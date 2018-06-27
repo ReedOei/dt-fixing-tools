@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
+import edu.washington.cs.dt.RESULT;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.IOException;
@@ -66,11 +67,21 @@ public class MinimizeTestList extends StandardMain {
             Preconditions.checkArgument(modifiedOrderLine.startsWith("when executed after: "));
 
             final String test = testLine.replace("Test: ", "");
+            final RESULT intended = RESULT.valueOf(intendedLine.replace("Intended behavior: ", ""));
+            final List<String> originalOrder =
+                    ListUtil.read(originalOrderLine.replace("when executed after: ", ""));
+            final RESULT revealed = RESULT.valueOf(revealedLine.replace("The revealed different behavior: ", ""));
             final List<String> modifiedOrder =
-                    ListUtil.read(modifiedOrderLine.replace("when executed after: ", ""), Function.identity());
+                    ListUtil.read(modifiedOrderLine.replace("when executed after: ", ""));
 
             try {
-                result.add(new TestMinimizer(modifiedOrder, classpath, test));
+                // If they're the same, don't both creating two
+                if (intended != revealed) {
+                    result.add(new TestMinimizer(originalOrder, classpath, test));
+                    result.add(new TestMinimizer(modifiedOrder, classpath, test));
+                } else {
+                    result.add(new TestMinimizer(modifiedOrder, classpath, test));
+                }
             } catch (InterruptedException | TimeoutException | ExecutionException e) {
                 e.printStackTrace();
             }

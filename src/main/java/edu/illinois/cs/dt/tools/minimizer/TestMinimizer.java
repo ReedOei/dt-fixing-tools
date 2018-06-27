@@ -42,7 +42,8 @@ public class TestMinimizer {
         System.out.println("[INFO] Expected: " + expected);
     }
 
-    private RESULT result(final List<String> order) throws FlakyTestException, InterruptedException, ExecutionException, TimeoutException {
+    private RESULT result(final List<String> order)
+            throws FlakyTestException, InterruptedException, ExecutionException, TimeoutException {
         final List<String> actualOrder = new ArrayList<>(order);
 
         if (!actualOrder.contains(dependentTest)) {
@@ -62,7 +63,9 @@ public class TestMinimizer {
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
 
-            minimizedResult = new MinimizeTestsResult(dependentTest, run(order));
+            minimizedResult = new MinimizeTestsResult(expected, dependentTest, run(order));
+            minimizedResult.verify(runner);
+
             System.out.println();
         }
 

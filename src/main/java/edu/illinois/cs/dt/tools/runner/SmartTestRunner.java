@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.TimeLimiter;
 import com.reedoei.eunomia.io.CaptureOutStream;
 import com.reedoei.eunomia.io.CapturedOutput;
+import com.reedoei.eunomia.util.Util;
 import edu.washington.cs.dt.TestExecResult;
 import edu.washington.cs.dt.runners.FixedOrderRunner;
 
@@ -11,6 +12,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +24,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class SmartTestRunner {
+    private static final SmartTestRunner master = new SmartTestRunner();
+
+    public static SmartTestRunner master() {
+        return master;
+    }
+
     private final TestInfoStore infoStore = new TestInfoStore();
     private final String classpath;
 
@@ -34,6 +43,12 @@ public class SmartTestRunner {
 
     private boolean correctTestsRan(final List<String> order, final TestExecResult result) {
         return new HashSet<>(order).equals(result.getNameToResultsMap().keySet());
+    }
+
+    @SafeVarargs
+    public final TestExecResult runOrder(final List<String>... orders)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        return runOrder(Arrays.stream(orders).reduce(new ArrayList<>(), Util::prependAll));
     }
 
     public TestExecResult runOrder(final List<String> order)

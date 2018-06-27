@@ -1,6 +1,6 @@
 package edu.illinois.cs.dt.tools.runner;
 
-import com.github.javaparser.ast.PackageDeclaration;
+import com.reedoei.eunomia.math.Averager;
 import edu.washington.cs.dt.OneTestExecResult;
 import edu.washington.cs.dt.TestExecResult;
 
@@ -11,9 +11,9 @@ import java.util.Map;
 public class TestInfoStore {
     // 6 hours in seconds. This is the time to use when we don't know how long tests should take.
     private static final long MAX_DEFAULT_TIMEOUT = 6 * 3600;
-    private static final long MIN_DEFAULT_TIMEOUT = 5; // Cannot time out in less than this many seconds.
     // How much longer we should wait than expected.
-    private static final double TIMEOUT_MULTIPLIER = 2.0;
+    private static final double TIMEOUT_MULTIPLIER = 2.5;
+    private static final long TIMEOUT_OFFSET = 5; // Add a flat 5 seconds to all timeouts
 
     private final Map<String, TestInfo> testInfo = new HashMap<>();
 
@@ -42,6 +42,10 @@ public class TestInfoStore {
             }
         }
 
-        return Math.max(MIN_DEFAULT_TIMEOUT, (long) (TIMEOUT_MULTIPLIER * totalExpectedTime));
+        return order.size() + TIMEOUT_OFFSET + (long) (TIMEOUT_MULTIPLIER * totalExpectedTime);
+    }
+
+    public double averageTime() {
+        return new Averager<>(testInfo.values().stream().map(TestInfo::averageTime)).mean();
     }
 }

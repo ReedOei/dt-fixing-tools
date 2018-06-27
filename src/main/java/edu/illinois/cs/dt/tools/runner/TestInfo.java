@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.runner;
 
 import com.reedoei.eunomia.collections.ListUtil;
+import com.reedoei.eunomia.math.Averager;
 import com.reedoei.eunomia.math.MathUtil;
 import edu.washington.cs.dt.OneTestExecResult;
 import edu.washington.cs.dt.RESULT;
@@ -15,7 +16,7 @@ public class TestInfo {
     // This is used to discover flaky tests during runs of this tool.
     private final Map<List<String>, RESULT> knownRuns = new HashMap<>();
 
-    private final List<Long> times = new ArrayList<>();
+    private final List<Double> times = new ArrayList<>();
 
     private final String testName;
 
@@ -31,8 +32,8 @@ public class TestInfo {
     }
 
     private void updateTime(final OneTestExecResult result) {
-        // Time is in nanoseconds
-        times.add((long) (result.getExecTime() / 1E9));
+        // Time is in nanoseconds by default, so convert it to seconds
+        times.add(result.getExecTime() / 1E9);
     }
 
     private void updateFlakiness(List<String> order, OneTestExecResult result) throws FlakyTestException {
@@ -48,6 +49,6 @@ public class TestInfo {
     }
 
     public double averageTime() {
-        return MathUtil.sum(times) / times.size();
+        return new Averager<>(times).mean();
     }
 }
