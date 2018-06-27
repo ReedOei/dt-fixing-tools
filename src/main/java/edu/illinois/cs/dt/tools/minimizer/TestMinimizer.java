@@ -2,43 +2,39 @@ package edu.illinois.cs.dt.tools.minimizer;
 
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.util.Util;
+import edu.illinois.cs.dt.tools.runner.FlakyTestException;
+import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.washington.cs.dt.RESULT;
 import edu.washington.cs.dt.TestExecResult;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 public class TestMinimizer {
     private final List<String> testOrder;
     private final String classpath;
     private final String dependentTest;
     private final RESULT expected;
+    private final SmartTestRunner runner;
 
     @Nullable
     private MinimizeTestsResult minimizedResult = null;
 
-    // The key is all tests in the order, and the value is the result of the last test.
-    // This is used to discover flaky tests during runs of this tool.
-    private final Map<List<String>, RESULT> knownRuns = new HashMap<>();
-    private final Set<String> flaky = new HashSet<>();
-
-    private boolean failOnFlakyTests = true;
-
     public TestMinimizer(final List<String> testOrder, final String dependentTest)
-            throws MinimizeTestListException {
+            throws FlakyTestException, InterruptedException, ExecutionException, TimeoutException {
         this(testOrder, System.getProperty("java.class.path"), dependentTest);
     }
 
     public TestMinimizer(final List<String> testOrder, final String classpath, final String dependentTest)
-            throws MinimizeTestListException {
+            throws FlakyTestException, InterruptedException, ExecutionException, TimeoutException {
         this.testOrder = testOrder;
         this.classpath = classpath;
         this.dependentTest = dependentTest;
+
+        this.runner = new SmartTestRunner(classpath);
 
         // Run in given order to determine what the result should be.
         System.out.println("[INFO] Getting expected result for: " + dependentTest);
@@ -46,45 +42,20 @@ public class TestMinimizer {
         System.out.println("[INFO] Expected: " + expected);
     }
 
-    private RESULT result(final List<String> order) throws MinimizeTestListException {
+    private RESULT result(final List<String> order) throws FlakyTestException, InterruptedException, ExecutionException, TimeoutException {
         final List<String> actualOrder = new ArrayList<>(order);
 
         if (!actualOrder.contains(dependentTest)) {
             actualOrder.add(dependentTest);
         }
 
-        final TestExecResult results = SmartTestRunner.runOrder(classpath, actualOrder);
-        updateFlakyTests(actualOrder, results);
+        final TestExecResult results = runner.runOrder(actualOrder);
 
         return results.getResult(dependentTest).result;
     }
 
-    private void updateFlakyTests(final List<String> order, final TestExecResult results)
-            throws MinimizeTestListException {
-        for (final String testName : results.getAllTests()) {
-            final RESULT testResult = results.getResult(testName).result;
-
-            if (flaky.contains(testName)) {
-                return;
-            }
-
-            final List<String> testsBefore = ListUtil.beforeInc(order, testName);
-
-            if (knownRuns.containsKey(testsBefore) && !knownRuns.get(testsBefore).equals(testResult)) {
-                flaky.add(testName);
-
-                if (failOnFlakyTests) {
-                    throw new MinimizeTestListException("Found flaky test '" + testName + "'. " +
-                            "Result was '" + knownRuns.get(testsBefore) + "' before but is '" +
-                            testResult + "' now, when run in the order " + testsBefore);
-                }
-            } else {
-                knownRuns.put(testsBefore, testResult);
-            }
-        }
-    }
-
-    public MinimizeTestsResult run() throws MinimizeTestListException {
+    public MinimizeTestsResult run()
+            throws MinimizeTestListException, FlakyTestException, InterruptedException, ExecutionException, TimeoutException {
         if (minimizedResult == null) {
             System.out.println("[INFO] Running minimizer for: " + dependentTest);
 
@@ -99,7 +70,7 @@ public class TestMinimizer {
     }
 
     private List<String> run(List<String> order)
-            throws MinimizeTestListException {
+            throws MinimizeTestListException, FlakyTestException, InterruptedException, ExecutionException, TimeoutException {
         final List<String> deps = new ArrayList<>();
 
         if (order.isEmpty()) {
@@ -164,7 +135,7 @@ public class TestMinimizer {
     }
 
     private List<String> runSequential(final List<String> deps, final List<String> testOrder)
-            throws MinimizeTestListException {
+            throws FlakyTestException, InterruptedException, ExecutionException, TimeoutException {
         final long startTime = System.currentTimeMillis();
         int testsRun = 0;
 

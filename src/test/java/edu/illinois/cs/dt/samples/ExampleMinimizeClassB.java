@@ -1,15 +1,15 @@
-package edu.washington.cs.dt.impact.samples;
+package edu.illinois.cs.dt.samples;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 // DO NOT RUN. These tests are only to be used by other tests (currently only MinimizeTestListTest).
 @Ignore
-public class ExampleMinimizeClassA {
+public class ExampleMinimizeClassB {
     private static int x = 0;
 
     @BeforeClass
@@ -23,18 +23,24 @@ public class ExampleMinimizeClassA {
     }
 
     @Test
-    public void test1() {
-        assertEquals(0, x);
-    }
-
-    @Test
-    public void test2() {
+    public void test1() throws Exception {
         x = 4;
         assertEquals(4, x);
     }
 
     @Test
-    public void test3() {
+    public void test2() throws Exception {
         assertEquals(4, x);
+    }
+
+    @Test
+    public void test3() throws Exception {
+        x = 0;
+        assertEquals(0, x);
+    }
+
+    @Test
+    public void test4() throws Exception {
+        assertEquals(0, x);
     }
 }

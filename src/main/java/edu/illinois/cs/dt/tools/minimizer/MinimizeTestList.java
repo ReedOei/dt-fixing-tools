@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 public class MinimizeTestList extends StandardMain {
@@ -69,7 +71,7 @@ public class MinimizeTestList extends StandardMain {
 
             try {
                 result.add(new TestMinimizer(modifiedOrder, classpath, test));
-            } catch (MinimizeTestListException e) {
+            } catch (InterruptedException | TimeoutException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
@@ -109,13 +111,14 @@ public class MinimizeTestList extends StandardMain {
                 }
 
                 minimizer.run().print(path.orElse(null));
-            } catch (MinimizeTestListException e) {
+            } catch (MinimizeTestListException | InterruptedException | TimeoutException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private void runDefault() throws IOException, MinimizeTestListException {
+    private void runDefault()
+            throws IOException, MinimizeTestListException, InterruptedException, ExecutionException, TimeoutException {
         final Path order = Paths.get(getArgRequired("order"));
         final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
         final String dependentTest = getArg("test").orElse(testOrder.get(testOrder.size() - 1));

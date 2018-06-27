@@ -1,4 +1,4 @@
-package edu.washington.cs.dt.impact.samples;
+package edu.illinois.cs.dt.samples;
 
 import org.junit.Ignore;
 import org.junit.Test;
