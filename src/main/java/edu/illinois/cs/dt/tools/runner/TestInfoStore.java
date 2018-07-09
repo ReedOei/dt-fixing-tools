@@ -9,13 +9,16 @@ import java.util.List;
 import java.util.Map;
 
 public class TestInfoStore {
-    // 6 hours in seconds. This is the time to use when we don't know how long tests should take.
-    private static final long MAX_DEFAULT_TIMEOUT = 6 * 3600;
+    // 3 hours in seconds. This is the time to use when we don't know how long tests should take.
+    // This time is still affected by the other modifiers below.
+    private static final long MAX_DEFAULT_TIMEOUT = 3 * 3600;
     // How much longer we should wait than expected.
-    private static final double TIMEOUT_MULTIPLIER = 2.5;
-    private static final long TIMEOUT_OFFSET = 5; // Add a flat 5 seconds to all timeouts
+    private static final double TIMEOUT_MULTIPLIER = 2.0;
+    private static final double TIMEOUT_OFFSET = 5.0; // Add a flat 5 seconds to all timeouts
+    private static final double PER_TEST_MULTIPLIER = 1.0; // Add a flat 1 second per test.
 
     private final Map<String, TestInfo> testInfo = new HashMap<>();
+    private final Averager<Double> testTimes = new Averager<>();
 
     public TestInfoStore() {
     }
@@ -25,6 +28,7 @@ public class TestInfoStore {
             final OneTestExecResult result = results.getResult(testName);
             if (testInfo.containsKey(testName)) {
                 testInfo.get(testName).updateWith(order, result);
+                testTimes.add(results.getResult(testName).getExecTime() / 1E9);
             } else {
                 testInfo.put(testName, new TestInfo(order, testName, result));
             }
@@ -36,16 +40,17 @@ public class TestInfoStore {
 
         for (final String s : order) {
             if (!testInfo.containsKey(s)) {
-                return MAX_DEFAULT_TIMEOUT;
+                totalExpectedTime = MAX_DEFAULT_TIMEOUT;
+                break;
             } else {
                 totalExpectedTime += testInfo.get(s).averageTime();
             }
         }
 
-        return order.size() + TIMEOUT_OFFSET + (long) (TIMEOUT_MULTIPLIER * totalExpectedTime);
+        return (long) (PER_TEST_MULTIPLIER * order.size() + TIMEOUT_OFFSET + TIMEOUT_MULTIPLIER * totalExpectedTime);
     }
 
     public double averageTime() {
-        return new Averager<>(testInfo.values().stream().map(TestInfo::averageTime)).mean();
+        return testTimes.mean();
     }
 }

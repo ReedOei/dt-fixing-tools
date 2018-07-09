@@ -16,19 +16,41 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class MinimizeTestList extends StandardMain {
-    private String classpath;
+    private final String classpath;
+    private final Path javaAgent;
 
-    public static void main(final String[] args) throws Exception {
-        new MinimizeTestList(args).run();
+    public static void main(final String[] args) {
+        try {
+            new MinimizeTestList(args).run();
+        } catch (Exception e) {
+            System.out.println();
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    public MinimizeTestList() {
+        this(new String[0]);
     }
 
     public MinimizeTestList(final String[] args) {
         super(args);
+        this.classpath = getArg("classpath").orElse(System.getProperty("java.class.path"));
+        this.javaAgent = Paths.get(getArg("javaagent").orElse(""));
+    }
+
+    public MinimizeTestList(final String classpath) {
+        this(classpath, Paths.get(""));
+    }
+
+    public MinimizeTestList(final String classpath, final Path javaAgent) {
+        super(new String[] {"-cp", classpath, "--javaagent", javaAgent.toAbsolutePath().toString()});
+
+        this.classpath = classpath;
+        this.javaAgent = javaAgent;
     }
 
     private Set<TestMinimizer> fromDtList(final Path path) {
@@ -77,12 +99,12 @@ public class MinimizeTestList extends StandardMain {
             try {
                 // If they're the same, don't both creating two
                 if (intended != revealed) {
-                    result.add(new TestMinimizer(originalOrder, classpath, test));
-                    result.add(new TestMinimizer(modifiedOrder, classpath, test));
+                    result.add(new TestMinimizer(originalOrder, classpath, test, javaAgent));
+                    result.add(new TestMinimizer(modifiedOrder, classpath, test, javaAgent));
                 } else {
-                    result.add(new TestMinimizer(modifiedOrder, classpath, test));
+                    result.add(new TestMinimizer(modifiedOrder, classpath, test, javaAgent));
                 }
-            } catch (InterruptedException | TimeoutException | ExecutionException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -92,9 +114,8 @@ public class MinimizeTestList extends StandardMain {
 
     @Override
     public void run() throws Exception {
-        this.classpath = getArg("classpath").orElse(System.getProperty("java.class.path"));
         if (getArg("dtFolder").isPresent()) {
-            Files.list(Paths.get(getArgRequired("dtFolder"))).forEach(this::runDependentTestFile);
+            runDependentTestFolder(Paths.get(getArgRequired("dtFolder")));
         } else if (getArg("dtFile").isPresent()) {
             runDependentTestFile(Paths.get(getArgRequired("dtFile")));
         } else {
@@ -102,10 +123,24 @@ public class MinimizeTestList extends StandardMain {
         }
     }
 
-    private void runDependentTestFile(final Path dtFile) {
+    public Set<MinimizeTestsResult> runDependentTestFolder(final Path dtFolder) throws IOException {
+        return Files.walk(dtFolder)
+                .filter(p -> Files.isRegularFile(p))
+                .flatMap(p -> runDependentTestFile(p).stream())
+                .collect(Collectors.toSet());
+    }
+
+    public Set<MinimizeTestsResult> runDependentTestFile(final Path dtFile) {
         final Optional<Path> outputPath = getArg("outputDir").map(Paths::get);
 
         final Set<TestMinimizer> minimizers = fromDtList(dtFile);
+
+        final Set<MinimizeTestsResult> results = new HashSet<>();
+
+        if (minimizers.isEmpty()) {
+            return results;
+        }
+
         System.out.println("[INFO] Starting running " + minimizers.size() + " minimizers.");
         System.out.println();
         for (final TestMinimizer minimizer : minimizers) {
@@ -121,19 +156,23 @@ public class MinimizeTestList extends StandardMain {
                     }
                 }
 
-                minimizer.run().print(path.orElse(null));
-            } catch (MinimizeTestListException | InterruptedException | TimeoutException | ExecutionException e) {
+                final MinimizeTestsResult result = minimizer.run();
+                result.print(path.orElse(null));
+                results.add(result);
+            } catch (Exception e) {
+                System.out.println();
                 e.printStackTrace();
             }
         }
+
+        return results;
     }
 
-    private void runDefault()
-            throws IOException, MinimizeTestListException, InterruptedException, ExecutionException, TimeoutException {
+    private void runDefault() throws Exception {
         final Path order = Paths.get(getArgRequired("order"));
         final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
         final String dependentTest = getArg("test").orElse(testOrder.get(testOrder.size() - 1));
 
-        new TestMinimizer(testOrder, classpath, dependentTest).run().print();
+        new TestMinimizer(testOrder, classpath, dependentTest, javaAgent).run().print();
     }
 }

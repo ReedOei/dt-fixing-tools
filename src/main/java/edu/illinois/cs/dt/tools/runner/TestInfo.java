@@ -2,7 +2,6 @@ package edu.illinois.cs.dt.tools.runner;
 
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.math.Averager;
-import com.reedoei.eunomia.math.MathUtil;
 import edu.washington.cs.dt.OneTestExecResult;
 import edu.washington.cs.dt.RESULT;
 

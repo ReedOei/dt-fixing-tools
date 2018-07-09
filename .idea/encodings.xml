@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/CaptureFactory.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/DiaperLogger.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/FileStateCapture.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/IStateCapture.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/NoOpStateCapture.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/StateCapture.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/StatisticsStateCapture.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/StatisticsStateCapture.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/edu/illinois/diaper/agent/MainAgent.java" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/src/main/resources/META-INF/MANIFEST.MF" charset="ISO-8859-1" />
+  </component>
+</project>

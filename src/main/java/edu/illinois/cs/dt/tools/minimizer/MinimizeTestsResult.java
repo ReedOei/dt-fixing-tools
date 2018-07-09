@@ -11,8 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 public class MinimizeTestsResult {
     private static final int VERIFY_REPEAT_COUNT = 10;
@@ -28,30 +26,26 @@ public class MinimizeTestsResult {
         this.deps = deps;
     }
 
-    private boolean isExpected(final SmartTestRunner runner, final List<String> deps)
-            throws InterruptedException, ExecutionException, TimeoutException {
+    private boolean isExpected(final SmartTestRunner runner, final List<String> deps) throws Exception {
         return runner
                 .runOrder(deps, ListUtil.fromArray(dependentTest))
+                .result()
                 .getResult(dependentTest).result.equals(expected);
     }
 
-    public boolean verify()
-            throws InterruptedException, ExecutionException, TimeoutException, MinimizeTestListException {
+    public boolean verify() throws Exception {
         return verify(new SmartTestRunner(), VERIFY_REPEAT_COUNT);
     }
 
-    public boolean verify(final int verifyCount)
-            throws InterruptedException, ExecutionException, TimeoutException, MinimizeTestListException {
+    public boolean verify(final int verifyCount) throws Exception {
         return verify(new SmartTestRunner(), verifyCount);
     }
 
-    public boolean verify(final SmartTestRunner runner)
-            throws InterruptedException, ExecutionException, TimeoutException, MinimizeTestListException {
+    public boolean verify(final SmartTestRunner runner) throws Exception {
         return verify(runner, VERIFY_REPEAT_COUNT);
     }
 
-    public boolean verify(final SmartTestRunner runner, final int verifyCount)
-            throws InterruptedException, ExecutionException, TimeoutException, MinimizeTestListException {
+    public boolean verify(final SmartTestRunner runner, final int verifyCount) throws Exception {
         for (int i = 0; i < verifyCount; i++) {
             final List<List<String>> depLists = ListUtil.sample(ListUtil.subsequences(deps), MAX_SUBSEQUENCES);
             int check = 1;
