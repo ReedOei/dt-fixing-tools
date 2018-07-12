@@ -63,7 +63,7 @@ public class MinimizeTestListTest {
                 ));
 
         final TestMinimizer minimizer =
-                new TestMinimizer(tests, "edu.illinois.cs.dt.samples.ExampleMinimizeClassA.test3");
+                new TestMinimizerBuilder().testOrder(tests).dependentTest("edu.illinois.cs.dt.samples.ExampleMinimizeClassA.test3").build();
 
         final List<String> result = minimizer.run().getDeps();
         assertThat(result, hasItem("edu.illinois.cs.dt.samples.ExampleMinimizeClassA.test2"));
@@ -80,7 +80,7 @@ public class MinimizeTestListTest {
                 ));
 
         final TestMinimizer minimizer =
-                new TestMinimizer(tests, "edu.illinois.cs.dt.samples.ExampleMinimizeClassA.test1");
+                new TestMinimizerBuilder().testOrder(tests).dependentTest("edu.illinois.cs.dt.samples.ExampleMinimizeClassA.test1").build();
 
         final List<String> result = minimizer.run().getDeps();
         assertThat(result, hasItem("edu.illinois.cs.dt.samples.ExampleMinimizeClassA.test2"));
@@ -97,7 +97,7 @@ public class MinimizeTestListTest {
                 ));
 
         final TestMinimizer minimizer =
-                new TestMinimizer(tests, "edu.illinois.cs.dt.samples.ExampleMinimizeClassB.test4");
+                new TestMinimizerBuilder().testOrder(tests).dependentTest("edu.illinois.cs.dt.samples.ExampleMinimizeClassB.test4").build();
 
         final List<String> result = minimizer.run().getDeps();
         assertThat(result, hasItem("edu.illinois.cs.dt.samples.ExampleMinimizeClassB.test1"));

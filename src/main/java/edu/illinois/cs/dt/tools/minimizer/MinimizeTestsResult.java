@@ -3,6 +3,7 @@ package edu.illinois.cs.dt.tools.minimizer;
 import com.google.gson.Gson;
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.IOUtil;
+import com.reedoei.eunomia.io.files.FileUtil;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.washington.cs.dt.RESULT;
 
@@ -19,6 +20,14 @@ public class MinimizeTestsResult {
     private final RESULT expected;
     private final String dependentTest;
     private final List<String> deps;
+
+    public static MinimizeTestsResult fromPath(final Path path) throws IOException {
+        return new Gson().fromJson(FileUtil.readFile(path), MinimizeTestsResult.class);
+    }
+
+    public static MinimizeTestsResult fromString(final String jsonString) {
+        return new Gson().fromJson(jsonString, MinimizeTestsResult.class);
+    }
 
     public MinimizeTestsResult(final RESULT expected, final String dependentTest, final List<String> deps) {
         this.expected = expected;
@@ -100,16 +109,17 @@ public class MinimizeTestsResult {
             try {
                 final Path outputFile = outputPath.resolve(dependentTest + "-" + expected + "-dependencies.json");
                 Files.write(outputFile, toString().getBytes());
-                return;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-
-        System.out.println(toString());
     }
 
     public List<String> getDeps() {
         return deps;
+    }
+
+    public String getDependentTest() {
+        return dependentTest;
     }
 }

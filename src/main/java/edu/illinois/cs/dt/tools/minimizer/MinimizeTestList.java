@@ -1,7 +1,10 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Streams;
 import com.reedoei.eunomia.collections.ListUtil;
+import com.reedoei.eunomia.collections.StreamUtil;
+import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import edu.washington.cs.dt.RESULT;
@@ -12,15 +15,15 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class MinimizeTestList extends StandardMain {
-    private final String classpath;
-    private final Path javaAgent;
+public class MinimizeTestList extends StandardMain implements VerbosePrinter {
+    private final TestMinimizerBuilder builder;
+    private final int verbosity;
 
     public static void main(final String[] args) {
         try {
@@ -38,8 +41,16 @@ public class MinimizeTestList extends StandardMain {
 
     public MinimizeTestList(final String[] args) {
         super(args);
-        this.classpath = getArg("classpath").orElse(System.getProperty("java.class.path"));
-        this.javaAgent = Paths.get(getArg("javaagent").orElse(""));
+
+        final String classpath = getArg("cp", "classpath").orElse(System.getProperty("java.class.path"));
+        final Path javaAgent = Paths.get(getArg("javaagent").orElse(""));
+
+        this.verbosity = verbosity(this);
+
+        this.builder = new TestMinimizerBuilder()
+                .classpath(classpath)
+                .javaAgent(javaAgent)
+                .verbosity(verbosity);
     }
 
     public MinimizeTestList(final String classpath) {
@@ -47,29 +58,99 @@ public class MinimizeTestList extends StandardMain {
     }
 
     public MinimizeTestList(final String classpath, final Path javaAgent) {
-        super(new String[] {"-cp", classpath, "--javaagent", javaAgent.toAbsolutePath().toString()});
-
-        this.classpath = classpath;
-        this.javaAgent = javaAgent;
+        this(new String[] {"-cp", classpath, "--javaagent", javaAgent.toAbsolutePath().toString()});
     }
 
-    private Set<TestMinimizer> fromDtList(final Path path) {
-        System.out.println("[INFO] Creating minimizers for file: " + path);
-
-        final Set<TestMinimizer> result = new HashSet<>();
+    private Stream<TestMinimizer> fromDtList(final Path path) {
+        println("[INFO] Creating minimizers for file: " + path);
 
         final List<String> lines;
         try {
             lines = Files.readAllLines(path, Charset.defaultCharset());
         } catch (IOException e) {
             e.printStackTrace();
-            return result;
+            return Stream.empty();
+        }
+        lines.removeIf(s -> s.isEmpty() || s.trim().isEmpty());
+
+        return Streams.stream(new TestMinimizerIterator(lines));
+    }
+
+    @Override
+    public void run() throws Exception {
+        if (getArg("dtFolder").isPresent()) {
+            StreamUtil.seq(runDependentTestFolder(Paths.get(getArgRequired("dtFolder"))));
+        } else if (getArg("dtFile").isPresent()) {
+            StreamUtil.seq(runDependentTestFile(Paths.get(getArgRequired("dtFile"))));
+        } else {
+            runDefault();
+        }
+    }
+
+    public Stream<MinimizeTestsResult> runDependentTestFolder(final Path dtFolder) throws IOException {
+        return Files.walk(dtFolder)
+                .filter(p -> Files.isRegularFile(p))
+                .flatMap(this::runDependentTestFile);
+    }
+
+    public Stream<MinimizeTestsResult> runDependentTestFile(final Path dtFile) {
+        final Optional<Path> outputPath = getArg("outputDir").map(Paths::get);
+
+        return fromDtList(dtFile).flatMap(minimizer -> {
+            try {
+                final String baseName = FilenameUtils.getBaseName(String.valueOf(dtFile.toAbsolutePath()));
+                final Optional<Path> path = outputPath.map(p -> p.resolve(baseName));
+
+                if (path.isPresent()) {
+                    try {
+                        FileUtil.makeDirectoryDestructive(path.get());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                final MinimizeTestsResult result = minimizer.run();
+                path.ifPresent(result::print);
+                return Stream.of(result);
+            } catch (Exception e) {
+                println();
+                e.printStackTrace();
+            }
+
+            return Stream.empty();
+        });
+    }
+
+    private void runDefault() throws Exception {
+        final Path order = Paths.get(getArgRequired("order"));
+        final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
+        final String dependentTest = getArg("test").orElse(testOrder.get(testOrder.size() - 1));
+
+        builder.testOrder(testOrder).dependentTest(dependentTest).build().run().print();
+    }
+
+    @Override
+    public int verbosity() {
+        return verbosity;
+    }
+
+    private class TestMinimizerIterator implements Iterator<TestMinimizer> {
+        private final List<TestMinimizer> nextMinimizers = new ArrayList<>();
+        private final List<String> lines;
+
+        public TestMinimizerIterator(List<String> lines) {
+            this.lines = lines;
         }
 
-        while (!lines.isEmpty()) {
-            if (lines.get(0).isEmpty()) {
-                lines.remove(0);
-                continue;
+        @Override
+        public boolean hasNext() {
+            return !nextMinimizers.isEmpty() || lines.size() >= 5;
+        }
+
+        @Override
+        public TestMinimizer next() {
+            if (!nextMinimizers.isEmpty()) {
+                return nextMinimizers.remove(0);
             }
 
             // Verify there are enough lines to contain all the information we need.
@@ -96,83 +177,24 @@ public class MinimizeTestList extends StandardMain {
             final List<String> modifiedOrder =
                     ListUtil.read(modifiedOrderLine.replace("when executed after: ", ""));
 
+            final TestMinimizerBuilder orderBuilder = builder.dependentTest(test);
+
             try {
                 // If they're the same, don't both creating two
                 if (intended != revealed) {
-                    result.add(new TestMinimizer(originalOrder, classpath, test, javaAgent));
-                    result.add(new TestMinimizer(modifiedOrder, classpath, test, javaAgent));
-                } else {
-                    result.add(new TestMinimizer(modifiedOrder, classpath, test, javaAgent));
+                    nextMinimizers.add(orderBuilder.testOrder(originalOrder).build());
                 }
+
+                nextMinimizers.add(orderBuilder.testOrder(modifiedOrder).build());
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
 
-        return result;
-    }
-
-    @Override
-    public void run() throws Exception {
-        if (getArg("dtFolder").isPresent()) {
-            runDependentTestFolder(Paths.get(getArgRequired("dtFolder")));
-        } else if (getArg("dtFile").isPresent()) {
-            runDependentTestFile(Paths.get(getArgRequired("dtFile")));
-        } else {
-            runDefault();
-        }
-    }
-
-    public Set<MinimizeTestsResult> runDependentTestFolder(final Path dtFolder) throws IOException {
-        return Files.walk(dtFolder)
-                .filter(p -> Files.isRegularFile(p))
-                .flatMap(p -> runDependentTestFile(p).stream())
-                .collect(Collectors.toSet());
-    }
-
-    public Set<MinimizeTestsResult> runDependentTestFile(final Path dtFile) {
-        final Optional<Path> outputPath = getArg("outputDir").map(Paths::get);
-
-        final Set<TestMinimizer> minimizers = fromDtList(dtFile);
-
-        final Set<MinimizeTestsResult> results = new HashSet<>();
-
-        if (minimizers.isEmpty()) {
-            return results;
-        }
-
-        System.out.println("[INFO] Starting running " + minimizers.size() + " minimizers.");
-        System.out.println();
-        for (final TestMinimizer minimizer : minimizers) {
-            try {
-                final String baseName = FilenameUtils.getBaseName(String.valueOf(dtFile.toAbsolutePath()));
-                final Optional<Path> path = outputPath.map(p -> p.resolve(baseName));
-
-                if (path.isPresent()) {
-                    try {
-                        FileUtil.makeDirectoryDestructive(path.get());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                final MinimizeTestsResult result = minimizer.run();
-                result.print(path.orElse(null));
-                results.add(result);
-            } catch (Exception e) {
-                System.out.println();
-                e.printStackTrace();
+            if (!nextMinimizers.isEmpty()) {
+                return nextMinimizers.remove(0);
+            } else {
+                return null;
             }
         }
-
-        return results;
-    }
-
-    private void runDefault() throws Exception {
-        final Path order = Paths.get(getArgRequired("order"));
-        final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
-        final String dependentTest = getArg("test").orElse(testOrder.get(testOrder.size() - 1));
-
-        new TestMinimizer(testOrder, classpath, dependentTest, javaAgent).run().print();
     }
 }

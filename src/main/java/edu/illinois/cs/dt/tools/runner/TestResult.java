@@ -3,6 +3,7 @@ package edu.illinois.cs.dt.tools.runner;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
+import com.thoughtworks.xstream.security.AnyTypePermission;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 import edu.washington.cs.dt.TestExecResult;
 
@@ -34,6 +35,8 @@ public class TestResult {
 
     private XStream getXStreamInstance() {
         XStream xstream = new XStream(new DomDriver());
+        XStream.setupDefaultSecurity(xstream);
+        xstream.addPermission(AnyTypePermission.ANY);
         xstream.setMode(XStream.XPATH_ABSOLUTE_REFERENCES);
         // Set fields to be omitted during serialization
         xstream.omitField(java.lang.ref.SoftReference.class, "timestamp");

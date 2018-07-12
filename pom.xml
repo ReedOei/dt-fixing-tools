@@ -21,7 +21,20 @@
         </plugins>
     </build>
 
+    <repositories>
+        <repository>
+            <id>soot-snapshot</id>
+            <name>soot snapshots</name>
+            <url>https://soot-build.cs.uni-paderborn.de/nexus/repository/soot-snapshot/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
+        <dependency>
+            <groupId>ca.mcgill.sable</groupId>
+            <artifactId>soot</artifactId>
+            <version>3.1.0-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>com.reedoei</groupId>
             <artifactId>eunomia</artifactId>
@@ -35,9 +48,12 @@
         <dependency>
             <groupId>edu.washington.cs.dt</groupId>
             <artifactId>dtdetector</artifactId>
-            <version>1.2.1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/dtdetector-1.2.1.jar</systemPath>
+            <version>1.2.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.washington.cs.dt</groupId>
+            <artifactId>dt-impact-tracer</artifactId>
+            <version>1.0.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>

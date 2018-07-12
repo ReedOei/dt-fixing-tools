@@ -58,15 +58,11 @@ public class SmartTestRunner {
     public TestResult runOrder(final List<String> order) throws Exception {
         final TimeLimiter limiter = SimpleTimeLimiter.create(Executors.newSingleThreadExecutor());
 
-//        System.out.println();
-//        System.out.println("Running: " + order);
-
         final long timeout = infoStore.getTimeout(order);
-        final String endTime = LocalDateTime.now().plusSeconds(timeout).toString();
+//        final String endTime = LocalDateTime.now().plusSeconds(timeout).toString();
+//        System.out.printf(" Running %d tests until %s", order.size(), endTime);
 
-        System.out.printf(" Running %d tests until %s", order.size(), endTime);
-
-        return limiter.callWithTimeout(runner(classpath, order), infoStore.getTimeout(order), TimeUnit.SECONDS);
+        return limiter.callWithTimeout(runner(classpath, order), timeout, TimeUnit.SECONDS);
     }
 
     private Callable<TestResult> runner(String classpath, List<String> order) {

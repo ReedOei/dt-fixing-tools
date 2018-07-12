@@ -1,7 +1,7 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
 import com.reedoei.eunomia.collections.ListUtil;
-import com.reedoei.eunomia.io.IOUtil;
+import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.util.Util;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.washington.cs.dt.RESULT;
@@ -14,12 +14,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class TestMinimizer {
+public class TestMinimizer implements VerbosePrinter {
     private final List<String> testOrder;
     private final String classpath;
     private final String dependentTest;
     private final RESULT expected;
     private final SmartTestRunner runner;
+
+    private final int verbosity;
 
     @Nullable
     private MinimizeTestsResult minimizedResult = null;
@@ -34,17 +36,28 @@ public class TestMinimizer {
 
     public TestMinimizer(final List<String> testOrder, final String classpath, final String dependentTest, final Path javaAgent)
             throws Exception {
+        this(testOrder, classpath, dependentTest, javaAgent, 1);
+    }
+
+    public TestMinimizer(final List<String> testOrder, final String classpath, final String dependentTest, final Path javaAgent, int verbosity)
+            throws Exception {
         this.testOrder = testOrder;
         this.classpath = classpath;
         this.dependentTest = dependentTest;
+        this.verbosity = verbosity;
 
         this.runner = new SmartTestRunner(classpath, javaAgent);
 
         // Run in given order to determine what the result should be.
-        System.out.println("[INFO] Getting expected result for: " + dependentTest);
-        System.out.print("[INFO]");
+        println("[INFO] Getting expected result for: " + dependentTest);
+        print("[INFO]");
         this.expected = result(testOrder);
-        System.out.println(" Expected: " + expected);
+        println(" Expected: " + expected);
+    }
+
+    @Override
+    public int verbosity() {
+        return verbosity;
     }
 
     private RESULT result(final List<String> order) throws Exception {
@@ -61,15 +74,13 @@ public class TestMinimizer {
 
     public MinimizeTestsResult run() throws Exception {
         if (minimizedResult == null) {
-            System.out.println("[INFO] Running minimizer for: " + dependentTest);
+            println("[INFO] Running minimizer for: " + dependentTest);
 
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
 
             minimizedResult = new MinimizeTestsResult(expected, dependentTest, run(order));
             minimizedResult.verify(runner);
-
-            System.out.println();
         }
 
         return minimizedResult;
@@ -79,11 +90,11 @@ public class TestMinimizer {
         final List<String> deps = new ArrayList<>();
 
         if (order.isEmpty()) {
-            System.out.println("[INFO] Order is empty, so it is already minimized!");
+            println("[INFO] Order is empty, so it is already minimized!");
             return deps;
         }
 
-        System.out.println("[INFO] Trying tests as isolated dependencies.");
+        println("[INFO] Trying tests as isolated dependencies.");
         if (tryIsolated(deps, order)) {
             return deps;
         }
@@ -91,20 +102,20 @@ public class TestMinimizer {
         final int origSize = order.size();
 
         while (order.size() > 1) {
-            System.out.print("\r\033[2K[INFO] Trying both halves, " + order.size() + " tests remaining.");
+            print("\r\033[2K[INFO] Trying both halves, " + order.size() + " tests remaining.");
 
             final RESULT topResult = result(Util.prependAll(deps, Util.topHalf(order)));
-            System.out.print(" Top result: " + topResult);
+            print(" Top result: " + topResult);
 
             final RESULT botResult = result(Util.prependAll(deps, Util.botHalf(order)));
-            System.out.print(", Bottom result: " + botResult);
+            print(", Bottom result: " + botResult);
 
             if (topResult == expected && botResult != expected) {
                 order = Util.topHalf(order);
             } else if (topResult != expected && botResult == expected) {
                 order = Util.botHalf(order);
             } else {
-                System.out.println();
+                println();
                 // It's not 100% obvious what to do in this case (could have weird dependencies that are hard to deal with).
                 // But sequential will definitely work (except because of flakiness for other reasons).
                 return runSequential(deps, order);
@@ -112,13 +123,13 @@ public class TestMinimizer {
         }
 
         if (origSize > 1) {
-            System.out.println();
+            println();
         }
 
-        System.out.print("[INFO] ");
+        print("[INFO] ");
         final RESULT orderResult = result(order);
         if (order.size() == 1 || orderResult == expected) {
-            System.out.println(" Found dependencies: " + order);
+            println(" Found dependencies: " + order);
 
             deps.addAll(order);
         } else {
@@ -131,28 +142,28 @@ public class TestMinimizer {
     }
 
     private boolean tryIsolated(final List<String> deps, final List<String> order) throws Exception {
-        System.out.print("[INFO] Trying dependent test '" + dependentTest + "' in isolation.");
+        print("[INFO] Trying dependent test '" + dependentTest + "' in isolation.");
         final RESULT isolated = result(Collections.singletonList(dependentTest));
-        System.out.println();
+        println();
 
         // TODO: Move to another method probably.
         if (isolated == expected) {
             deps.clear();
-            System.out.println("[INFO] Test has expected result in isolation.");
+            println("[INFO] Test has expected result in isolation.");
             return true;
         }
 
         for (int i = 0; i < order.size(); i++) {
             String test = order.get(i);
 
-            IOUtil.printClearLine("[INFO] Running test " + i + " of " + order.size() + ". ");
+            print("\r\033[2K[INFO] Running test " + i + " of " + order.size() + ". ");
             final RESULT r = result(Collections.singletonList(test));
 
             // Found an order where we get the expected result with just one test, can't be more
             // minimal than this.
             if (r == expected) {
-                System.out.println();
-                System.out.println("[INFO] Found dependency: " + test);
+                println();
+                println("[INFO] Found dependency: " + test);
                 deps.add(test);
                 return true;
             }
@@ -180,7 +191,7 @@ public class TestMinimizer {
         while (!remainingTests.isEmpty()) {
             final long estimated = estimate(testsRun, remainingTests.size(), deps.size());
 
-            IOUtil.printClearLine(String.format("[INFO] Running sequentially, %d tests left (%d seconds remaining)", remainingTests.size(), estimated));
+            print(String.format("\r\033[2K[INFO] Running sequentially, %d tests left (%d seconds remaining)", remainingTests.size(), estimated));
             final String current = remainingTests.remove(0);
 
             final List<String> order = Util.prependAll(deps, remainingTests);
@@ -188,14 +199,14 @@ public class TestMinimizer {
             testsRun += order.size();
 
             if (r != expected) {
-                System.out.println();
-                System.out.println("[INFO] Found dependency: " + current);
+                println();
+                println("[INFO] Found dependency: " + current);
                 deps.add(current);
             }
         }
 
-        System.out.println();
-        System.out.println("[INFO] Found " + deps.size() + " dependencies.");
+        println();
+        println("[INFO] Found " + deps.size() + " dependencies.");
 
         return deps;
     }
