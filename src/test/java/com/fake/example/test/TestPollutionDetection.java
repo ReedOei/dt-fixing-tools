@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-// NOTE: These tests are only to be used for testing by other classes, and should not be run directly.
+// NOTE: These dts are only to be used for testing by other classes, and should not be run directly.
 // NOTE: It is very important that this class *NOT* be in a package containing "edu.illinois".
 //       If it is, then it will be ignored by poldet.
 @Ignore

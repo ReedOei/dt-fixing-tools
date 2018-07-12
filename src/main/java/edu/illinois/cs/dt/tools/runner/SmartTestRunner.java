@@ -2,17 +2,18 @@ package edu.illinois.cs.dt.tools.runner;
 
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.TimeLimiter;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.reedoei.eunomia.io.capture.CaptureOutStream;
 import com.reedoei.eunomia.io.capture.CapturedOutput;
 import com.reedoei.eunomia.util.Util;
-import edu.washington.cs.dt.TestExecResult;
+import edu.illinois.cs.dt.tools.runner.data.TestResult;
+import edu.washington.cs.dt.TestExecResults;
 import edu.washington.cs.dt.runners.FixedOrderRunner;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 public class SmartTestRunner {
     private static final SmartTestRunner master = new SmartTestRunner();
     private final Path javaAgent;
+
+    private boolean throwOnFlaky;
 
     public static SmartTestRunner master() {
         return master;
@@ -42,12 +45,21 @@ public class SmartTestRunner {
     }
 
     public SmartTestRunner(final String classpath, final Path javaAgent) {
-        this.classpath = classpath;
-        this.javaAgent = javaAgent;
+        this(classpath, javaAgent, true);
     }
 
-    private boolean correctTestsRan(final List<String> order, final TestExecResult result) {
-        return new HashSet<>(order).equals(result.getNameToResultsMap().keySet());
+    public SmartTestRunner(final String classpath, final boolean throwOnFlaky) {
+        this(classpath, Paths.get(""), throwOnFlaky);
+    }
+
+    public SmartTestRunner(final String classpath, final Path javaAgent, final boolean throwOnFlaky) {
+        this.classpath = classpath;
+        this.javaAgent = javaAgent;
+        this.throwOnFlaky = throwOnFlaky;
+    }
+
+    private boolean correctTestsRan(final List<String> order, final TestExecResults result) {
+        return new HashSet<>(order).equals(result.getExecutionRecords().get(0).getNameToResultsMap().keySet());
     }
 
     @SafeVarargs
@@ -60,33 +72,49 @@ public class SmartTestRunner {
 
         final long timeout = infoStore.getTimeout(order);
 //        final String endTime = LocalDateTime.now().plusSeconds(timeout).toString();
-//        System.out.printf(" Running %d tests until %s", order.size(), endTime);
+//        System.out.printf(" Running %d dts until %s", order.size(), endTime);
 
-        return limiter.callWithTimeout(runner(classpath, order), timeout, TimeUnit.SECONDS);
+        try {
+            return limiter.callWithTimeout(runner(classpath, order), timeout, TimeUnit.SECONDS);
+        } catch (UncheckedExecutionException e) {
+            // Throw it as a FlakyTestException so it's easier to deal with.
+            if (e.getCause() instanceof FlakyTestException) {
+                throw (FlakyTestException) e.getCause();
+            } else {
+                throw e;
+            }
+        }
     }
 
     private Callable<TestResult> runner(String classpath, List<String> order) {
         return () -> {
-            final CapturedOutput<TestExecResult> capture =
-                    new CaptureOutStream<>(() -> new FixedOrderRunner(classpath, order, javaAgent.toString()).run().getExecutionRecords().get(0))
+            final CapturedOutput<TestExecResults> capture =
+                    new CaptureOutStream<>(() -> new FixedOrderRunner(classpath, order, javaAgent.toString()).run())
                             .run();
 
-            final Optional<TestExecResult> result = capture.value();
+            final Optional<TestExecResults> results = capture.value();
 
-            if (result.isPresent() && correctTestsRan(order, result.get())) {
-                return handleResult(order, result.get());
+            if (results.isPresent() && correctTestsRan(order, results.get())) {
+                return handleResult(order, results.get());
             } else {
                 return handleError(order, capture);
             }
         };
     }
 
-    private TestResult handleResult(final List<String> order, final TestExecResult result) {
-        infoStore.update(order, result);
-        return new TestResult(result);
+    private TestResult handleResult(final List<String> order, final TestExecResults results) {
+        try {
+            infoStore.update(order, results);
+        } catch (FlakyTestException e) {
+            if (throwOnFlaky) {
+                throw e;
+            }
+        }
+
+        return new TestResult(results);
     }
 
-    private TestResult handleError(final List<String> order, final CapturedOutput<TestExecResult> capture) {
+    private TestResult handleError(final List<String> order, final CapturedOutput<TestExecResults> capture) {
         final Path errorPath = Paths.get(order.get(order.size() - 1) + "-error-log.txt");
 
         System.out.println("[ERROR] An exception occurred while running the order: " + order);
@@ -110,5 +138,9 @@ public class SmartTestRunner {
 
     public double averageTestTime() {
         return infoStore.averageTime();
+    }
+
+    public boolean isFlaky(final String testName) {
+        return infoStore.isFlaky(testName);
     }
 }

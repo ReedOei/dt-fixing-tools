@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.runner;
+package edu.illinois.cs.dt.tools.runner.data;
 
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.thoughtworks.xstream.XStream;
@@ -6,6 +6,7 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
 import com.thoughtworks.xstream.security.AnyTypePermission;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 import edu.washington.cs.dt.TestExecResult;
+import edu.washington.cs.dt.TestExecResults;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -13,11 +14,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TestResult {
-    private final TestExecResult baseResult;
+    private final TestExecResults baseResults;
     private final Map<String, DiffContainer> stateDiffs;
 
-    public TestResult(final TestExecResult result) {
-        this.baseResult = result;
+    public TestResult(final TestExecResults results) {
+        this.baseResults = results;
 
         Map<String, DiffContainer> stateDiffTemp;
         try {
@@ -29,7 +30,7 @@ public class TestResult {
     }
 
     private Map<String,DiffContainer> readXml() throws IOException {
-        // TODO: Make this nicer...
+        // TODO: Make this nicer... It really is safe though
         return (Map<String, DiffContainer>) getXStreamInstance().fromXML(FileUtil.readFile(Paths.get("state-diff.xml")));
     }
 
@@ -46,8 +47,12 @@ public class TestResult {
         return xstream;
     }
 
+    public TestExecResults results() {
+        return baseResults;
+    }
+
     public TestExecResult result() {
-        return baseResult;
+        return baseResults.getExecutionRecords().get(0);
     }
 
     public Map<String, DiffContainer> stateDiffs() {

@@ -7,11 +7,13 @@ import com.reedoei.eunomia.subject.SubjectFactory;
 import com.reedoei.eunomia.util.ProcessUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.eunomia.util.Util;
+import edu.illinois.cs.dt.tools.diagnosis.detection.Detector;
+import edu.illinois.cs.dt.tools.diagnosis.detection.ExecutingDetector;
+import edu.illinois.cs.dt.tools.diagnosis.detection.DetectorFactory;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.Instrumentation;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestList;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.runner.SimpleRunner;
-import edu.washington.cs.dt.impact.tools.detectors.RandomDetector;
 import edu.washington.cs.dt.tools.UnitTestFinder;
 
 import java.io.File;
@@ -60,7 +62,7 @@ public class Diagnoser extends StandardMain {
         return result -> new TestDiagnoser(classpath, javaAgent, staticFieldInfo, result).run();
     }
 
-    private Stream<MinimizeTestsResult> results() throws IOException, InterruptedException {
+    private Stream<MinimizeTestsResult> results() throws Exception {
         // TODO: Refactor into provider or factory or something.
         if (getArg("minimized").isPresent()) {
             final Path minimized = Paths.get(getArgRequired("minimized"));
@@ -73,22 +75,25 @@ public class Diagnoser extends StandardMain {
         }
     }
 
-    private Stream<MinimizeTestsResult> detect() throws IOException, InterruptedException {
+    private Stream<MinimizeTestsResult> detect() throws Exception {
         final Path dtFolder = Files.createDirectories(Paths.get("detection-results"));
-        final Path dtFile = dtFolder.resolve("dt-lists.txt");
+        final Path dtFile = dtFolder.resolve(ExecutingDetector.DT_LISTS_PATH);
 
         if (!Files.exists(dtFile)) {
-            // Will write test list to a file named allunittests.txt
-            final String cp = classpath + File.pathSeparator + System.getProperty("java.class.path");
+            final Path testListPath = Paths.get("allunittests.txt");
+            if (!Files.exists(testListPath)) {
+                // Will write test list to a file named allunittests.txt
+                final String cp = classpath + File.pathSeparator + System.getProperty("java.class.path");
 
-            ProcessUtil.runClass(cp, UnitTestFinder.class, "--pathOrJarFile", subject.testClasses().toString()).waitFor();
-            final List<String> tests = Files.readAllLines(Paths.get("allunittests.txt"), Charset.defaultCharset());
+                System.out.println("[INFO] Getting test list.");
+                ProcessUtil.runClass(cp, UnitTestFinder.class, "--pathOrJarFile", subject.testClasses().toString()).waitFor();
+            }
 
-            // TODO: Add remove nondeterminsitic tests first.
-            // Maybe write a new detector at this point.
-            // NOTE: If writing a new detector, can remove dependency on dt-impact tracer and clear out libs a little bit.
-            // Maybe make some sort of filter system or something that can compose these things together
-            new RandomDetector(classpath, tests, 10).writeTo(dtFolder); // TODO: Make this not a constant anymore.
+            final List<String> tests = Files.readAllLines(testListPath, Charset.defaultCharset());
+
+            final Detector detector = DetectorFactory.makeDetector(classpath, tests);
+            System.out.println("[INFO] Created dependent test detector (" + detector.getClass() + ").");
+            detector.writeTo(dtFolder);
         }
 
         return new MinimizeTestList(classpath).runDependentTestFile(dtFile);
@@ -131,8 +136,8 @@ public class Diagnoser extends StandardMain {
                         subject.dependencies() + "/*") + File.pathSeparator +
                 System.getProperty("java.class.path");
 
-        System.out.println("[INFO] Running tests.");
-        ProcessUtil.runClass(sootOutputCp, SimpleRunner.class, "--tests", subject.testClasses().toString())
+        System.out.println("[INFO] Running dts.");
+        ProcessUtil.runClass(sootOutputCp, SimpleRunner.class, "--dts", subject.testClasses().toString())
         .waitFor();
     }
 }

@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MinimizeTestsResult {
-    private static final int VERIFY_REPEAT_COUNT = 10;
+    private static final int VERIFY_REPEAT_COUNT = 1;
     private static final int MAX_SUBSEQUENCES = 1000;
 
     private final RESULT expected;
@@ -60,7 +60,7 @@ public class MinimizeTestsResult {
             int check = 1;
             int totalChecks = 2 + depLists.size() - 1;
 
-            IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.",  i, verifyCount, check++, totalChecks));
+            IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
             // Check that it's correct with the dependencies
             if (!isExpected(runner, deps)) {
                 throw new MinimizeTestListException("Got unexpected result when running with all dependencies!");
@@ -71,7 +71,7 @@ public class MinimizeTestsResult {
                 continue;
             }
 
-            IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.",  i, verifyCount, check++, totalChecks));
+            IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
             // Check that it's wrong without dependencies.
             if (isExpected(runner, new ArrayList<>())) {
                 throw new MinimizeTestListException("Got expected result even without any dependencies!");
@@ -83,7 +83,7 @@ public class MinimizeTestsResult {
                     continue;
                 }
 
-                IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.",  i, verifyCount, check++, totalChecks));
+                IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
                 if (isExpected(runner, depList)) {
                     throw new MinimizeTestListException("Got expected result without some dependencies! " + depList);
                 }

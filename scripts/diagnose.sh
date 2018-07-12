@@ -21,6 +21,6 @@ if [[ ! -z "$DT_LOC" ]]; then
         java -cp "$JAVA_HOME/jre/lib/*:$CLASSPATH:" edu.illinois.cs.dt.tools.diagnosis.Diagnoser -cp "$SUBJ_CLASSPATH" --dtFolder "$DT_LOC" --outputDir "$OUTPUT_DIR" --javaagent "$JAVA_AGENT"
     fi
 else
-    java -cp "$JAVA_HOME/jre/lib/*:$CLASSPATH:" edu.illinois.cs.dt.tools.diagnosis.Diagnoser -cp "$SUBJ_CLASSPATH" --outputDir "$OUTPUT_DIR" --javaagent "$JAVA_AGENT"
+    java -cp "$JAVA_HOME/jre/lib/*:$CLASSPATH:" edu.illinois.cs.dt.tools.diagnosis.Diagnoser -cp "$SUBJ_CLASSPATH" --outputDir "$OUTPUT_DIR" --javaagent "$JAVA_AGENT" --verbose
 fi
 

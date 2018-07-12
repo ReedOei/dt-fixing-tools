@@ -7,7 +7,7 @@ import java.io.File;
 
 import static org.junit.Assert.fail;
 
-// Do not run. Has intentionally flaky tests.
+// Do not run. Has intentionally flaky dts.
 @Ignore
 public class ExampleHasFlakyTests {
     private static int x = 0;

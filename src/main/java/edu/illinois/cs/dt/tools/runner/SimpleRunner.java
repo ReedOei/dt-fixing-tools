@@ -15,12 +15,12 @@ public class SimpleRunner extends StandardMain {
     private SimpleRunner(final String[] args) {
         super(args);
 
-        testsPath = Paths.get(getArgRequired("tests"));
+        testsPath = Paths.get(getArgRequired("dts"));
         classpath = Util.buildClassPath(getArg("cp", "classpath").orElse(System.getProperty("java.class.path")));
     }
 
     public SimpleRunner(final Path testsPath, final String classpath) {
-        super(new String[] {"--tests", testsPath.toString(), "-cp", classpath});
+        super(new String[] {"--dts", testsPath.toString(), "-cp", classpath});
 
         this.testsPath = testsPath;
         this.classpath = classpath;

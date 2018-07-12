@@ -14,6 +14,6 @@ mkdir "output"
 java -cp "$JAVA_HOME/jre/lib/*:$CLASSPATH:" edu.illinois.cs.dt.tools.diagnosis.instrumentation.Instrumentation --soot-cp "$SUBJ_CLASSPATH:$JAVA_HOME/jre/lib/*" --input-dir "$TARGET_FOLDER/classes" --output-dir "output/"
 java -cp "$JAVA_HOME/jre/lib/*:$CLASSPATH" edu.illinois.cs.dt.tools.diagnosis.instrumentation.Instrumentation --soot-cp "$SUBJ_CLASSPATH:$JAVA_HOME/jre/lib/*" --input-dir "$TARGET_FOLDER/test-classes" --output-dir "output/"
 
-# Run the instrumented tests
+# Run the instrumented dts
 java -cp "sootOutput/:dependency/*:$CLASSPATH:" edu.illinois.cs.dt.tools.runner.SimpleRunner --tests "$TARGET_FOLDER/test-classes"
 

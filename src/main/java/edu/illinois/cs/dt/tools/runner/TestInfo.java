@@ -11,13 +11,14 @@ import java.util.List;
 import java.util.Map;
 
 public class TestInfo {
-    // The key is all tests in the order, and the value is the result of the last test.
-    // This is used to discover flaky tests during runs of this tool.
+    // The key is all dts in the order, and the value is the result of the last test.
+    // This is used to discover flaky dts during runs of this tool.
     private final Map<List<String>, RESULT> knownRuns = new HashMap<>();
 
     private final List<Double> times = new ArrayList<>();
 
     private final String testName;
+    private boolean isFlaky = false;
 
     public TestInfo(final List<String> order, final String testName, final OneTestExecResult result)
             throws FlakyTestException {
@@ -36,18 +37,26 @@ public class TestInfo {
     }
 
     private void updateFlakiness(List<String> order, OneTestExecResult result) throws FlakyTestException {
-        final RESULT testResult = result.result;
+        if (!isFlaky) {
+            final RESULT testResult = result.result;
 
-        final List<String> testsBefore = ListUtil.beforeInc(order, testName);
+            final List<String> testsBefore = ListUtil.beforeInc(order, testName);
 
-        if (knownRuns.containsKey(testsBefore) && !knownRuns.get(testsBefore).equals(testResult)) {
-            throw new FlakyTestException(testName, knownRuns.get(testsBefore), testResult, testsBefore);
-        } else {
-            knownRuns.put(testsBefore, testResult);
+            if (knownRuns.containsKey(testsBefore) && !knownRuns.get(testsBefore).equals(testResult)) {
+                this.isFlaky = true;
+
+                throw new FlakyTestException(testName, knownRuns.get(testsBefore), testResult, testsBefore);
+            } else {
+                knownRuns.put(testsBefore, testResult);
+            }
         }
     }
 
     public double averageTime() {
         return new Averager<>(times).mean();
+    }
+
+    public boolean isFlaky() {
+        return isFlaky;
     }
 }

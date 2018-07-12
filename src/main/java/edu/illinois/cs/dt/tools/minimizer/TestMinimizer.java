@@ -4,6 +4,7 @@ import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.util.Util;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
+import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.washington.cs.dt.RESULT;
 import edu.washington.cs.dt.TestExecResult;
 
@@ -74,7 +75,7 @@ public class TestMinimizer implements VerbosePrinter {
 
     public MinimizeTestsResult run() throws Exception {
         if (minimizedResult == null) {
-            println("[INFO] Running minimizer for: " + dependentTest);
+            System.out.println("[INFO] Running minimizer for: " + dependentTest);
 
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
@@ -94,7 +95,7 @@ public class TestMinimizer implements VerbosePrinter {
             return deps;
         }
 
-        println("[INFO] Trying tests as isolated dependencies.");
+        println("[INFO] Trying dts as isolated dependencies.");
         if (tryIsolated(deps, order)) {
             return deps;
         }
@@ -102,7 +103,7 @@ public class TestMinimizer implements VerbosePrinter {
         final int origSize = order.size();
 
         while (order.size() > 1) {
-            print("\r\033[2K[INFO] Trying both halves, " + order.size() + " tests remaining.");
+            print("\r\033[2K[INFO] Trying both halves, " + order.size() + " dts remaining.");
 
             final RESULT topResult = result(Util.prependAll(deps, Util.topHalf(order)));
             print(" Top result: " + topResult);
@@ -191,7 +192,7 @@ public class TestMinimizer implements VerbosePrinter {
         while (!remainingTests.isEmpty()) {
             final long estimated = estimate(testsRun, remainingTests.size(), deps.size());
 
-            print(String.format("\r\033[2K[INFO] Running sequentially, %d tests left (%d seconds remaining)", remainingTests.size(), estimated));
+            print(String.format("\r\033[2K[INFO] Running sequentially, %d dts left (%d seconds remaining)", remainingTests.size(), estimated));
             final String current = remainingTests.remove(0);
 
             final List<String> order = Util.prependAll(deps, remainingTests);

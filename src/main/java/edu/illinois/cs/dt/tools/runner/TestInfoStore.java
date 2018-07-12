@@ -3,13 +3,14 @@ package edu.illinois.cs.dt.tools.runner;
 import com.reedoei.eunomia.math.Averager;
 import edu.washington.cs.dt.OneTestExecResult;
 import edu.washington.cs.dt.TestExecResult;
+import edu.washington.cs.dt.TestExecResults;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class TestInfoStore {
-    // 3 hours in seconds. This is the time to use when we don't know how long tests should take.
+    // 3 hours in seconds. This is the time to use when we don't know how long dts should take.
     // This time is still affected by the other modifiers below.
     private static final long MAX_DEFAULT_TIMEOUT = 3 * 3600;
     // How much longer we should wait than expected.
@@ -21,6 +22,10 @@ public class TestInfoStore {
     private final Averager<Double> testTimes = new Averager<>();
 
     public TestInfoStore() {
+    }
+
+    public void update(final List<String> order, final TestExecResults results) throws FlakyTestException {
+        results.getExecutionRecords().forEach(result -> update(order, result));
     }
 
     public void update(final List<String> order, final TestExecResult results) throws FlakyTestException {
@@ -52,5 +57,9 @@ public class TestInfoStore {
 
     public double averageTime() {
         return testTimes.mean();
+    }
+
+    public boolean isFlaky(final String testName) {
+        return testInfo.containsKey(testName) && testInfo.get(testName).isFlaky();
     }
 }

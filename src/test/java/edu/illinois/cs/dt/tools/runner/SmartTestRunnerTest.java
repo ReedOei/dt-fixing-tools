@@ -14,12 +14,8 @@ public class SmartTestRunnerTest {
     public void testDetectFlakyTests() throws Throwable {
         final List<String> tests = ListUtil.fromArray("edu.illinois.cs.dt.samples.ExampleHasFlakyTests.testFlakyFileDependent");
 
-        try {
-            runner.runOrder(tests);
-            runner.runOrder(tests);
-        } catch (UncheckedExecutionException e) {
-            throw e.getCause();
-        }
+        runner.runOrder(tests);
+        runner.runOrder(tests);
     }
 
     @Test(expected = RuntimeException.class)

@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 
-// DO NOT RUN. These tests are only to be used by other tests (currently only MinimizeTestListTest).
+// DO NOT RUN. These dts are only to be used by other dts (currently only MinimizeTestListTest).
 @Ignore
 public class ExampleMinimizeClassA {
     private static int x = 0;

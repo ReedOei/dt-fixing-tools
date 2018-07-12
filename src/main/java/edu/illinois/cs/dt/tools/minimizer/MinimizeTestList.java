@@ -1,13 +1,10 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Streams;
-import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.collections.StreamUtil;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
-import edu.washington.cs.dt.RESULT;
+import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.IOException;
@@ -15,8 +12,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -64,16 +59,11 @@ public class MinimizeTestList extends StandardMain implements VerbosePrinter {
     private Stream<TestMinimizer> fromDtList(final Path path) {
         println("[INFO] Creating minimizers for file: " + path);
 
-        final List<String> lines;
         try {
-            lines = Files.readAllLines(path, Charset.defaultCharset());
+            return DependentTestList.fromFile(path).dts().stream().flatMap(dt -> dt.minimizers(builder));
         } catch (IOException e) {
-            e.printStackTrace();
             return Stream.empty();
         }
-        lines.removeIf(s -> s.isEmpty() || s.trim().isEmpty());
-
-        return Streams.stream(new TestMinimizerIterator(lines));
     }
 
     @Override
@@ -132,69 +122,5 @@ public class MinimizeTestList extends StandardMain implements VerbosePrinter {
     @Override
     public int verbosity() {
         return verbosity;
-    }
-
-    private class TestMinimizerIterator implements Iterator<TestMinimizer> {
-        private final List<TestMinimizer> nextMinimizers = new ArrayList<>();
-        private final List<String> lines;
-
-        public TestMinimizerIterator(List<String> lines) {
-            this.lines = lines;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return !nextMinimizers.isEmpty() || lines.size() >= 5;
-        }
-
-        @Override
-        public TestMinimizer next() {
-            if (!nextMinimizers.isEmpty()) {
-                return nextMinimizers.remove(0);
-            }
-
-            // Verify there are enough lines to contain all the information we need.
-            Preconditions.checkArgument(lines.size() >= 5);
-
-            final String testLine = lines.remove(0);
-            final String intendedLine = lines.remove(0);
-            final String originalOrderLine = lines.remove(0);
-            final String revealedLine = lines.remove(0);
-            final String modifiedOrderLine = lines.remove(0);
-
-            // Make sure the lines look correct (i.e., start with the right text)
-            Preconditions.checkArgument(testLine.startsWith("Test: "));
-            Preconditions.checkArgument(intendedLine.startsWith("Intended behavior: "));
-            Preconditions.checkArgument(originalOrderLine.startsWith("when executed after: "));
-            Preconditions.checkArgument(revealedLine.startsWith("The revealed different behavior: "));
-            Preconditions.checkArgument(modifiedOrderLine.startsWith("when executed after: "));
-
-            final String test = testLine.replace("Test: ", "");
-            final RESULT intended = RESULT.valueOf(intendedLine.replace("Intended behavior: ", ""));
-            final List<String> originalOrder =
-                    ListUtil.read(originalOrderLine.replace("when executed after: ", ""));
-            final RESULT revealed = RESULT.valueOf(revealedLine.replace("The revealed different behavior: ", ""));
-            final List<String> modifiedOrder =
-                    ListUtil.read(modifiedOrderLine.replace("when executed after: ", ""));
-
-            final TestMinimizerBuilder orderBuilder = builder.dependentTest(test);
-
-            try {
-                // If they're the same, don't both creating two
-                if (intended != revealed) {
-                    nextMinimizers.add(orderBuilder.testOrder(originalOrder).build());
-                }
-
-                nextMinimizers.add(orderBuilder.testOrder(modifiedOrder).build());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            if (!nextMinimizers.isEmpty()) {
-                return nextMinimizers.remove(0);
-            } else {
-                return null;
-            }
-        }
     }
 }

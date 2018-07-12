@@ -38,42 +38,40 @@ public class TestDiagnoser {
     }
 
     public Map<String, DiffContainer> run() {
-        minimized.getDeps().forEach(this::findStatePollutions);
+        if (minimized.getDeps().isEmpty()) {
+            System.out.println("[INFO] No dependencies for " + minimized.getDependentTest() + ", so no polluting dts found.");
+            return pollutions;
+        }
 
-        System.out.println(staticFieldsDt);
+        minimized.getDeps().forEach(this::findStatePollutions);
 
         if (pollutions.keySet().stream().anyMatch(testName -> !pollutions.get(testName).getDiffs().isEmpty())) {
             System.out.println();
-            System.out.println("[INFO] Polluting tests in dependencies of " + minimized.getDependentTest());
-            System.out.println();
+            System.out.println("[INFO] Polluting dts in dependencies of " + minimized.getDependentTest());
 
             for (final String testName : pollutions.keySet()) {
                 if (!pollutions.get(testName).getDiffs().isEmpty()) {
-                    System.out.println("[INFO] Found pollutions for test: " + testName);
+                    System.out.println("[INFO] Found pollution from: " + testName);
 
                     pollutions.get(testName).getDiffs().forEach((fieldName, diff) -> {
                         if (staticFieldsDt.contains(fieldName)) {
-                            System.out.println("****************************************");
-                            System.out.println("This field is accessed by the test code!");
-                            System.out.println("****************************************");
+                            System.out.println("**Accessed by test** " + formatDiff(fieldName, diff));
+                        } else {
+                            System.out.println(formatDiff(fieldName, diff));
                         }
-
-                        System.out.println(fieldName + ":");
-                        System.out.println("    Before: " + diff.getBefore());
-                        System.out.println("    After: " + diff.getAfter());
                     });
 
                     System.out.println();
                 }
             }
         } else {
-            if (minimized.getDeps().isEmpty()) {
-                System.out.println("[INFO] No dependencies for " + minimized.getDependentTest() + ", so no polluting tests found.");
-            } else {
-                System.out.println("[INFO] No polluting tests in dependencies of: " + minimized.getDependentTest());
-            }
+            System.out.println("[INFO] No polluting dts in dependencies of: " + minimized.getDependentTest());
         }
 
         return pollutions;
+    }
+
+    private String formatDiff(final String fieldName, final DiffContainer.Diff diff) {
+        return String.format("%s: (%s, %s)", fieldName, diff.getBefore(), diff.getAfter());
     }
 }
