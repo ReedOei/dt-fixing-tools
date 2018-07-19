@@ -56,11 +56,6 @@
             <artifactId>dtdetector</artifactId>
             <version>1.2.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>edu.washington.cs.dt</groupId>
-            <artifactId>dt-impact-tracer</artifactId>
-            <version>1.0.4-SNAPSHOT</version>
-        </dependency>
 
         <dependency>
             <groupId>junit</groupId>

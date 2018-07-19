@@ -18,6 +18,6 @@ public class MinimizeTestsResultTest {
 
         final TestMinimizer minimizer =
                 new TestMinimizerBuilder().testOrder(tests).dependentTest("edu.illinois.cs.dt.samples.ExampleMinimizeClassA.test3").build();
-        System.out.println(minimizer.run());
+        System.out.println(minimizer.get());
     }
 }

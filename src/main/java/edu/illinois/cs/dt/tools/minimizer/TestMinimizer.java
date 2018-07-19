@@ -1,21 +1,27 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
 import com.reedoei.eunomia.collections.ListUtil;
+import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.io.VerbosePrinter;
+import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.eunomia.util.Util;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.washington.cs.dt.RESULT;
 import edu.washington.cs.dt.TestExecResult;
+import org.checkerframework.checker.initialization.qual.Initialized;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class TestMinimizer implements VerbosePrinter {
+public class TestMinimizer extends FileCache<MinimizeTestsResult> implements VerbosePrinter {
     private final List<String> testOrder;
     private final String classpath;
     private final String dependentTest;
@@ -23,6 +29,7 @@ public class TestMinimizer implements VerbosePrinter {
     private final SmartTestRunner runner;
 
     private final int verbosity;
+    private final Path path;
 
     @Nullable
     private MinimizeTestsResult minimizedResult = null;
@@ -54,6 +61,8 @@ public class TestMinimizer implements VerbosePrinter {
         print("[INFO]");
         this.expected = result(testOrder);
         println(" Expected: " + expected);
+
+        this.path = MinimizeTestsResult.path(dependentTest, expected, Paths.get("minimized"));
     }
 
     @Override
@@ -73,7 +82,7 @@ public class TestMinimizer implements VerbosePrinter {
         return results.getResult(dependentTest).result;
     }
 
-    public MinimizeTestsResult run() throws Exception {
+    private MinimizeTestsResult run() throws Exception {
         if (minimizedResult == null) {
             System.out.println("[INFO] Running minimizer for: " + dependentTest);
 
@@ -214,5 +223,28 @@ public class TestMinimizer implements VerbosePrinter {
 
     public String getDependentTest() {
         return dependentTest;
+    }
+
+    @Override
+    public Path path() {
+        return path;
+    }
+
+    @Override
+    protected MinimizeTestsResult load() {
+        minimizedResult = new RuntimeThrower<>(() -> MinimizeTestsResult.fromPath(path())).run();
+        return minimizedResult;
+    }
+
+    @Override
+    protected void save() {
+        if (minimizedResult != null) {
+            minimizedResult.print(path().getParent());
+        }
+    }
+
+    @Override
+    protected MinimizeTestsResult generate() {
+        return new RuntimeThrower<>(this::run).run();
     }
 }

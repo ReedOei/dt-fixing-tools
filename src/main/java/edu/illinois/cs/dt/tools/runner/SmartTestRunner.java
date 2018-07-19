@@ -104,7 +104,9 @@ public class SmartTestRunner {
 
     private TestResult handleResult(final List<String> order, final TestExecResults results) {
         try {
-            infoStore.update(order, results);
+            synchronized (infoStore) {
+                infoStore.update(order, results);
+            }
         } catch (FlakyTestException e) {
             if (throwOnFlaky) {
                 throw e;
@@ -117,11 +119,11 @@ public class SmartTestRunner {
     private TestResult handleError(final List<String> order, final CapturedOutput<TestExecResults> capture) {
         final Path errorPath = Paths.get(order.get(order.size() - 1) + "-error-log.txt");
 
-        System.out.println("[ERROR] An exception occurred while running the order: " + order);
-        System.out.println("[ERROR] The full output has been written to: " + errorPath);
+        System.out.println("[ERROR] An exception occurred while running an order with " + order.size() + " tests.");
+        System.out.println("[ERROR] The full order and output will be written to: " + errorPath);
 
         try {
-            Files.write(errorPath, capture.stringOutput().getBytes());
+            Files.write(errorPath, (order + "\n" + capture.stringOutput()).getBytes());
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("[ERROR]: Could not write file. Writing to stdout:");

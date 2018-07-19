@@ -55,7 +55,6 @@ public class Instrumentation extends StandardMain {
 
         Scene.v().setSootClassPath(sootCp);
 
-        System.out.println("[INFO] Starting Soot");
         Main.main(new String[] {"-allow-phantom-refs", "-pp", "-w", "-process-path", inputPath.toAbsolutePath().toString()});
         FileUtil.copyFiles(inputPath, Paths.get("sootOutput"));
 

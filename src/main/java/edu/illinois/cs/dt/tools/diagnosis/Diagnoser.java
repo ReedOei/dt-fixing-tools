@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
+import com.google.common.base.Preconditions;
 import com.reedoei.eunomia.collections.SetUtil;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.subject.Subject;
@@ -14,6 +15,7 @@ import edu.illinois.cs.dt.tools.diagnosis.instrumentation.Instrumentation;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestList;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.runner.SimpleRunner;
+import edu.illinois.cs.dt.tools.utility.TestFinder;
 import edu.washington.cs.dt.tools.UnitTestFinder;
 
 import java.io.File;
@@ -38,8 +40,8 @@ public class Diagnoser extends StandardMain {
     private Diagnoser(final String[] args) throws IOException {
         super(args);
 
-        subject = SubjectFactory.forPath(Paths.get("..").toAbsolutePath().toRealPath());
-        classpath = getArg("cp", "classpath").orElse(System.getProperty("java.class.path"));
+        subject = SubjectFactory.forPath(Paths.get(".").toAbsolutePath().toRealPath());
+        classpath = getArg("cp", "classpath").orElse(subject.classpath());
         javaAgent = Paths.get(getArgRequired("javaagent"));
     }
 
@@ -59,7 +61,7 @@ public class Diagnoser extends StandardMain {
     }
 
     public Consumer<MinimizeTestsResult> diagnose(final Map<String, Set<String>> staticFieldInfo) {
-        return result -> new TestDiagnoser(classpath, javaAgent, staticFieldInfo, result).run();
+        return result -> new TestDiagnoser(classpath, javaAgent, staticFieldInfo, result, subject).run();
     }
 
     private Stream<MinimizeTestsResult> results() throws Exception {
@@ -80,16 +82,7 @@ public class Diagnoser extends StandardMain {
         final Path dtFile = dtFolder.resolve(ExecutingDetector.DT_LISTS_PATH);
 
         if (!Files.exists(dtFile)) {
-            final Path testListPath = Paths.get("allunittests.txt");
-            if (!Files.exists(testListPath)) {
-                // Will write test list to a file named allunittests.txt
-                final String cp = classpath + File.pathSeparator + System.getProperty("java.class.path");
-
-                System.out.println("[INFO] Getting test list.");
-                ProcessUtil.runClass(cp, UnitTestFinder.class, "--pathOrJarFile", subject.testClasses().toString()).waitFor();
-            }
-
-            final List<String> tests = Files.readAllLines(testListPath, Charset.defaultCharset());
+            final List<String> tests = new TestFinder(classpath, subject).get();
 
             final Detector detector = DetectorFactory.makeDetector(classpath, tests);
             System.out.println("[INFO] Created dependent test detector (" + detector.getClass() + ").");
@@ -123,12 +116,14 @@ public class Diagnoser extends StandardMain {
     private void generateStaticFieldInfo(final Path staticFieldInfoPath) throws Exception {
         System.out.println("[INFO] Instrumenting to get lists of static fields.");
 
-        final String sootCp = subject.classpath() + Util.buildClassPath(System.getProperty("java.home") + "/lib/*");
+        if (FileUtil.isEmpty(Paths.get("sootOutput"))) {
+            final String sootCp = subject.classpath() + Util.buildClassPath(System.getProperty("java.home") + "/lib/*");
 
-        System.out.println("[INFO] Instrumenting test classes.");
-        Instrumentation.instrument(sootCp, subject.testClasses(), staticFieldInfoPath);
-        System.out.println("[INFO] Instrumenting classes.");
-        Instrumentation.instrument(sootCp, subject.classes(), staticFieldInfoPath);
+            System.out.println("[INFO] Instrumenting test classes.");
+            Instrumentation.instrument(sootCp, subject.testClasses(), staticFieldInfoPath);
+            System.out.println("[INFO] Instrumenting classes.");
+            Instrumentation.instrument(sootCp, subject.classes(), staticFieldInfoPath);
+        }
 
         final String sootOutputCp =
                 Util.buildClassPath(

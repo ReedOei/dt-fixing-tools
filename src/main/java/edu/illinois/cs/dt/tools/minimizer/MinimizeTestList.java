@@ -99,7 +99,7 @@ public class MinimizeTestList extends StandardMain implements VerbosePrinter {
                     }
                 }
 
-                final MinimizeTestsResult result = minimizer.run();
+                final MinimizeTestsResult result = minimizer.get();
                 path.ifPresent(result::print);
                 return Stream.of(result);
             } catch (Exception e) {
@@ -116,7 +116,7 @@ public class MinimizeTestList extends StandardMain implements VerbosePrinter {
         final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
         final String dependentTest = getArg("test").orElse(testOrder.get(testOrder.size() - 1));
 
-        builder.testOrder(testOrder).dependentTest(dependentTest).build().run().print();
+        builder.testOrder(testOrder).dependentTest(dependentTest).build().get().print();
     }
 
     @Override

@@ -14,6 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MinimizeTestsResult {
+    public static Path path(final String dependentTest, final RESULT expected, final Path outputPath) {
+        return outputPath.resolve(dependentTest + "-" + expected + "-dependencies.json");
+    }
+
     private static final int VERIFY_REPEAT_COUNT = 1;
     private static final int MAX_SUBSEQUENCES = 1000;
 
@@ -71,23 +75,7 @@ public class MinimizeTestsResult {
                 continue;
             }
 
-            IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
-            // Check that it's wrong without dependencies.
-            if (isExpected(runner, new ArrayList<>())) {
-                throw new MinimizeTestListException("Got expected result even without any dependencies!");
-            }
-
-            // Check that for any subsequence that isn't the whole list, it's wrong.
-            for (final List<String> depList : depLists) {
-                if (depList.equals(deps)) {
-                    continue;
-                }
-
-                IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
-                if (isExpected(runner, depList)) {
-                    throw new MinimizeTestListException("Got expected result without some dependencies! " + depList);
-                }
-            }
+            verifyDependencies(runner, verifyCount, i, depLists, check, totalChecks);
         }
 
         System.out.println();
@@ -95,9 +83,38 @@ public class MinimizeTestsResult {
         return true;
     }
 
+    private void verifyDependencies(final SmartTestRunner runner,
+                                    final int verifyCount,
+                                    final int i,
+                                    final List<List<String>> depLists,
+                                    int check,
+                                    final int totalChecks) throws Exception {
+        IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
+        // Check that it's wrong without dependencies.
+        if (isExpected(runner, new ArrayList<>())) {
+            throw new MinimizeTestListException("Got expected result even without any dependencies!");
+        }
+
+        // Check that for any subsequence that isn't the whole list, it's wrong.
+        for (final List<String> depList : depLists) {
+            if (depList.equals(deps)) {
+                continue;
+            }
+
+            IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
+            if (isExpected(runner, depList)) {
+                throw new MinimizeTestListException("Got expected result without some dependencies! " + depList);
+            }
+        }
+    }
+
     @Override
     public String toString() {
         return new Gson().toJson(this);
+    }
+
+    public Path path(final Path outputPath) {
+        return path(dependentTest, expected, outputPath);
     }
 
     public void print() {
@@ -107,19 +124,23 @@ public class MinimizeTestsResult {
     public void print(final Path outputPath) {
         if (outputPath != null) {
             try {
-                final Path outputFile = outputPath.resolve(dependentTest + "-" + expected + "-dependencies.json");
-                Files.write(outputFile, toString().getBytes());
+                Files.createDirectories(outputPath);
+                Files.write(path(outputPath), toString().getBytes());
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public List<String> getDeps() {
+    public List<String> deps() {
         return deps;
     }
 
-    public String getDependentTest() {
+    public String dependentTest() {
         return dependentTest;
+    }
+
+    public RESULT expected() {
+        return expected;
     }
 }

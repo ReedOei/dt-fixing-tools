@@ -4,11 +4,12 @@ import com.reedoei.eunomia.collections.ListUtil;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.washington.cs.dt.TestExecResultsDelta;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public abstract class UniqueDetector extends ExecutingDetector {
-    private final List<DependentTest> prevDeltas = new ArrayList<>();
+    private final Set<String> prevTests = new HashSet<>();
 
     public UniqueDetector(String classpath, int rounds) {
         super(classpath, rounds);
@@ -24,21 +25,13 @@ public abstract class UniqueDetector extends ExecutingDetector {
     public List<DependentTest> results() throws Exception {
         final List<DependentTest> runResults = removeDuplicates(run());
 
-        prevDeltas.addAll(runResults);
+        runResults.forEach(dt -> prevTests.add(dt.name()));
 
         return runResults;
     }
 
     private List<DependentTest> removeDuplicates(final List<DependentTest> deltas) {
-        deltas.removeIf(t -> {
-            for (final DependentTest dt : prevDeltas) {
-                if (dt.name().equals(t.name())) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
+        deltas.removeIf(dt -> prevTests.contains(dt.name()));
 
         return deltas;
     }
