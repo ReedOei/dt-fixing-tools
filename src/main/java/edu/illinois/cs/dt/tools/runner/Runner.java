@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.runner;
 
+import com.reedoei.eunomia.util.ExecutionInfo;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 
 import java.util.List;

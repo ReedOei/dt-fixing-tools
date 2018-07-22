@@ -45,7 +45,7 @@ public class TestFinder extends FileCache<List<String>> {
         final String cp = classpath + File.pathSeparator + System.getProperty("java.class.path");
         new RuntimeThrower<>(() ->
                 ProcessUtil.runClass(cp, UnitTestFinder.class, "--pathOrJarFile", subject.testClasses().toString())
-                           .waitFor());
+                           .waitFor()).run();
         final List<String> tests = load();
         Preconditions.checkState(!tests.isEmpty(), "No tests found (" + path() + " is empty)");
         return tests;
