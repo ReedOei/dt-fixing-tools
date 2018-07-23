@@ -67,6 +67,8 @@ public class StaticFieldInfo extends FileCache<Map<String, Set<String>>> {
     }
 
     private void generateStaticFieldInfo(final Path staticFieldInfoPath) throws Exception {
+        Files.createDirectories(STATIC_FIELD_INFO_PATH);
+
         System.out.println("[INFO] Instrumenting to get lists of static fields.");
 
         if (FileUtil.isEmpty(Paths.get("sootOutput"))) {
