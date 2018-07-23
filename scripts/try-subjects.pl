@@ -12,7 +12,8 @@ try_subjects(Path, Results) :-
         (
             member(Line, Lines),
             try_subject(Line, Url, Commit, Modules),
-            member(ModulePath, Modules)
+            member(ModulePath, Modules),
+            run(ModulePath)
         ),
         Results).
 
@@ -27,12 +28,18 @@ try_subject(Line, Url, Commit, ModulePaths) :-
     maven_modules(ProjectPath, ModulePaths).
 
 run(Path) :-
+    format("[INFO] Running path: ~s~n", Path),
     working_directory(CWD, CWD),
     directory_file_path(CWD, "diagnose.sh", DiagnoseScript),
 
+    writeln("[INFO] Compiling classes"),
     compiles(Path),
+    writeln("[INFO] Compiling tests"),
     compiles(Path, testCompile),
+    writeln("[INFO] Fetching dependencies"),
     compiles(Path, dependencies),
 
-    read_process(Path, path(bash), [DiagnoseScript], _).
+    !,
+    format("[INFO] Running main script at ~s~n", DiagnoseScript),
+    run_process(Path, path(bash), [DiagnoseScript]).
 

@@ -32,5 +32,5 @@
     else
         java -cp "$JAVA_HOME/jre/lib/*:$CLASSPATH:$SUBJ_CLASSPATH:" edu.illinois.cs.dt.tools.diagnosis.Diagnoser --outputDir "$OUTPUT_DIR" --javaagent "$JAVA_AGENT"
     fi
-) &> log.txt
+) |& tee log.txt
 
