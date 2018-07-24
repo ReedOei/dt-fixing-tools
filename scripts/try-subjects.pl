@@ -1,8 +1,11 @@
+#!/usr/bin/env swipl
+
+:- initialization(main).
+
 :- use_module(library(filesex)).
 :- use_module(library(achelois)).
 
-main :-
-    current_prolog_flag(argv, [_, FilePath]),
+main([FilePath|_]) :-
     try_subjects(FilePath, R),
     writeln(R).
 
