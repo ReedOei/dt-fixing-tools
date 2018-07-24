@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.runner;
 
 import com.reedoei.eunomia.math.Averager;
+import edu.illinois.cs.dt.tools.configuration.Configuration;
 import edu.washington.cs.dt.OneTestExecResult;
 import edu.washington.cs.dt.TestExecResult;
 import edu.washington.cs.dt.TestExecResults;
@@ -10,13 +11,15 @@ import java.util.List;
 import java.util.Map;
 
 public class TestInfoStore {
-    // 3 hours in seconds. This is the time to use when we don't know how long dts should take.
+    // This is the time to use when we don't know how long dts should take.
     // This time is still affected by the other modifiers below.
-    private static final long MAX_DEFAULT_TIMEOUT = 3 * 3600;
+    private static final long MAX_DEFAULT_TIMEOUT = (long) Configuration.config().getProperty("runner.timeout.max", 3 * 3600);
     // How much longer we should wait than expected.
-    private static final double TIMEOUT_MULTIPLIER = 2.0;
-    private static final double TIMEOUT_OFFSET = 5.0; // Add a flat 5 seconds to all timeouts
-    private static final double PER_TEST_MULTIPLIER = 1.0; // Add a flat 1 second per test.
+    private static final double TIMEOUT_MULTIPLIER = Configuration.config().getProperty("runner.timeout.multiplier", 4.0);
+    // Adds a flat number of seconds to all timeouts
+    private static final double TIMEOUT_OFFSET = Configuration.config().getProperty("runner.timeout.offset", 5.0);
+    // Add a flat number of seconds per test.
+    private static final double PER_TEST_MULTIPLIER = Configuration.config().getProperty("runner.timeout.pertest", 2.0);
 
     private final Map<String, TestInfo> testInfo = new HashMap<>();
     private final Averager<Double> testTimes = new Averager<>();

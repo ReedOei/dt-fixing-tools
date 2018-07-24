@@ -34,7 +34,7 @@ public class Configuration {
         return this;
     }
 
-    public String getPropertyWithDefault(final String s, final String def) {
+    public String getProperty(final String s, final String def) {
         if (properties.getProperty(s) == null) {
             try {
                 loadProperties();
@@ -46,7 +46,19 @@ public class Configuration {
         return properties.getProperty(s);
     }
 
+    public double getDoubleProperty(final String s) {
+        return Double.parseDouble(getProperty(s, "0.0"));
+    }
+
+    public double getDoubleProperty(final String s, final double def) {
+        return getProperty(s, def);
+    }
+
+    public double getProperty(final String s, final double def) {
+        return Double.parseDouble(getProperty(s, String.valueOf(def)));
+    }
+
     public int getRounds() {
-        return Integer.parseInt(getPropertyWithDefault(DT_RANDOMIZE_ROUNDS, String.valueOf(DT_RANDOMIZE_ROUNDS_NUM)));
+        return Integer.parseInt(getProperty(DT_RANDOMIZE_ROUNDS, String.valueOf(DT_RANDOMIZE_ROUNDS_NUM)));
     }
 }

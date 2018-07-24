@@ -16,8 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -46,15 +44,14 @@ public class Diagnoser extends StandardMain {
 
     @Override
     protected void run() throws Exception {
-        results().forEach(diagnose(new StaticFieldInfo(subject).get()));
+        results().forEach(diagnose(new StaticFieldInfo(subject)));
     }
 
-    public Consumer<MinimizeTestsResult> diagnose(final Map<String, Set<String>> staticFieldInfo) {
-        return result -> new TestDiagnoser(classpath, javaAgent, staticFieldInfo, result, subject).run();
+    private Consumer<MinimizeTestsResult> diagnose(final StaticFieldInfo staticFieldInfo) {
+        return result -> new TestDiagnoser(classpath, javaAgent, staticFieldInfo.get(), result, subject).run();
     }
 
     private Stream<MinimizeTestsResult> results() throws Exception {
-        // TODO: Refactor into provider or factory or something.
         if (getArg("minimized").isPresent()) {
             final Path minimized = Paths.get(getArgRequired("minimized"));
             return Stream.of(MinimizeTestsResult.fromPath(minimized));
