@@ -1,5 +1,12 @@
+BASE_DIR="$1"
+if [[ -z "$BASE_DIR" ]]; then
+    BASE_DIR="$(pwd)"
+fi
+
 copy() {
-    for fname in $(find -name "$1"); do
+    echo "Looking for $1 in $BASE_DIR"
+
+    for fname in $(find "$BASE_DIR" -name "$1"); do
         outname="$(basename $(dirname $fname))-$(basename $fname)"
 
         echo "Copying $fname to all-results/$outname"
@@ -7,8 +14,7 @@ copy() {
     done
 }
 
-rm -rf all-results
-mkdir all-results
+mkdir -p all-results
 
 copy "pollution-data"
 copy "minimized"
