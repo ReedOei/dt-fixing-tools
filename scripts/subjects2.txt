@@ -1,4 +1,3 @@
-https://github.com/apache/flink HEAD
 https://github.com/apache/logging-log4j2 HEAD
 https://github.com/apache/wicket HEAD
 https://github.com/apache/maven HEAD
