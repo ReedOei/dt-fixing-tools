@@ -30,7 +30,7 @@ fields(Path, Fields) :-
 walk(Path, Files) :-
     exists_directory(Path),
     list_files(Path, TempFiles),
-    findall(ChildFiles, (member(Dir, TempFiles), walk(Dir, ChildFiles)), ChildFileList),
+    findall(ChildFiles, (member(Dir, TempFiles), exists_directory(Dir), walk(Dir, ChildFiles)), ChildFileList),
     flatten([TempFiles|ChildFileList], Files).
 walk(Path, [Path]) :- exists_file(Path).
 walk(_, []). % Path isn't a file or directory, so it just doesn't exist.
