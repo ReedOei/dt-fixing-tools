@@ -36,7 +36,6 @@ public class TestDiagnoser {
         if (minimized.deps().isEmpty()) {
             System.out.println("[INFO] No pollutions: No dependencies for " + minimized.dependentTest() + ".");
         } else {
-            System.out.println();
             System.out.println("[INFO] Polluting dts in dependencies of " + minimized.dependentTest());
         }
 

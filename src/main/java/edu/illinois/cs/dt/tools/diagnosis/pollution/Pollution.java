@@ -99,4 +99,8 @@ public class Pollution extends FileCache<Pollution> {
     public void forEach(final BiConsumer<String, DiffContainer.Diff> consumer) {
         data.forEach(consumer);
     }
+
+    public boolean exists() {
+        return hasResult();
+    }
 }

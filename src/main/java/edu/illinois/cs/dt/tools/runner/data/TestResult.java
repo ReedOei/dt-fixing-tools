@@ -41,8 +41,8 @@ public class TestResult {
         for (final Element entry : document.getRootElement().elements("entry")) {
             final String testName = entry.elementText("string");
 
-            final Map<String, Object> before = new HashMap<>();
-            final Map<String, Object> after = new HashMap<>();
+            final Map<String, String> before = new HashMap<>();
+            final Map<String, String> after = new HashMap<>();
 
             for (final Node node : entry.selectNodes("edu.illinois.cs.dt.tools.diagnosis.DiffContainer/diffs/entry/string")) {
                 // Dummy strings so we're guaranteed a diff on every key. This is fine because the map

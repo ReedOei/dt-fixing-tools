@@ -52,7 +52,15 @@ public class Diagnoser extends StandardMain {
     }
 
     private Stream<MinimizeTestsResult> results() throws Exception {
-        if (getArg("minimized").isPresent()) {
+        if (Files.exists(Paths.get("minimized"))) {
+            return Files.walk(Paths.get("minimized")).flatMap(p -> {
+                try {
+                    return Stream.of(MinimizeTestsResult.fromPath(p));
+                } catch (IOException ignored) {}
+
+                return Stream.empty();
+            });
+        } else if (getArg("minimized").isPresent()) {
             final Path minimized = Paths.get(getArgRequired("minimized"));
             return Stream.of(MinimizeTestsResult.fromPath(minimized));
         } else if (getArg("dtFolder").isPresent()) {
