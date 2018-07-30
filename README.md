@@ -1,7 +1,7 @@
 # DT Fixing Tools
 
 Tools for automatically debugging dependent tests.
-Currently very much a work in progress.
+Currently a work in progress.
 
 ## Properties
 

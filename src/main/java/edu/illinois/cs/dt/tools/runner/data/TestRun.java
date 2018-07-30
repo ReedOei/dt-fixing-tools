@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.runner.data;
 
 import edu.illinois.cs.dt.tools.configuration.Configuration;
+import edu.illinois.cs.dt.tools.minimizer.TestMinimizer;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.washington.cs.dt.RESULT;
 
@@ -27,14 +28,17 @@ public class TestRun {
         return result;
     }
 
-    public boolean verify(final String dt, final String classpath) {
-        return IntStream.range(0, VERIFY_ROUNDS)
-                .allMatch(i -> verifyRound(dt, classpath));
+    public boolean verify(final String name, final String classpath) {
+        return verify(name, classpath, null);
     }
 
-    private boolean verifyRound(final String dt, final String classpath) {
-        System.out.printf("[DEBUG] Verifying %s, status: expected %s", dt, this.result);
+    public boolean verify(final String dt, final String classpath, final TestMinimizer minimizer) {
+        return IntStream.range(0, VERIFY_ROUNDS)
+                .allMatch(i -> verifyRound(dt, classpath, minimizer));
+    }
 
+    private boolean verifyRound(final String dt, final String classpath, final TestMinimizer minimizer) {
+        System.out.printf("[DEBUG] Verifying %s, status: expected %s", dt, this.result);
         RESULT result = null;
         try {
             final List<String> order = new ArrayList<>(this.order);
@@ -42,10 +46,12 @@ public class TestRun {
             result = new SmartTestRunner(classpath).runOrder(order).result().getResult(dt).result;
         } catch (Exception ignored) {}
 
-        final boolean b = this.result.equals(result);
-
-        System.out.printf( " %s got %s\n", b ? "and" : "but", result);
-
-        return b;
+        if (minimizer != null) {
+            System.out.printf(", got %s, minimizer got %s\n", result, minimizer.expected());
+            return this.result.equals(result) && this.result.equals(minimizer.expected());
+        } else {
+            System.out.printf(", got %s\n", result);
+            return this.result.equals(result);
+        }
     }
 }

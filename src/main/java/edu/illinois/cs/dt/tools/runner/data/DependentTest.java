@@ -68,7 +68,7 @@ public class DependentTest {
             final TestMinimizer minimizer = builder.build();
 
             if (VERIFY_DTS) {
-                if (!intended.verify(name, builder.classpath()) || !run.result().equals(minimizer.expected())) {
+                if (!run.verify(name, builder.classpath(), minimizer)) {
                     return Stream.empty();
                 }
             }
@@ -77,5 +77,9 @@ public class DependentTest {
         } catch (Exception e) {
             return Stream.empty();
         }
+    }
+
+    public boolean verify(final String classpath) {
+        return intended.verify(name, classpath) && revealed.verify(name, classpath);
     }
 }
