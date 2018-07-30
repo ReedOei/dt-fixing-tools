@@ -100,6 +100,35 @@ public class Pollution extends FileCache<Pollution> {
         data.forEach(consumer);
     }
 
+    public void forEachFiltered(final BiConsumer<String, DiffContainer.Diff> consumer) {
+        data.forEach((fieldName, diff) -> {
+            if (shouldConsume(fieldName, diff)) {
+                consumer.accept(fieldName, diff);
+            }
+        });
+    }
+
+    private boolean shouldConsume(final String fieldName, final DiffContainer.Diff diff) {
+        if (fieldName.startsWith("com.thoughtworks.xstream") ||
+                fieldName.startsWith("java.") ||
+                fieldName.startsWith("javax.") ||
+                fieldName.startsWith("jdk.") ||
+                fieldName.startsWith("sun.")) {
+            return false;
+        }
+
+        final String[] split = fieldName.split(".");
+
+        if (split.length == 0) {
+            return true;
+        }
+
+        final String varName = split[split.length - 1];
+
+        // e.g. FIELDS_NAMED_LIKE_THIS shouldn't be considered, because they're probably constants.
+        return !varName.toUpperCase().equals(varName);
+    }
+
     public boolean exists() {
         return hasResult();
     }

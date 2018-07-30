@@ -21,28 +21,28 @@ try_subjects(Path, Results) :-
         Results).
 
 try_subject(Line, Url, Commit, [ModulePath]) :-
-    split_string(Line, " ", "", [Url, Commit, RelativeModulePath]),
+    atomic_list_concat([Url, Commit, RelativeModulePath], ' ', Line),
     clone_project(Url, Commit, ProjectPath),
     directory_file_path(ProjectPath, RelativeModulePath, ModulePath).
 
 try_subject(Line, Url, Commit, ModulePaths) :-
-    split_string(Line, " ", "", [Url, Commit]),
+    atomic_list_concat([Url, Commit], ' ', Line),
     clone_project(Url, Commit, ProjectPath),
     maven_modules(ProjectPath, ModulePaths).
 
 run(Path) :-
-    format("[INFO] Running path: ~s~n", Path),
+    format('[INFO] Running path: ~s~n', Path),
     working_directory(CWD, CWD),
-    directory_file_path(CWD, "diagnose.sh", DiagnoseScript),
+    directory_file_path(CWD, 'diagnose.sh', DiagnoseScript),
 
-    writeln("[INFO] Compiling classes"),
+    writeln('[INFO] Compiling classes'),
     compiles(Path),
-    writeln("[INFO] Compiling tests"),
+    writeln('[INFO] Compiling tests'),
     compiles(Path, testCompile),
-    writeln("[INFO] Fetching dependencies"),
+    writeln('[INFO] Fetching dependencies'),
     compiles(Path, dependencies),
 
     !,
-    format("[INFO] Running main script at ~s~n", DiagnoseScript),
+    format('[INFO] Running main script at ~s~n', DiagnoseScript),
     run_process(Path, path(bash), [DiagnoseScript]).
 

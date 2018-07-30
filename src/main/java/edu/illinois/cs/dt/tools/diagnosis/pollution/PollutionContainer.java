@@ -4,6 +4,8 @@ import com.github.javaparser.utils.StringEscapeUtils;
 import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.subject.Subject;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticAccessInfo;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.codehaus.plexus.util.StringUtils;
@@ -13,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -68,15 +71,17 @@ public class PollutionContainer extends FileCache<PollutionContainer> {
                 StringEscapeUtils.escapeJava(StringUtils.abbreviate(String.valueOf(diff.getAfter()), 30)));
     }
 
-    public void print(final Set<String> staticFieldsDt) {
+    public void print(final StaticTracer tracer) {
         forEach((testName, pollution) -> {
             if (!pollution.data().isEmpty()) {
                 System.out.println("[INFO] Found pollution from: " + testName);
 
-                pollution.forEach((fieldName, diff) -> {
-                    if (staticFieldsDt.contains(fieldName)) {
+                pollution.forEachFiltered((fieldName, diff) -> {
+                    final Optional<StaticAccessInfo> staticAccessInfo = tracer.get(fieldName);
+                    if (staticAccessInfo.isPresent()) {
                         System.out.println("-----------------------------------------------------");
                         System.out.println("**Accessed by test** " + formatDiff(fieldName, diff));
+                        staticAccessInfo.get().stackTrace().forEach(System.out::println);
                         System.out.println("-----------------------------------------------------");
                     } else {
                         System.out.println(formatDiff(fieldName, diff));

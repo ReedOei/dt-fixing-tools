@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
 import com.reedoei.eunomia.subject.SubjectFactory;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.washington.cs.dt.RESULT;
 import org.junit.Test;
@@ -20,7 +21,8 @@ public class TestDiagnoserTest {
     public void testSimple() {
         final MinimizeTestsResult result = new MinimizeTestsResult(RESULT.PASS, POLLUTED, Collections.singletonList(POLLUTER));
         final TestDiagnoser diagnoser =
-                new TestDiagnoser(System.getProperty("java.class.path"), JAVA_AGENT, new HashMap<>(), result, SubjectFactory.forPath(Paths.get(".")));
+                new TestDiagnoser(System.getProperty("java.class.path"),
+                        JAVA_AGENT, result, SubjectFactory.forPath(Paths.get(".")));
 
         diagnoser.run();
     }

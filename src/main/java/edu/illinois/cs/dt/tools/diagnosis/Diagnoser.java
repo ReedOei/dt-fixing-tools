@@ -6,17 +6,17 @@ import com.reedoei.eunomia.util.StandardMain;
 import edu.illinois.cs.dt.tools.diagnosis.detection.Detector;
 import edu.illinois.cs.dt.tools.diagnosis.detection.DetectorFactory;
 import edu.illinois.cs.dt.tools.diagnosis.detection.ExecutingDetector;
-import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
+import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutionContainer;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestList;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.utility.TestFinder;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class Diagnoser extends StandardMain {
@@ -32,6 +32,18 @@ public class Diagnoser extends StandardMain {
         javaAgent = Paths.get(getArgRequired("javaagent"));
     }
 
+    public Diagnoser(final Subject subject, final Path javaAgent) {
+        this(subject, subject.classpath(), javaAgent);
+    }
+
+    public Diagnoser(final Subject subject, final String classpath, final Path javaAgent) {
+        super(new String[0]);
+
+        this.subject = subject;
+        this.classpath = classpath;
+        this.javaAgent = javaAgent;
+    }
+
     public static void main(final String[] args) {
         try {
             new Diagnoser(args).run();
@@ -44,11 +56,11 @@ public class Diagnoser extends StandardMain {
 
     @Override
     protected void run() throws Exception {
-        results().forEach(diagnose(new StaticFieldInfo(subject)));
+        diagnose();
     }
 
-    private Consumer<MinimizeTestsResult> diagnose(final StaticFieldInfo staticFieldInfo) {
-        return result -> new TestDiagnoser(classpath, javaAgent, staticFieldInfo.get(), result, subject).run();
+    public Stream<PollutionContainer> diagnose() throws Exception {
+        return results().map(result -> new TestDiagnoser(classpath, javaAgent, result, subject).run());
     }
 
     private Stream<MinimizeTestsResult> results() throws Exception {

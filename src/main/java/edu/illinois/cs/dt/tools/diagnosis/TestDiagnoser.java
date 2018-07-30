@@ -1,18 +1,16 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
 import com.reedoei.eunomia.subject.Subject;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutionContainer;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 public class TestDiagnoser {
-    private final Map<String, Set<String>> staticFieldInfo;
-    private final Set<String> staticFieldsDt; // The static fields used by the dependent test.
+    private final StaticTracer tracer; // The static fields used by the dependent test.
     private final MinimizeTestsResult minimized;
 
     private final PollutionContainer pollutionContainer;
@@ -20,12 +18,11 @@ public class TestDiagnoser {
     private final SmartTestRunner runner;
 
     public TestDiagnoser(final String classpath, final Path javaAgent,
-                         final Map<String, Set<String>> staticFieldInfo, final MinimizeTestsResult minimized,
+                         final MinimizeTestsResult minimized,
                          final Subject subject) {
-        this.staticFieldInfo = staticFieldInfo;
         this.minimized = minimized;
 
-        this.staticFieldsDt = staticFieldInfo.getOrDefault(minimized.dependentTest(), new HashSet<>());
+        this.tracer = new StaticFieldInfo(subject).get().getOrDefault(minimized.dependentTest(), new StaticTracer());
 
         runner = new SmartTestRunner(classpath, javaAgent);
 
@@ -39,6 +36,6 @@ public class TestDiagnoser {
             System.out.println("[INFO] Polluting dts in dependencies of " + minimized.dependentTest());
         }
 
-        return pollutionContainer.with(container -> container.print(staticFieldsDt));
+        return pollutionContainer.with(container -> container.print(tracer));
     }
 }

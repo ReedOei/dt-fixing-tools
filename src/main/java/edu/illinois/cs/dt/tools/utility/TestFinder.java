@@ -5,6 +5,7 @@ import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.subject.Subject;
 import com.reedoei.eunomia.util.ProcessUtil;
 import com.reedoei.eunomia.util.RuntimeThrower;
+import com.reedoei.eunomia.util.Util;
 import edu.washington.cs.dt.tools.UnitTestFinder;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -42,7 +43,7 @@ public class TestFinder extends FileCache<List<String>> {
     protected List<String> generate() {
         System.out.println("[INFO] Getting test list.");
 
-        final String cp = classpath + File.pathSeparator + System.getProperty("java.class.path");
+        final String cp = classpath + File.pathSeparator + System.getProperty("java.class.path") + File.pathSeparator + Util.buildClassPath("lib/*");
         new RuntimeThrower<>(() ->
                 ProcessUtil.runClass(cp, UnitTestFinder.class, "--pathOrJarFile", subject.testClasses().toString())
                            .waitFor()).run();

@@ -1,6 +1,6 @@
 package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
-import com.reedoei.eunomia.collections.SetUtil;
+import com.google.gson.Gson;
 import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.subject.Subject;
@@ -17,10 +17,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
-public class StaticFieldInfo extends FileCache<Map<String, Set<String>>> {
-    private static final Path STATIC_FIELD_INFO_PATH = Paths.get("static-field-info").toAbsolutePath();
+public class StaticFieldInfo extends FileCache<Map<String, StaticTracer>> {
+    public static final Path STATIC_FIELD_INFO_PATH = Paths.get("static-field-info").toAbsolutePath();
     private final Subject subject;
 
     public StaticFieldInfo(final Subject subject) {
@@ -33,14 +32,15 @@ public class StaticFieldInfo extends FileCache<Map<String, Set<String>>> {
     }
 
     @Override
-    protected Map<String, Set<String>> load() {
-        final Map<String, Set<String>> result = new HashMap<>();
+    protected Map<String, StaticTracer> load() {
+        final Map<String, StaticTracer> result = new HashMap<>();
 
         new RuntimeThrower<>(() -> {
             Files.walk(STATIC_FIELD_INFO_PATH).forEach(path -> {
                     if (Files.isRegularFile(path)) {
                         try {
-                            result.put(path.getFileName().toString(), SetUtil.read(FileUtil.readFile(path)));
+                            result.put(path.getFileName().toString(),
+                                    new Gson().fromJson(FileUtil.readFile(path), StaticTracer.class));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -59,7 +59,7 @@ public class StaticFieldInfo extends FileCache<Map<String, Set<String>>> {
     }
 
     @Override
-    protected Map<String, Set<String>> generate() {
+    protected @NonNull Map<String, StaticTracer> generate() {
         return new RuntimeThrower<>(() -> {
             generateStaticFieldInfo(STATIC_FIELD_INFO_PATH);
             return load();
