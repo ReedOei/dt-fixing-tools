@@ -53,4 +53,8 @@ public class TestMinimizerBuilder {
     public TestMinimizer build() throws Exception {
         return new TestMinimizer(testOrder, classpath, dependentTest, javaAgent, verbosity);
     }
+
+    public String classpath() {
+        return classpath;
+    }
 }

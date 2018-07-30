@@ -16,11 +16,15 @@ public class StaticAccessInfo {
     private final String fieldName;
     private final List<StackTraceElement> stackTrace;
 
-    StaticAccessInfo(final String fieldName, final StackTraceElement[] stackTrace) {
-        this.fieldName = fieldName;
+    public StaticAccessInfo(final String fieldName, final StackTraceElement[] stackTrace) {
+        // The first 2 are going to be the call the getStackTrace and the call to logStatic, so
+        // get rid of them.
+        this(fieldName, Arrays.asList(stackTrace).subList(2, stackTrace.length));
+    }
 
-        // The first 2 are going to be the call the getStackTrace and the call to logStatic
-        this.stackTrace = Arrays.asList(stackTrace).subList(2, stackTrace.length);
+    public StaticAccessInfo(final String fieldName, final List<StackTraceElement> stackTrace) {
+        this.fieldName = fieldName;
+        this.stackTrace = stackTrace;
     }
 
     @Override

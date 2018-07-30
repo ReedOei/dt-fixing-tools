@@ -65,6 +65,10 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         this.path = MinimizeTestsResult.path(dependentTest, expected, Paths.get("minimized"));
     }
 
+    public RESULT expected() {
+        return expected;
+    }
+
     @Override
     public int verbosity() {
         return verbosity;

@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.reedoei.eunomia.io.capture.CaptureOutStream;
 import com.reedoei.eunomia.io.capture.CapturedOutput;
 import com.reedoei.eunomia.util.Util;
+import edu.illinois.cs.dt.tools.configuration.Configuration;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import edu.washington.cs.dt.TestExecResults;
 import edu.washington.cs.dt.runners.FixedOrderRunner;
@@ -27,7 +28,7 @@ public class SmartTestRunner {
     private static final SmartTestRunner master = new SmartTestRunner();
     private final Path javaAgent;
 
-    private boolean throwOnFlaky;
+    private boolean throwOnFlaky = Configuration.config().getProperty("runner.throw_on_flaky", true);
 
     public static SmartTestRunner master() {
         return master;

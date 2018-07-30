@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.runner.data;
 
 import com.google.gson.Gson;
+import edu.illinois.cs.dt.tools.configuration.Configuration;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizer;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizerBuilder;
 import edu.washington.cs.dt.TestExecResultsDelta;
@@ -9,6 +10,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class DependentTest {
+    private static final boolean VERIFY_DTS = Configuration.config().getProperty("dt.verify", false);
+
     public static DependentTest fromDelta(final TestExecResultsDelta delta) {
         return new DependentTest(delta.testName,
                 new TestRun(delta.intendedPreTests, delta.intendedResult.result),
@@ -46,8 +49,8 @@ public class DependentTest {
     public Stream<TestMinimizer> minimizers(final TestMinimizerBuilder builder) {
         final TestMinimizerBuilder minimizerBuilder = builder.dependentTest(name);
 
-        final Supplier<Stream<TestMinimizer>> intendedMinimizer = () -> minimizer(minimizerBuilder.testOrder(intended.order()));
-        final Supplier<Stream<TestMinimizer>> revealedMinimizer = () -> minimizer(minimizerBuilder.testOrder(revealed.order()));
+        final Supplier<Stream<TestMinimizer>> intendedMinimizer = () -> minimizer(minimizerBuilder, intended);
+        final Supplier<Stream<TestMinimizer>> revealedMinimizer = () -> minimizer(minimizerBuilder, revealed);
 
         if (intended.result().equals(revealed.result())) {
             if (intended.order().size() < revealed.order().size()) {
@@ -60,9 +63,17 @@ public class DependentTest {
         }
     }
 
-    private Stream<TestMinimizer> minimizer(final TestMinimizerBuilder builder) {
+    private Stream<TestMinimizer> minimizer(final TestMinimizerBuilder builder, final TestRun run) {
         try {
-            return Stream.of(builder.build());
+            final TestMinimizer minimizer = builder.build();
+
+            if (VERIFY_DTS) {
+                if (!intended.verify(name, builder.classpath()) || !run.result().equals(minimizer.expected())) {
+                    return Stream.empty();
+                }
+            }
+
+            return Stream.of(minimizer);
         } catch (Exception e) {
             return Stream.empty();
         }

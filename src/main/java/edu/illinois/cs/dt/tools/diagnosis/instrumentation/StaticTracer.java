@@ -1,14 +1,21 @@
 package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
 import com.google.gson.Gson;
+import com.reedoei.eunomia.collections.SetUtil;
+import com.reedoei.eunomia.io.files.FileUtil;
+import org.checkerframework.checker.initialization.qual.Initialized;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class StaticTracer {
     private static StaticTracer tracer = new StaticTracer();
@@ -16,6 +23,28 @@ public class StaticTracer {
 
     public static StaticTracer tracer() {
         return tracer;
+    }
+
+    public StaticTracer() {
+    }
+
+    public StaticTracer(final Set<StaticAccessInfo> staticFields) {
+        this.staticFields.addAll(staticFields);
+    }
+
+    public static StaticTracer from(final Path path) throws IOException {
+        @NonNull final String json = FileUtil.readFile(path);
+
+        // It's the old format.
+        if (json.startsWith("[")) {
+            final Set<StaticAccessInfo> staticFields =
+                    SetUtil.read(json).stream()
+                            .map(fieldName -> new StaticAccessInfo(fieldName, Collections.emptyList()))
+                            .collect(Collectors.toSet());
+            return new StaticTracer(staticFields);
+        } else {
+            return new Gson().fromJson(json, StaticTracer.class);
+        }
     }
 
     public Set<StaticAccessInfo> staticFields() {

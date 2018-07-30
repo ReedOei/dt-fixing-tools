@@ -39,8 +39,7 @@ public class StaticFieldInfo extends FileCache<Map<String, StaticTracer>> {
             Files.walk(STATIC_FIELD_INFO_PATH).forEach(path -> {
                     if (Files.isRegularFile(path)) {
                         try {
-                            result.put(path.getFileName().toString(),
-                                    new Gson().fromJson(FileUtil.readFile(path), StaticTracer.class));
+                            result.put(path.getFileName().toString(), StaticTracer.from(path));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }

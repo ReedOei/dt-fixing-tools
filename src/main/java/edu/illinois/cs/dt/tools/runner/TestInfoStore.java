@@ -13,7 +13,7 @@ import java.util.Map;
 public class TestInfoStore {
     // This is the time to use when we don't know how long dts should take.
     // This time is still affected by the other modifiers below.
-    private static final long MAX_DEFAULT_TIMEOUT = (long) Configuration.config().getProperty("runner.timeout.max", 3 * 3600);
+    private static final long MAX_DEFAULT_TIMEOUT = (long) Configuration.config().getProperty("runner.timeout.default", 3 * 3600);
     // How much longer we should wait than expected.
     private static final double TIMEOUT_MULTIPLIER = Configuration.config().getProperty("runner.timeout.multiplier", 4.0);
     // Adds a flat number of seconds to all timeouts

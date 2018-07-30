@@ -4,6 +4,7 @@ import com.reedoei.eunomia.collections.StreamUtil;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
+import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import org.apache.commons.io.FilenameUtils;
 
@@ -19,6 +20,7 @@ import java.util.stream.Stream;
 public class MinimizeTestList extends StandardMain implements VerbosePrinter {
     private final TestMinimizerBuilder builder;
     private final int verbosity;
+    private final String classpath;
 
     public static void main(final String[] args) {
         try {
@@ -37,7 +39,7 @@ public class MinimizeTestList extends StandardMain implements VerbosePrinter {
     public MinimizeTestList(final String[] args) {
         super(args);
 
-        final String classpath = getArg("cp", "classpath").orElse(System.getProperty("java.class.path"));
+        classpath = getArg("cp", "classpath").orElse(System.getProperty("java.class.path"));
         final Path javaAgent = Paths.get(getArg("javaagent").orElse(""));
 
         this.verbosity = verbosity(this);
@@ -60,7 +62,8 @@ public class MinimizeTestList extends StandardMain implements VerbosePrinter {
         println("[INFO] Creating minimizers for file: " + path);
 
         try {
-            return DependentTestList.fromFile(path).dts().stream().flatMap(dt -> dt.minimizers(builder));
+            return DependentTestList.fromFile(path).dts().stream()
+                    .flatMap(dt -> dt.minimizers(builder));
         } catch (IOException e) {
             return Stream.empty();
         }

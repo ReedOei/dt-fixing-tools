@@ -13,7 +13,7 @@ findFields(Path, Fields) :-
     atom_concat(_, '.xml', Path),
     fields(Path, Fields),
     length(Fields, Length),
-    format('Found ~w fields: ~w~n', [Length, Fields]).
+    format('Found ~w fields (~w): ~w~n', [Length, Path, Fields]).
 
 fields(Path, Fields) :-
     load_xml(Path, [element(map, [], Elements)], []),

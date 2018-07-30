@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
+import com.reedoei.eunomia.collections.StreamUtil;
 import com.reedoei.eunomia.subject.Subject;
 import com.reedoei.eunomia.subject.SubjectFactory;
 import com.reedoei.eunomia.util.StandardMain;
@@ -11,7 +12,6 @@ import edu.illinois.cs.dt.tools.minimizer.MinimizeTestList;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.utility.TestFinder;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,7 +56,7 @@ public class Diagnoser extends StandardMain {
 
     @Override
     protected void run() throws Exception {
-        diagnose();
+        StreamUtil.seq(diagnose());
     }
 
     public Stream<PollutionContainer> diagnose() throws Exception {

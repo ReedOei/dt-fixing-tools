@@ -43,7 +43,7 @@ public class Configuration {
             }
         }
 
-        return properties.getProperty(s);
+        return properties.getProperty(s, def);
     }
 
     public double getDoubleProperty(final String s) {
@@ -58,7 +58,23 @@ public class Configuration {
         return Double.parseDouble(getProperty(s, String.valueOf(def)));
     }
 
+    public int getIntProperty(final String s) {
+        return Integer.parseInt(getProperty(s, "0"));
+    }
+
+    public int getIntProperty(final String s, final int def) {
+        return getProperty(s, def);
+    }
+
+    public int getProperty(final String s, final int def) {
+        return Integer.parseInt(getProperty(s, String.valueOf(def)));
+    }
+
     public int getRounds() {
         return Integer.parseInt(getProperty(DT_RANDOMIZE_ROUNDS, String.valueOf(DT_RANDOMIZE_ROUNDS_NUM)));
+    }
+
+    public boolean getProperty(final String s, final boolean b) {
+        return Boolean.parseBoolean(getProperty(s, String.valueOf(b)));
     }
 }
