@@ -12,10 +12,9 @@ import edu.washington.cs.dt.TestExecResultsDifferentior;
 import edu.washington.cs.dt.main.Main;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class RandomDetector extends UniqueDetector {
-    private static final boolean VERIFY_DTS = Configuration.config().getProperty("dt.verify", false);
+    private static final boolean VERIFY_DTS = Configuration.config().getProperty("dt.verify", true);
 
     private final List<String> tests;
     private final TestExecResult origResult;

@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class DependentTest {
-    private static final boolean VERIFY_DTS = Configuration.config().getProperty("dt.verify", false);
+    private static final boolean VERIFY_DTS = Configuration.config().getProperty("dt.verify", true);
 
     public static DependentTest fromDelta(final TestExecResultsDelta delta) {
         return new DependentTest(delta.testName,
