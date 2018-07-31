@@ -65,7 +65,7 @@ public class DependentTest {
 
     private Stream<TestMinimizer> minimizer(final TestMinimizerBuilder builder, final TestRun run) {
         try {
-            final TestMinimizer minimizer = builder.build();
+            final TestMinimizer minimizer = builder.testOrder(run.order()).build();
 
             if (VERIFY_DTS) {
                 if (!run.verify(name, builder.classpath(), minimizer)) {
