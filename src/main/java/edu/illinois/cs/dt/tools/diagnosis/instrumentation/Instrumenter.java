@@ -64,7 +64,6 @@ public class Instrumenter extends BodyTransformer {
         if (vat != null) {
             List<AnnotationTag> tags = vat.getAnnotations();
             for (AnnotationTag at : tags) {
-                // TODO: Fix this so that it actually looks at the fq name for the Test annotation.
                 if (at.getType().contains("Test")) {
                     return true;
                 }

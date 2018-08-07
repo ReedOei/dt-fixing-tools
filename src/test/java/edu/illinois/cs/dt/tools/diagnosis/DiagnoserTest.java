@@ -5,21 +5,17 @@ import com.reedoei.eunomia.subject.SubjectFactory;
 import com.reedoei.eunomia.util.Util;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
 import org.apache.commons.io.FileUtils;
-import org.checkerframework.checker.initialization.qual.Initialized;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
 public class DiagnoserTest {

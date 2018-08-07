@@ -35,7 +35,7 @@ public class StaticTracer {
     public static StaticTracer from(final Path path) throws IOException {
         @NonNull final String json = FileUtil.readFile(path);
 
-        // It's the old format.
+        // If it's the old format, then it's just a list of static fields
         if (json.startsWith("[")) {
             final Set<StaticAccessInfo> staticFields =
                     SetUtil.read(json).stream()

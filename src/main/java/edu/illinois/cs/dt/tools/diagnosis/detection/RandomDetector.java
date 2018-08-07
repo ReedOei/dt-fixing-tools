@@ -1,21 +1,18 @@
 package edu.illinois.cs.dt.tools.diagnosis.detection;
 
-import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.collections.RandomList;
 import com.reedoei.eunomia.collections.StreamUtil;
-import edu.illinois.cs.dt.tools.configuration.Configuration;
+import edu.illinois.cs.dt.tools.diagnosis.detection.filters.FlakyFilter;
+import edu.illinois.cs.dt.tools.diagnosis.detection.filters.UniqueFilter;
+import edu.illinois.cs.dt.tools.diagnosis.detection.filters.VerifyFilter;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.washington.cs.dt.TestExecResult;
-import edu.washington.cs.dt.TestExecResults;
-import edu.washington.cs.dt.TestExecResultsDifferentior;
 import edu.washington.cs.dt.main.Main;
 
 import java.util.List;
 
-public class RandomDetector extends UniqueDetector {
-    private static final boolean VERIFY_DTS = Configuration.config().getProperty("dt.verify", true);
-
+public class RandomDetector extends ExecutingDetector {
     private final List<String> tests;
     private final TestExecResult origResult;
 
@@ -32,6 +29,11 @@ public class RandomDetector extends UniqueDetector {
         System.out.println("[INFO] Detecting flaky tests.");
         StreamUtil.seq(new FlakyDetector(classpath, rounds, tests, runner, origResult).detect());
         System.out.println();
+
+        addFilter(new FlakyFilter(runner));
+        addFilter(new UniqueFilter());
+        addFilter(new VerifyFilter(classpath));
+        addFilter(new UniqueFilter());
     }
 
     @Override
@@ -40,20 +42,9 @@ public class RandomDetector extends UniqueDetector {
     }
 
     @Override
-    public List<DependentTest> run() throws Exception {
-        final TestExecResults results = runner.runOrder(new RandomList<>(tests).shuffled()).results();
-        return verify(removeFlaky(makeDts(new TestExecResultsDifferentior(origResult, results).diffResults())));
-    }
-
-    private List<DependentTest> verify(final List<DependentTest> dependentTests) {
-        if (VERIFY_DTS) {
-            return ListUtil.filter(dt -> dt.verify(classpath), dependentTests);
-        } else {
-            return dependentTests;
-        }
-    }
-
-    private List<DependentTest> removeFlaky(final List<DependentTest> deltas) {
-        return ListUtil.filter(d -> !runner.isFlaky(d.name()), deltas);
+    public List<DependentTest> results() throws Exception {
+        final RandomList<String> order = new RandomList<>(tests).shuffled();
+        final TestExecResult result = runner.runOrder(order).result();
+        return makeDts(tests, origResult, order, result);
     }
 }

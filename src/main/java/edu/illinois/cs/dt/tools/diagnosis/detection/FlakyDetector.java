@@ -1,15 +1,14 @@
 package edu.illinois.cs.dt.tools.diagnosis.detection;
 
+import edu.illinois.cs.dt.tools.diagnosis.detection.filters.UniqueFilter;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
-import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import edu.washington.cs.dt.TestExecResult;
-import edu.washington.cs.dt.TestExecResultsDifferentior;
 import edu.washington.cs.dt.main.Main;
 
 import java.util.List;
 
-public class FlakyDetector extends UniqueDetector {
+public class FlakyDetector extends ExecutingDetector {
     private final List<String> tests;
     private final TestExecResult origResult;
 
@@ -22,6 +21,8 @@ public class FlakyDetector extends UniqueDetector {
         this.origResult = origResult;
 
         Main.removeredundancy = false;
+
+        addFilter(new UniqueFilter());
     }
 
     @Override
@@ -30,9 +31,7 @@ public class FlakyDetector extends UniqueDetector {
     }
 
     @Override
-    public List<DependentTest> run() throws Exception {
-        final TestResult run = runner.runOrder(tests);
-
-        return makeDts(new TestExecResultsDifferentior(origResult, run.results()).diffResults());
+    public List<DependentTest> results() throws Exception {
+        return makeDts(tests, origResult, tests, runner.runOrder(tests).result());
     }
 }

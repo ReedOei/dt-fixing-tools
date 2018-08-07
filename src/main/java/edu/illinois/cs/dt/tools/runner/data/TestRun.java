@@ -42,7 +42,9 @@ public class TestRun {
         RESULT result = null;
         try {
             final List<String> order = new ArrayList<>(this.order);
-            order.add(dt);
+            if (!order.contains(dt)) {
+                order.add(dt);
+            }
             result = new SmartTestRunner(classpath).runOrder(order).result().getResult(dt).result;
         } catch (Exception ignored) {}
 

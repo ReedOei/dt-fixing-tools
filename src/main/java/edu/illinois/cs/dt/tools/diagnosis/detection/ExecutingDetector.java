@@ -1,12 +1,19 @@
 package edu.illinois.cs.dt.tools.diagnosis.detection;
 
 import com.google.common.collect.Streams;
+import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.string.StringUtil;
 import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
+import edu.illinois.cs.dt.tools.runner.data.TestRun;
+import edu.washington.cs.dt.RESULT;
+import edu.washington.cs.dt.TestExecResult;
+import edu.washington.cs.dt.TestExecResults;
+import edu.washington.cs.dt.TestExecResultsDelta;
+import edu.washington.cs.dt.TestExecResultsDifferentior;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,6 +22,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,6 +33,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
     protected SmartTestRunner runner;
 
     private int rounds;
+    private List<Predicate<DependentTest>> filters = new ArrayList<>();
 
     public ExecutingDetector(final String classpath, final int rounds) {
         this.classpath = classpath;
@@ -35,9 +45,53 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
     public abstract SmartTestRunner makeRunner(final String classpath);
     public abstract List<DependentTest> results() throws Exception;
 
+    public static <T> List<T> before(final List<T> ts, final T t) {
+        final int i = ts.indexOf(t);
+
+        if (i != -1) {
+            return new ArrayList<>(ts.subList(0, Math.min(ts.size(), i)));
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
+    public List<DependentTest> makeDts(final List<String> intendedOrder, final TestExecResult intended,
+                                       final List<String> revealedOrder, final TestExecResult revealed) {
+        final List<DependentTest> result = new ArrayList<>();
+
+        intended.getNameToResultsMap().forEach((testName, intendedResult) -> {
+            final Map<String, RESULT> revealedResults = revealed.getNameToResultsMap();
+
+            if (revealedResults.containsKey(testName)) {
+                final RESULT revealedResult = revealedResults.get(testName);
+                if (!revealedResult.equals(intendedResult)) {
+                    result.add(new DependentTest(testName,
+                            new TestRun(before(intendedOrder, testName), intendedResult),
+                            new TestRun(before(revealedOrder, testName), revealedResult)));
+                }
+            }
+        });
+
+        return result;
+    }
+
+    public ExecutingDetector addFilter(final Predicate<DependentTest> predicate) {
+        filters.add(predicate);
+
+        return this;
+    }
+
     @Override
     public Stream<DependentTest> detect() {
         return Streams.stream(new RunnerIterator());
+    }
+
+    private Stream<DependentTest> filter(Stream<DependentTest> dts) {
+        for (final Predicate<DependentTest> filter : filters) {
+            dts = dts.filter(filter);
+        }
+
+        return dts;
     }
 
     @Override
@@ -76,7 +130,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         public void generate() {
             final List<DependentTest> currentRound;
             try {
-                currentRound = results();
+                currentRound = filter(results().stream()).collect(Collectors.toList());
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {

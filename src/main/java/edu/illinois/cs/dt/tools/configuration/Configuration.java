@@ -8,9 +8,6 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 public class Configuration {
-    private static final String DT_RANDOMIZE_ROUNDS = "dt.randomize.rounds";
-    private static final int DT_RANDOMIZE_ROUNDS_NUM = 10;
-
     private static final Configuration config = new Configuration();
 
     public static Configuration config() {
@@ -71,7 +68,7 @@ public class Configuration {
     }
 
     public int getRounds() {
-        return Integer.parseInt(getProperty(DT_RANDOMIZE_ROUNDS, String.valueOf(DT_RANDOMIZE_ROUNDS_NUM)));
+        return Integer.parseInt(getProperty("dt.randomize.rounds", String.valueOf(10)));
     }
 
     public boolean getProperty(final String s, final boolean b) {

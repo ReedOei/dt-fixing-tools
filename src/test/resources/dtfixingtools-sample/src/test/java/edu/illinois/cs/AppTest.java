@@ -11,12 +11,12 @@ public class AppTest {
     public static int x = 0;
 
     @BeforeClass
-    public static void beforClass() {
+    public static void beforeClass() throws Exception {
         x = 0;
     }
 
     @AfterClass
-    public static void afterClass() {
+    public static void afterClass() throws Exception {
         x = 0;
     }
 
