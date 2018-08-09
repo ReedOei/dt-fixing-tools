@@ -55,7 +55,7 @@ public class TestInfoStore {
             }
         }
 
-        return (long) (PER_TEST_MULTIPLIER * order.size() + TIMEOUT_OFFSET + TIMEOUT_MULTIPLIER * totalExpectedTime);
+        return (long) (TIMEOUT_MULTIPLIER * (PER_TEST_MULTIPLIER * order.size() + TIMEOUT_OFFSET + totalExpectedTime));
     }
 
     public double averageTime() {
