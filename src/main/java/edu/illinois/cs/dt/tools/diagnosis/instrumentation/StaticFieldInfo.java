@@ -7,6 +7,7 @@ import com.reedoei.eunomia.subject.Subject;
 import com.reedoei.eunomia.util.ProcessUtil;
 import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.eunomia.util.Util;
+import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.runner.SimpleRunner;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -21,9 +22,11 @@ import java.util.Map;
 public class StaticFieldInfo extends FileCache<Map<String, StaticTracer>> {
     public static final Path STATIC_FIELD_INFO_PATH = Paths.get("static-field-info").toAbsolutePath();
     private final Subject subject;
+    private final MinimizeTestsResult minimized;
 
-    public StaticFieldInfo(final Subject subject) {
+    public StaticFieldInfo(final Subject subject, final MinimizeTestsResult minimized) {
         this.subject = subject;
+        this.minimized = minimized;
     }
 
     @Override
@@ -39,7 +42,9 @@ public class StaticFieldInfo extends FileCache<Map<String, StaticTracer>> {
             Files.walk(STATIC_FIELD_INFO_PATH).forEach(path -> {
                     if (Files.isRegularFile(path)) {
                         try {
-                            result.put(path.getFileName().toString(), StaticTracer.from(path));
+                            if (path.getFileName().toString().equals(minimized.dependentTest())) {
+                                result.put(path.getFileName().toString(), StaticTracer.from(path));
+                            }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }

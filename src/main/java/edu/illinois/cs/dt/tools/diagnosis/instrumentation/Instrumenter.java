@@ -146,7 +146,11 @@ public class Instrumenter extends BodyTransformer {
                 final String fqName = fqName(expr.getMethod());
 
                 if (fqName.equals("java.lang.System.getProperty")) {
-                    final StaticInvokeExpr invoke = Jimple.v().newStaticInvokeExpr(concat.makeRef(), StringConstant.v("System.property."), expr.getArg(0));
+                    final StaticInvokeExpr invoke =
+                            Jimple.v().newStaticInvokeExpr(
+                                    concat.makeRef(),
+                                    StringConstant.v(SystemPropertyAccessor.SYSTEM_PROPERTY),
+                                    expr.getArg(0));
 
                     final SootClass string = Scene.v().loadClassAndSupport(String.class.getCanonicalName());
                     final Local local = Jimple.v().newLocal("tmpSystemPropertyConcatName", string.getType());

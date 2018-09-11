@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
+// TODO: Make all files cache inside of a dir like .dtfixingtools
 public class Diagnoser extends StandardMain {
     private final Subject subject;
     private final String classpath;

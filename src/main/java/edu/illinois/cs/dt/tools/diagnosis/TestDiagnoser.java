@@ -22,7 +22,7 @@ public class TestDiagnoser {
                          final Subject subject) {
         this.minimized = minimized;
 
-        this.tracer = new StaticFieldInfo(subject).get().getOrDefault(minimized.dependentTest(), new StaticTracer());
+        this.tracer = new StaticFieldInfo(subject, minimized).get().getOrDefault(minimized.dependentTest(), new StaticTracer());
 
         runner = new SmartTestRunner(classpath, javaAgent);
 

@@ -67,10 +67,6 @@ public class Configuration {
         return Integer.parseInt(getProperty(s, String.valueOf(def)));
     }
 
-    public int getRounds() {
-        return Integer.parseInt(getProperty("dt.randomize.rounds", String.valueOf(10)));
-    }
-
     public boolean getProperty(final String s, final boolean b) {
         return Boolean.parseBoolean(getProperty(s, String.valueOf(b)));
     }
