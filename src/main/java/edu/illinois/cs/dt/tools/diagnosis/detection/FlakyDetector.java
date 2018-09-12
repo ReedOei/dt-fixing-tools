@@ -3,7 +3,6 @@ package edu.illinois.cs.dt.tools.diagnosis.detection;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
-import edu.washington.cs.dt.main.Main;
 
 import java.util.List;
 
@@ -13,8 +12,6 @@ public class FlakyDetector extends ExecutingDetector {
 
     public FlakyDetector(final Runner runner, final int rounds, final List<String> tests, final TestRunResult origResult) {
         super(runner, rounds);
-
-        Main.removeredundancy = false;
 
         this.tests = tests;
         this.origResult = origResult;

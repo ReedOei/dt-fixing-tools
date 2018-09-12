@@ -8,7 +8,6 @@ import com.reedoei.eunomia.util.Util;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.runner.Runner;
-import edu.washington.cs.dt.RESULT;
 import scala.Option;
 
 import javax.annotation.Nullable;

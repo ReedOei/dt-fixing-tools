@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.data.results.Result;
-import edu.washington.cs.dt.RESULT;
 
 import java.io.IOException;
 import java.nio.charset.Charset;

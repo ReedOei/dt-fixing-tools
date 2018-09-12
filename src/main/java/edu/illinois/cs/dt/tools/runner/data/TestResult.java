@@ -2,12 +2,11 @@ package edu.illinois.cs.dt.tools.runner.data;
 
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.Util;
+import com.reedoei.testrunner.data.results.TestRunResult;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 import com.thoughtworks.xstream.security.AnyTypePermission;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
-import edu.washington.cs.dt.TestExecResult;
-import edu.washington.cs.dt.TestExecResults;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -68,32 +67,5 @@ public class TestResult {
         xstream.omitField(java.lang.ref.Reference.class, "referent");
 
         return xstream;
-    }
-
-    private final TestExecResults baseResults;
-    private final Map<String, DiffContainer> stateDiffs;
-
-    public TestResult(final TestExecResults results) {
-        this.baseResults = results;
-
-        Map<String, DiffContainer> stateDiffTemp;
-        try {
-            stateDiffTemp = readXml();
-        } catch (IOException | DocumentException e) {
-            stateDiffTemp = new HashMap<>();
-        }
-        stateDiffs = stateDiffTemp;
-    }
-
-    public TestExecResults results() {
-        return baseResults;
-    }
-
-    public TestExecResult result() {
-        return baseResults.getExecutionRecords().get(0);
-    }
-
-    public Map<String, DiffContainer> stateDiffs() {
-        return stateDiffs;
     }
 }

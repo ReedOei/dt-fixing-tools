@@ -4,6 +4,7 @@ import com.google.common.collect.Streams;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.string.StringUtil;
+import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
@@ -55,11 +56,11 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
             final Map<String, TestResult> revealedResults = revealed.results();
 
             if (revealedResults.containsKey(testName)) {
-                final TestResult revealedResult = revealedResults.get(testName);
-                if (!revealedResult.equals(intendedResult)) {
+                final Result revealedResult = revealedResults.get(testName).result();
+                if (!revealedResult.equals(intendedResult.result())) {
                     result.add(new DependentTest(testName,
                             new TestRun(before(intendedOrder, testName), intendedResult.result()),
-                            new TestRun(before(revealedOrder, testName), revealedResult.result())));
+                            new TestRun(before(revealedOrder, testName), revealedResult)));
                 }
             }
         });

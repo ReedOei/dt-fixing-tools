@@ -4,13 +4,11 @@ import com.reedoei.eunomia.collections.RandomList;
 import com.reedoei.eunomia.collections.StreamUtil;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
-import com.reedoei.testrunner.runner.RunnerFactory$;
 import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.diagnosis.detection.filters.FlakyFilter;
 import edu.illinois.cs.dt.tools.diagnosis.detection.filters.UniqueFilter;
 import edu.illinois.cs.dt.tools.diagnosis.detection.filters.VerifyFilter;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
-import edu.washington.cs.dt.main.Main;
 
 import java.util.List;
 
@@ -22,8 +20,6 @@ public class RandomDetector extends ExecutingDetector {
         super(runner, rounds);
 
         this.tests = tests;
-
-        Main.removeredundancy = false;
 
         System.out.println("[INFO] Getting original results (" + tests.size() + " tests).");
         this.origResult = runner.runList(tests).get();
