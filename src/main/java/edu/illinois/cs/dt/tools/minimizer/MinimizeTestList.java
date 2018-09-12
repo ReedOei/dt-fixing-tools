@@ -45,7 +45,7 @@ public class MinimizeTestList extends TestPlugin {
     }
 
     public Stream<MinimizeTestsResult> runDependentTestFile(final Path dtFile) {
-        final Path outputPath = Paths.get(Configuration.config().getProperty("testminimizer.outputDir", ""));
+        final Path outputPath = Paths.get(Configuration.config().getProperty("testminimizer.output_dir", ""));
 
         return fromDtList(dtFile).flatMap(minimizer -> {
             try {
