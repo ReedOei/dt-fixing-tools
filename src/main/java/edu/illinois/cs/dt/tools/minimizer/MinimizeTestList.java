@@ -1,12 +1,13 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
-import com.reedoei.eunomia.collections.StreamUtil;
-import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
-import com.reedoei.eunomia.util.StandardMain;
-import edu.illinois.cs.dt.tools.runner.data.DependentTest;
+import com.reedoei.testrunner.configuration.Configuration;
+import com.reedoei.testrunner.mavenplugin.TestPlugin;
+import com.reedoei.testrunner.runner.Runner;
+import com.reedoei.testrunner.runner.RunnerFactory$;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.maven.project.MavenProject;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -17,66 +18,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class MinimizeTestList extends StandardMain implements VerbosePrinter {
-    private final TestMinimizerBuilder builder;
-    private final int verbosity;
-    private final String classpath;
+public class MinimizeTestList extends TestPlugin {
+    private TestMinimizerBuilder builder;
+    private Runner runner;
 
-    public static void main(final String[] args) {
-        try {
-            new MinimizeTestList(args).run();
-        } catch (Exception e) {
-            System.out.println();
-            e.printStackTrace();
-            System.exit(1);
-        }
-    }
-
-    public MinimizeTestList() {
-        this(new String[0]);
-    }
-
-    public MinimizeTestList(final String[] args) {
-        super(args);
-
-        classpath = getArg("cp", "classpath").orElse(System.getProperty("java.class.path"));
-        final Path javaAgent = Paths.get(getArg("javaagent").orElse(""));
-
-        this.verbosity = verbosity(this);
-
-        this.builder = new TestMinimizerBuilder()
-                .classpath(classpath)
-                .javaAgent(javaAgent)
-                .verbosity(verbosity);
-    }
-
-    public MinimizeTestList(final String classpath) {
-        this(classpath, Paths.get(""));
-    }
-
-    public MinimizeTestList(final String classpath, final Path javaAgent) {
-        this(new String[] {"-cp", classpath, "--javaagent", javaAgent.toAbsolutePath().toString()});
+    public MinimizeTestList(final Runner runner) {
+        super();
+        this.runner = runner;
     }
 
     private Stream<TestMinimizer> fromDtList(final Path path) {
-        println("[INFO] Creating minimizers for file: " + path);
+        System.out.println("[INFO] Creating minimizers for file: " + path);
 
         try {
             return DependentTestList.fromFile(path).dts().stream()
-                    .flatMap(dt -> dt.minimizers(builder));
+                    .flatMap(dt -> dt.minimizers(builder, runner));
         } catch (IOException e) {
             return Stream.empty();
-        }
-    }
-
-    @Override
-    public void run() throws Exception {
-        if (getArg("dtFolder").isPresent()) {
-            StreamUtil.seq(runDependentTestFolder(Paths.get(getArgRequired("dtFolder"))));
-        } else if (getArg("dtFile").isPresent()) {
-            StreamUtil.seq(runDependentTestFile(Paths.get(getArgRequired("dtFile"))));
-        } else {
-            runDefault();
         }
     }
 
@@ -87,26 +45,19 @@ public class MinimizeTestList extends StandardMain implements VerbosePrinter {
     }
 
     public Stream<MinimizeTestsResult> runDependentTestFile(final Path dtFile) {
-        final Optional<Path> outputPath = getArg("outputDir").map(Paths::get);
+        final Path outputPath = Paths.get(Configuration.config().getProperty("testminimizer.outputDir", ""));
 
         return fromDtList(dtFile).flatMap(minimizer -> {
             try {
                 final String baseName = FilenameUtils.getBaseName(String.valueOf(dtFile.toAbsolutePath()));
-                final Optional<Path> path = outputPath.map(p -> p.resolve(baseName));
+                final Path path = outputPath.resolve(baseName);
 
-                if (path.isPresent()) {
-                    try {
-                        FileUtil.makeDirectoryDestructive(path.get());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
+                FileUtil.makeDirectoryDestructive(path);
 
                 final MinimizeTestsResult result = minimizer.get();
-                path.ifPresent(result::print);
+                result.print(path);
                 return Stream.of(result);
             } catch (Exception e) {
-                println();
                 e.printStackTrace();
             }
 
@@ -114,16 +65,19 @@ public class MinimizeTestList extends StandardMain implements VerbosePrinter {
         });
     }
 
-    private void runDefault() throws Exception {
-        final Path order = Paths.get(getArgRequired("order"));
-        final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
-        final String dependentTest = getArg("test").orElse(testOrder.get(testOrder.size() - 1));
-
-        builder.testOrder(testOrder).dependentTest(dependentTest).build().get().print();
-    }
-
     @Override
-    public int verbosity() {
-        return verbosity;
+    public void execute(final MavenProject project) {
+        this.runner = RunnerFactory$.MODULE$.from(project).get();
+        this.builder = new TestMinimizerBuilder(runner);
+
+        final Path order = Paths.get(Configuration.config().getProperty("testminimizer.order", null));
+        try {
+            final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
+            final String dependentTest = Configuration.config().getProperty("testminimizer.dt", testOrder.get(testOrder.size() - 1));
+
+            builder.testOrder(testOrder).dependentTest(dependentTest).build().get().print();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

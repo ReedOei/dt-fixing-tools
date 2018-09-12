@@ -5,16 +5,13 @@ import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.eunomia.util.Util;
-import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
-import edu.illinois.cs.dt.tools.runner.data.DependentTest;
+import com.reedoei.testrunner.data.results.Result;
+import com.reedoei.testrunner.data.results.TestResult;
+import com.reedoei.testrunner.runner.Runner;
 import edu.washington.cs.dt.RESULT;
-import edu.washington.cs.dt.TestExecResult;
-import org.checkerframework.checker.initialization.qual.Initialized;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
+import scala.Option;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -23,10 +20,9 @@ import java.util.List;
 
 public class TestMinimizer extends FileCache<MinimizeTestsResult> implements VerbosePrinter {
     private final List<String> testOrder;
-    private final String classpath;
     private final String dependentTest;
-    private final RESULT expected;
-    private final SmartTestRunner runner;
+    private final Result expected;
+    private final Runner runner;
 
     private final int verbosity;
     private final Path path;
@@ -34,27 +30,21 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
     @Nullable
     private MinimizeTestsResult minimizedResult = null;
 
-    public TestMinimizer(final List<String> testOrder, final String dependentTest) throws Exception {
-        this(testOrder, System.getProperty("java.class.path"), dependentTest);
+    public TestMinimizer(final List<String> testOrder, final Runner runner, final String dependentTest) throws Exception {
+        this(testOrder, runner, dependentTest, Paths.get(""));
     }
 
-    public TestMinimizer(final List<String> testOrder, final String classpath, final String dependentTest) throws Exception {
-        this(testOrder, classpath, dependentTest, Paths.get(""));
-    }
-
-    public TestMinimizer(final List<String> testOrder, final String classpath, final String dependentTest, final Path javaAgent)
+    public TestMinimizer(final List<String> testOrder, final Runner runner, final String dependentTest, final Path javaAgent)
             throws Exception {
-        this(testOrder, classpath, dependentTest, javaAgent, 1);
+        this(testOrder, runner, dependentTest, javaAgent, 1);
     }
 
-    public TestMinimizer(final List<String> testOrder, final String classpath, final String dependentTest, final Path javaAgent, int verbosity)
-            throws Exception {
+    public TestMinimizer(final List<String> testOrder, final Runner runner, final String dependentTest, final Path javaAgent, int verbosity) {
         this.testOrder = testOrder;
-        this.classpath = classpath;
         this.dependentTest = dependentTest;
         this.verbosity = verbosity;
 
-        this.runner = new SmartTestRunner(classpath, javaAgent);
+        this.runner = runner;
 
         // Run in given order to determine what the result should be.
         println("[INFO] Getting expected result for: " + dependentTest);
@@ -65,7 +55,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         this.path = MinimizeTestsResult.path(dependentTest, expected, Paths.get("minimized"));
     }
 
-    public RESULT expected() {
+    public Result expected() {
         return expected;
     }
 
@@ -74,16 +64,17 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         return verbosity;
     }
 
-    private RESULT result(final List<String> order) throws Exception {
+    private Result result(final List<String> order) {
         final List<String> actualOrder = new ArrayList<>(order);
 
         if (!actualOrder.contains(dependentTest)) {
             actualOrder.add(dependentTest);
         }
 
-        final TestExecResult results = runner.runOrder(actualOrder).result();
-
-        return results.getResult(dependentTest).result;
+        return runner.runList(actualOrder)
+                .flatMap(r -> Option.apply(r.results().get(dependentTest)))
+                .map(TestResult::result)
+                .get();
     }
 
     private MinimizeTestsResult run() throws Exception {
@@ -118,10 +109,10 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         while (order.size() > 1) {
             print("\r\033[2K[INFO] Trying both halves, " + order.size() + " dts remaining.");
 
-            final RESULT topResult = result(Util.prependAll(deps, Util.topHalf(order)));
+            final Result topResult = result(Util.prependAll(deps, Util.topHalf(order)));
             print(" Top result: " + topResult);
 
-            final RESULT botResult = result(Util.prependAll(deps, Util.botHalf(order)));
+            final Result botResult = result(Util.prependAll(deps, Util.botHalf(order)));
             print(", Bottom result: " + botResult);
 
             if (topResult == expected && botResult != expected) {
@@ -141,7 +132,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         }
 
         print("[INFO] ");
-        final RESULT orderResult = result(order);
+        final Result orderResult = result(order);
         if (order.size() == 1 || orderResult == expected) {
             println(" Found dependencies: " + order);
 
@@ -155,9 +146,9 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         return deps;
     }
 
-    private boolean tryIsolated(final List<String> deps, final List<String> order) throws Exception {
+    private boolean tryIsolated(final List<String> deps, final List<String> order) {
         print("[INFO] Trying dependent test '" + dependentTest + "' in isolation.");
-        final RESULT isolated = result(Collections.singletonList(dependentTest));
+        final Result isolated = result(Collections.singletonList(dependentTest));
         println();
 
         // TODO: Move to another method probably.
@@ -171,7 +162,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
             String test = order.get(i);
 
             print("\r\033[2K[INFO] Running test " + i + " of " + order.size() + ". ");
-            final RESULT r = result(Collections.singletonList(test));
+            final Result r = result(Collections.singletonList(test));
 
             // Found an order where we get the expected result with just one test, can't be more
             // minimal than this.
@@ -186,31 +177,15 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         return false;
     }
 
-    private int triangleNum(final int n) {
-        return n * (n + 1) / 2;
-    }
-
-    private long estimate(final double testsRun, final int numTests, final int deps) {
-        final int estimatedDeps = testsRun == 0 ? deps : (int) (deps + (((double) deps) / testsRun));
-
-        return (long) (runner.averageTestTime() * (numTests + estimatedDeps * numTests + triangleNum(numTests)));
-    }
-
-    private List<String> runSequential(final List<String> deps, final List<String> testOrder)
-            throws Exception {
-        int testsRun = 0;
-
+    private List<String> runSequential(final List<String> deps, final List<String> testOrder) {
         final List<String> remainingTests = new ArrayList<>(testOrder);
 
         while (!remainingTests.isEmpty()) {
-            final long estimated = estimate(testsRun, remainingTests.size(), deps.size());
-
-            print(String.format("\r\033[2K[INFO] Running sequentially, %d dts left (%d seconds remaining)", remainingTests.size(), estimated));
+            print(String.format("\r\033[2K[INFO] Running sequentially, %d tests left", remainingTests.size()));
             final String current = remainingTests.remove(0);
 
             final List<String> order = Util.prependAll(deps, remainingTests);
-            final RESULT r = result(order);
-            testsRun += order.size();
+            final Result r = result(order);
 
             if (r != expected) {
                 println();

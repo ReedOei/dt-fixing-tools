@@ -1,13 +1,11 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
-import com.reedoei.eunomia.subject.Subject;
+import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutionContainer;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
-import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
-
-import java.nio.file.Path;
+import org.apache.maven.project.MavenProject;
 
 public class TestDiagnoser {
     private final StaticTracer tracer; // The static fields used by the dependent test.
@@ -15,18 +13,17 @@ public class TestDiagnoser {
 
     private final PollutionContainer pollutionContainer;
 
-    private final SmartTestRunner runner;
+    private final MavenProject project;
+    private final Runner runner;
 
-    public TestDiagnoser(final String classpath, final Path javaAgent,
-                         final MinimizeTestsResult minimized,
-                         final Subject subject) {
+    public TestDiagnoser(final MavenProject project, final Runner r, final MinimizeTestsResult minimized) {
+        this.project = project;
+        this.runner = r;
         this.minimized = minimized;
 
-        this.tracer = new StaticFieldInfo(subject, minimized).get().getOrDefault(minimized.dependentTest(), new StaticTracer());
+        this.tracer = new StaticFieldInfo(project, minimized).get().getOrDefault(minimized.dependentTest(), new StaticTracer());
 
-        runner = new SmartTestRunner(classpath, javaAgent);
-
-        this.pollutionContainer = new PollutionContainer(runner, subject, minimized.deps());
+        this.pollutionContainer = new PollutionContainer(runner, minimized.deps());
     }
 
     public PollutionContainer run() {

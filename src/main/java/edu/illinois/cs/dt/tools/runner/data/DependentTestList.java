@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.files.FileUtil;
+import com.reedoei.testrunner.data.results.Result;
 import edu.washington.cs.dt.RESULT;
 
 import java.io.IOException;
@@ -43,10 +44,10 @@ public class DependentTestList {
             Preconditions.checkArgument(modifiedOrderLine.startsWith("when executed after: "));
 
             final String test = testLine.replace("Test: ", "");
-            final RESULT intended = RESULT.valueOf(intendedLine.replace("Intended behavior: ", ""));
+            final Result intended = Result.valueOf(intendedLine.replace("Intended behavior: ", ""));
             final List<String> originalOrder =
                     ListUtil.read(originalOrderLine.replace("when executed after: ", ""));
-            final RESULT revealed = RESULT.valueOf(revealedLine.replace("The revealed different behavior: ", ""));
+            final Result revealed = Result.valueOf(revealedLine.replace("The revealed different behavior: ", ""));
             final List<String> modifiedOrder =
                     ListUtil.read(modifiedOrderLine.replace("when executed after: ", ""));
 

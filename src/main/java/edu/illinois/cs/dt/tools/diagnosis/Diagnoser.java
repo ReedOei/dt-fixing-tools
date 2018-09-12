@@ -1,16 +1,18 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
 import com.reedoei.eunomia.collections.StreamUtil;
-import com.reedoei.eunomia.subject.Subject;
-import com.reedoei.eunomia.subject.SubjectFactory;
-import com.reedoei.eunomia.util.StandardMain;
+import com.reedoei.testrunner.configuration.Configuration;
+import com.reedoei.testrunner.mavenplugin.TestPlugin;
+import com.reedoei.testrunner.runner.Runner;
+import com.reedoei.testrunner.runner.RunnerFactory$;
+import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.diagnosis.detection.Detector;
 import edu.illinois.cs.dt.tools.diagnosis.detection.DetectorFactory;
 import edu.illinois.cs.dt.tools.diagnosis.detection.ExecutingDetector;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutionContainer;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestList;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
-import edu.illinois.cs.dt.tools.utility.TestFinder;
+import org.apache.maven.project.MavenProject;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,48 +22,28 @@ import java.util.List;
 import java.util.stream.Stream;
 
 // TODO: Make all files cache inside of a dir like .dtfixingtools
-public class Diagnoser extends StandardMain {
-    private final Subject subject;
-    private final String classpath;
-    private final Path javaAgent;
+public class Diagnoser extends TestPlugin {
+    private MavenProject project;
+    private Path javaAgent;
+    private Runner runner;
 
-    private Diagnoser(final String[] args) throws IOException {
-        super(args);
+    @Override
+    public void execute(final MavenProject project) {
+        this.project = project;
 
-        subject = SubjectFactory.forPath(Paths.get(".").toAbsolutePath().toRealPath());
-        classpath = getArg("cp", "classpath").orElse(subject.classpath());
-        javaAgent = Paths.get(getArgRequired("javaagent"));
-    }
+        this.javaAgent = Paths.get(Configuration.config().getProperty("dtfixingtools.javaagent", ""));
 
-    public Diagnoser(final Subject subject, final Path javaAgent) {
-        this(subject, subject.classpath(), javaAgent);
-    }
+        this.runner = RunnerFactory$.MODULE$.from(project).get();
 
-    public Diagnoser(final Subject subject, final String classpath, final Path javaAgent) {
-        super(new String[0]);
-
-        this.subject = subject;
-        this.classpath = classpath;
-        this.javaAgent = javaAgent;
-    }
-
-    public static void main(final String[] args) {
         try {
-            new Diagnoser(args).run();
+            StreamUtil.seq(diagnose());
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        System.exit(0);
-    }
-
-    @Override
-    protected void run() throws Exception {
-        StreamUtil.seq(diagnose());
     }
 
     public Stream<PollutionContainer> diagnose() throws Exception {
-        return results().map(result -> new TestDiagnoser(classpath, javaAgent, result, subject).run());
+        return results().map(result -> new TestDiagnoser(project, runner, result).run());
     }
 
     private Stream<MinimizeTestsResult> results() throws Exception {
@@ -73,12 +55,6 @@ public class Diagnoser extends StandardMain {
 
                 return Stream.empty();
             });
-        } else if (getArg("minimized").isPresent()) {
-            final Path minimized = Paths.get(getArgRequired("minimized"));
-            return Stream.of(MinimizeTestsResult.fromPath(minimized));
-        } else if (getArg("dtFolder").isPresent()) {
-            final Path dtFolder = Paths.get(getArgRequired("dtFolder"));
-            return new MinimizeTestList(classpath).runDependentTestFolder(dtFolder);
         } else {
             return detect();
         }
@@ -89,13 +65,13 @@ public class Diagnoser extends StandardMain {
         final Path dtFile = dtFolder.resolve(ExecutingDetector.DT_LISTS_PATH);
 
         if (!Files.exists(dtFile)) {
-            final List<String> tests = new TestFinder(classpath, subject).get();
+            final List<String> tests = scala.collection.JavaConverters.bufferAsJavaList(TestLocator.tests(project).toList().toBuffer());
 
-            final Detector detector = DetectorFactory.makeDetector(classpath, tests);
+            final Detector detector = DetectorFactory.makeDetector(runner, tests);
             System.out.println("[INFO] Created dependent test detector (" + detector.getClass() + ").");
             detector.writeTo(dtFolder);
         }
 
-        return new MinimizeTestList(classpath).runDependentTestFile(dtFile);
+        return new MinimizeTestList(runner).runDependentTestFile(dtFile);
     }
 }

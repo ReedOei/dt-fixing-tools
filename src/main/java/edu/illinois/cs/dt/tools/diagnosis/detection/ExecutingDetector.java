@@ -1,19 +1,15 @@
 package edu.illinois.cs.dt.tools.diagnosis.detection;
 
 import com.google.common.collect.Streams;
-import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.string.StringUtil;
-import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
+import com.reedoei.testrunner.data.results.TestResult;
+import com.reedoei.testrunner.data.results.TestRunResult;
+import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import edu.illinois.cs.dt.tools.runner.data.TestRun;
-import edu.washington.cs.dt.RESULT;
-import edu.washington.cs.dt.TestExecResult;
-import edu.washington.cs.dt.TestExecResults;
-import edu.washington.cs.dt.TestExecResultsDelta;
-import edu.washington.cs.dt.TestExecResultsDifferentior;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,20 +25,16 @@ import java.util.stream.Stream;
 
 public abstract class ExecutingDetector implements Detector, VerbosePrinter {
     public static final Path DT_LISTS_PATH = Paths.get("dt-lists.json");
-    protected final String classpath;
-    protected SmartTestRunner runner;
+    protected Runner runner;
 
     private int rounds;
     private List<Predicate<DependentTest>> filters = new ArrayList<>();
 
-    public ExecutingDetector(final String classpath, final int rounds) {
-        this.classpath = classpath;
+    public ExecutingDetector(final Runner runner, final int rounds) {
+        this.runner = runner;
         this.rounds = rounds;
-
-        runner = makeRunner(classpath);
     }
 
-    public abstract SmartTestRunner makeRunner(final String classpath);
     public abstract List<DependentTest> results() throws Exception;
 
     public static <T> List<T> before(final List<T> ts, final T t) {
@@ -55,19 +47,19 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         }
     }
 
-    public List<DependentTest> makeDts(final List<String> intendedOrder, final TestExecResult intended,
-                                       final List<String> revealedOrder, final TestExecResult revealed) {
+    public List<DependentTest> makeDts(final List<String> intendedOrder, final TestRunResult intended,
+                                       final List<String> revealedOrder, final TestRunResult revealed) {
         final List<DependentTest> result = new ArrayList<>();
 
-        intended.getNameToResultsMap().forEach((testName, intendedResult) -> {
-            final Map<String, RESULT> revealedResults = revealed.getNameToResultsMap();
+        intended.results().forEach((testName, intendedResult) -> {
+            final Map<String, TestResult> revealedResults = revealed.results();
 
             if (revealedResults.containsKey(testName)) {
-                final RESULT revealedResult = revealedResults.get(testName);
+                final TestResult revealedResult = revealedResults.get(testName);
                 if (!revealedResult.equals(intendedResult)) {
                     result.add(new DependentTest(testName,
-                            new TestRun(before(intendedOrder, testName), intendedResult),
-                            new TestRun(before(revealedOrder, testName), revealedResult)));
+                            new TestRun(before(intendedOrder, testName), intendedResult.result()),
+                            new TestRun(before(revealedOrder, testName), revealedResult.result())));
                 }
             }
         });

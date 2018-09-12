@@ -2,11 +2,10 @@ package edu.illinois.cs.dt.tools.diagnosis.pollution;
 
 import com.github.javaparser.utils.StringEscapeUtils;
 import com.reedoei.eunomia.data.caching.FileCache;
-import com.reedoei.eunomia.subject.Subject;
+import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticAccessInfo;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
-import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.codehaus.plexus.util.StringUtils;
 
@@ -16,19 +15,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 
 public class PollutionContainer extends FileCache<PollutionContainer> {
-    private final SmartTestRunner runner;
-    private final Subject subject;
+    private final Runner runner;
     private final List<String> tests;
 
     private Map<String, Pollution> data = new HashMap<>();
 
-    public PollutionContainer(final SmartTestRunner runner, final Subject subject, final List<String> tests) {
+    public PollutionContainer(final Runner runner, final List<String> tests) {
         this.runner = runner;
-        this.subject = subject;
         this.tests = tests;
     }
 

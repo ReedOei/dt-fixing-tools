@@ -1,9 +1,9 @@
 package edu.illinois.cs.dt.tools.runner.data;
 
-import edu.illinois.cs.dt.tools.configuration.Configuration;
+import com.reedoei.testrunner.configuration.Configuration;
+import com.reedoei.testrunner.data.results.Result;
+import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizer;
-import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
-import edu.washington.cs.dt.RESULT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +13,9 @@ public class TestRun {
     private static final int VERIFY_ROUNDS = Configuration.config().getProperty("dt.verify.rounds", 1);
 
     private final List<String> order;
-    private final RESULT result;
+    private final Result result;
 
-    public TestRun(List<String> order, RESULT result) {
+    public TestRun(final List<String> order, final Result result) {
         this.order = order;
         this.result = result;
     }
@@ -24,28 +24,28 @@ public class TestRun {
         return order;
     }
 
-    public RESULT result() {
+    public Result result() {
         return result;
     }
 
-    public boolean verify(final String name, final String classpath) {
-        return verify(name, classpath, null);
+    public boolean verify(final String name, final Runner runner) {
+        return verify(name, runner, null);
     }
 
-    public boolean verify(final String dt, final String classpath, final TestMinimizer minimizer) {
+    public boolean verify(final String dt, final Runner runner, final TestMinimizer minimizer) {
         return IntStream.range(0, VERIFY_ROUNDS)
-                .allMatch(i -> verifyRound(dt, classpath, minimizer));
+                .allMatch(i -> verifyRound(dt, runner, minimizer));
     }
 
-    private boolean verifyRound(final String dt, final String classpath, final TestMinimizer minimizer) {
+    private boolean verifyRound(final String dt, final Runner runner, final TestMinimizer minimizer) {
         System.out.printf("[DEBUG] Verifying %s, status: expected %s", dt, this.result);
-        RESULT result = null;
+        Result result = null;
         try {
             final List<String> order = new ArrayList<>(this.order);
             if (!order.contains(dt)) {
                 order.add(dt);
             }
-            result = new SmartTestRunner(classpath).runOrder(order).result().getResult(dt).result;
+            result = runner.runList(order).get().results().get(dt).result();
         } catch (Exception ignored) {}
 
         if (minimizer != null) {

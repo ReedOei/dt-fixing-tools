@@ -1,15 +1,17 @@
 package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
-import com.google.gson.Gson;
 import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.io.files.FileUtil;
-import com.reedoei.eunomia.subject.Subject;
-import com.reedoei.eunomia.util.ProcessUtil;
+import com.reedoei.eunomia.subject.classpath.Classpath;
 import com.reedoei.eunomia.util.RuntimeThrower;
-import com.reedoei.eunomia.util.Util;
+import com.reedoei.testrunner.runner.Runner;
+import com.reedoei.testrunner.runner.RunnerFactory$;
+import com.reedoei.testrunner.testobjects.TestLocator;
+import com.reedoei.testrunner.util.MavenClassLoader;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
-import edu.illinois.cs.dt.tools.runner.SimpleRunner;
+import org.apache.maven.project.MavenProject;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import scala.collection.immutable.Stream;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,11 +23,12 @@ import java.util.Map;
 
 public class StaticFieldInfo extends FileCache<Map<String, StaticTracer>> {
     public static final Path STATIC_FIELD_INFO_PATH = Paths.get("static-field-info").toAbsolutePath();
-    private final Subject subject;
+
+    private final MavenProject project;
     private final MinimizeTestsResult minimized;
 
-    public StaticFieldInfo(final Subject subject, final MinimizeTestsResult minimized) {
-        this.subject = subject;
+    public StaticFieldInfo(final MavenProject project, final MinimizeTestsResult minimized) {
+        this.project = project;
         this.minimized = minimized;
     }
 
@@ -76,22 +79,24 @@ public class StaticFieldInfo extends FileCache<Map<String, StaticTracer>> {
         System.out.println("[INFO] Instrumenting to get lists of static fields.");
 
         if (FileUtil.isEmpty(Paths.get("sootOutput"))) {
-            final String sootCp = subject.classpath() + Util.buildClassPath(System.getProperty("java.home") + "/lib/*");
+            final String sootCp = new MavenClassLoader(project).classpath() + Classpath.build(System.getProperty("java.home") + "/lib/*");
 
             System.out.println("[INFO] Instrumenting test classes.");
-            Instrumentation.instrument(sootCp, subject.testClasses(), staticFieldInfoPath);
+            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getTestOutputDirectory()), staticFieldInfoPath);
             System.out.println("[INFO] Instrumenting classes.");
-            Instrumentation.instrument(sootCp, subject.classes(), staticFieldInfoPath);
+            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getOutputDirectory()), staticFieldInfoPath);
         }
 
         final String sootOutputCp =
-                Util.buildClassPath(
+                Classpath.build(
                         Paths.get("").resolve("sootOutput").toAbsolutePath().toString(),
-                        subject.dependencies() + "/*") + File.pathSeparator +
+                        project.getBuild().getDirectory() + "/dependency/*") + File.pathSeparator +
                         System.getProperty("java.class.path");
 
         System.out.println("[INFO] Running dts.");
-        ProcessUtil.runClass(sootOutputCp, SimpleRunner.class, "--dts", subject.testClasses().toString())
-                .waitFor();
+
+        final Runner runner = RunnerFactory$.MODULE$.from(project).get();
+        final Stream<String> tests = TestLocator.tests(project);
+        runner.runWithCp(sootOutputCp, tests);
     }
 }

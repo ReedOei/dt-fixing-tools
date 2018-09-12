@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.IOUtil;
 import com.reedoei.eunomia.io.files.FileUtil;
-import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
-import edu.washington.cs.dt.RESULT;
+import com.reedoei.testrunner.data.results.Result;
+import com.reedoei.testrunner.runner.Runner;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,14 +14,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MinimizeTestsResult {
-    public static Path path(final String dependentTest, final RESULT expected, final Path outputPath) {
+    public static Path path(final String dependentTest, final Result expected, final Path outputPath) {
         return outputPath.resolve(dependentTest + "-" + expected + "-dependencies.json");
     }
 
     private static final int VERIFY_REPEAT_COUNT = 1;
     private static final int MAX_SUBSEQUENCES = 1000;
 
-    private final RESULT expected;
+    private final Result expected;
     private final String dependentTest;
     private final List<String> deps;
 
@@ -33,32 +33,28 @@ public class MinimizeTestsResult {
         return new Gson().fromJson(jsonString, MinimizeTestsResult.class);
     }
 
-    public MinimizeTestsResult(final RESULT expected, final String dependentTest, final List<String> deps) {
+    public MinimizeTestsResult(final Result expected, final String dependentTest, final List<String> deps) {
         this.expected = expected;
         this.dependentTest = dependentTest;
         this.deps = deps;
     }
 
-    private boolean isExpected(final SmartTestRunner runner, final List<String> deps) throws Exception {
+    private boolean isExpected(final Runner runner, final List<String> deps) throws Exception {
+        final List<String> order = new ArrayList<>(deps);
+        order.add(dependentTest());
+
         return runner
-                .runOrder(deps, ListUtil.fromArray(dependentTest))
-                .result()
-                .getResult(dependentTest).result.equals(expected);
+                .runList(order)
+                .get()
+                .results()
+                .get(dependentTest()).result().equals(expected());
     }
 
-    public boolean verify() throws Exception {
-        return verify(new SmartTestRunner(), VERIFY_REPEAT_COUNT);
-    }
-
-    public boolean verify(final int verifyCount) throws Exception {
-        return verify(new SmartTestRunner(), verifyCount);
-    }
-
-    public boolean verify(final SmartTestRunner runner) throws Exception {
+    public boolean verify(final Runner runner) throws Exception {
         return verify(runner, VERIFY_REPEAT_COUNT);
     }
 
-    public boolean verify(final SmartTestRunner runner, final int verifyCount) throws Exception {
+    public boolean verify(final Runner runner, final int verifyCount) throws Exception {
         for (int i = 0; i < verifyCount; i++) {
             final List<List<String>> depLists = ListUtil.sample(ListUtil.subsequences(deps), MAX_SUBSEQUENCES);
             int check = 1;
@@ -83,7 +79,7 @@ public class MinimizeTestsResult {
         return true;
     }
 
-    private void verifyDependencies(final SmartTestRunner runner,
+    private void verifyDependencies(final Runner runner,
                                     final int verifyCount,
                                     final int i,
                                     final List<List<String>> depLists,
@@ -140,7 +136,7 @@ public class MinimizeTestsResult {
         return dependentTest;
     }
 
-    public RESULT expected() {
+    public Result expected() {
         return expected;
     }
 }

@@ -1,9 +1,8 @@
 package edu.illinois.cs.dt.tools.diagnosis.pollution;
 
-import com.google.gson.Gson;
 import com.reedoei.eunomia.data.caching.FileCache;
+import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
-import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -20,31 +19,11 @@ public class Pollution extends FileCache<Pollution> {
     private final String testName;
     private final Path path;
 
-    private final SmartTestRunner runner;
+    private final Runner runner;
 
     private Map<String, DiffContainer.Diff> data = new HashMap<>();
 
-    public Pollution(final SmartTestRunner runner, final Path path) {
-        this.path = path;
-        this.runner = runner;
-        this.testName = path.getFileName().toString();
-
-        load();
-    }
-
-    public Pollution(final Path path) {
-        this.path = path;
-        this.runner = SmartTestRunner.master();
-        this.testName = path.getFileName().toString();
-
-        load();
-    }
-
-    public Pollution(final String testName) {
-        this(SmartTestRunner.master(), testName);
-    }
-
-    public Pollution(final SmartTestRunner runner, final String testName) {
+    public Pollution(final Runner runner, final String testName) {
         this.runner = runner;
         this.testName = testName;
         this.path = Paths.get("pollution-data").resolve(testName + ".xml");
@@ -57,6 +36,7 @@ public class Pollution extends FileCache<Pollution> {
 
     @Override
     protected Pollution load() {
+        // This is actually safe...sorry
         data = (Map<String, DiffContainer.Diff>) TestResult.getXStreamInstance().fromXML(path().toFile());
 
         return this;
@@ -77,7 +57,7 @@ public class Pollution extends FileCache<Pollution> {
     @Override
     protected Pollution generate() {
         try {
-            final Map<String, DiffContainer> diffs = runner.runOrder(Collections.singletonList(testName)).stateDiffs();
+            final Map<String, DiffContainer> diffs = runner.runList(Collections.singletonList(testName)).get().diffs();
             if (diffs.containsKey(testName)) {
                 this.data = diffs.get(testName).getDiffs();
             }

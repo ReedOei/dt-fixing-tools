@@ -1,22 +1,16 @@
 package edu.illinois.cs.dt.tools.runner.data;
 
 import com.google.gson.Gson;
-import edu.illinois.cs.dt.tools.configuration.Configuration;
+import com.reedoei.testrunner.configuration.Configuration;
+import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizer;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizerBuilder;
-import edu.washington.cs.dt.TestExecResultsDelta;
 
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class DependentTest {
     private static final boolean VERIFY_DTS = Configuration.config().getProperty("dt.verify", true);
-
-    public static DependentTest fromDelta(final TestExecResultsDelta delta) {
-        return new DependentTest(delta.testName,
-                new TestRun(delta.intendedPreTests, delta.intendedResult.result),
-                new TestRun(delta.dependentTests, delta.divergentResult.result));
-    }
 
     private final String name;
 
@@ -46,11 +40,11 @@ public class DependentTest {
         return new Gson().toJson(this);
     }
 
-    public Stream<TestMinimizer> minimizers(final TestMinimizerBuilder builder) {
+    public Stream<TestMinimizer> minimizers(final TestMinimizerBuilder builder, final Runner runner) {
         final TestMinimizerBuilder minimizerBuilder = builder.dependentTest(name);
 
-        final Supplier<Stream<TestMinimizer>> intendedMinimizer = () -> minimizer(minimizerBuilder, intended);
-        final Supplier<Stream<TestMinimizer>> revealedMinimizer = () -> minimizer(minimizerBuilder, revealed);
+        final Supplier<Stream<TestMinimizer>> intendedMinimizer = () -> minimizer(minimizerBuilder, intended, runner);
+        final Supplier<Stream<TestMinimizer>> revealedMinimizer = () -> minimizer(minimizerBuilder, revealed, runner);
 
         if (intended.result().equals(revealed.result())) {
             if (intended.order().size() < revealed.order().size()) {
@@ -63,12 +57,12 @@ public class DependentTest {
         }
     }
 
-    private Stream<TestMinimizer> minimizer(final TestMinimizerBuilder builder, final TestRun run) {
+    private Stream<TestMinimizer> minimizer(final TestMinimizerBuilder builder, final TestRun run, final Runner runner) {
         try {
             final TestMinimizer minimizer = builder.testOrder(run.order()).build();
 
             if (VERIFY_DTS) {
-                if (!run.verify(name, builder.classpath(), minimizer)) {
+                if (!run.verify(name, runner,minimizer)) {
                     return Stream.empty();
                 }
             }
@@ -79,7 +73,7 @@ public class DependentTest {
         }
     }
 
-    public boolean verify(final String classpath) {
-        return intended.verify(name, classpath) && revealed.verify(name, classpath);
+    public boolean verify(final Runner runner) {
+        return intended.verify(name, runner) && revealed.verify(name, runner);
     }
 }

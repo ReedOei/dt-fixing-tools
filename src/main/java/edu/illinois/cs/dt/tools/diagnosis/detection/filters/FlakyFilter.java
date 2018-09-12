@@ -1,19 +1,20 @@
 package edu.illinois.cs.dt.tools.diagnosis.detection.filters;
 
-import edu.illinois.cs.dt.tools.runner.SmartTestRunner;
+import com.reedoei.testrunner.runner.Runner;
+import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 
 import java.util.function.Predicate;
 
 public class FlakyFilter implements Predicate<DependentTest> {
-    private final SmartTestRunner runner;
+    private final SmartRunner runner;
 
-    public FlakyFilter(final SmartTestRunner runner) {
+    public FlakyFilter(final SmartRunner runner) {
         this.runner = runner;
     }
 
     @Override
     public boolean test(final DependentTest dependentTest) {
-        return !runner.isFlaky(dependentTest.name());
+        return !runner.info().isFlaky(dependentTest.name());
     }
 }
