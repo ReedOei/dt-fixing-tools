@@ -1,9 +1,18 @@
 package edu.illinois.cs.dt.tools.diagnosis.pollution;
 
+import com.github.javaparser.utils.StringEscapeUtils;
 import com.reedoei.eunomia.data.caching.FileCache;
+import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticAccessInfo;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
+import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
@@ -15,18 +24,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-public class Pollution extends FileCache<Pollution> {
-    private final String testName;
+public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
+    private static final Path POLLUTION_STORAGE_PATH = Paths.get("pollution-data");
+
     private final Path path;
 
     private final Runner runner;
+    private final String cp;
+    private final MinimizeTestsResult minimized;
 
-    private Map<String, DiffContainer.Diff> data = new HashMap<>();
-
-    public Pollution(final Runner runner, final String testName) {
+    public Pollution(final Runner runner, final String cp, final MinimizeTestsResult minimized) {
         this.runner = runner;
-        this.testName = testName;
-        this.path = Paths.get("pollution-data").resolve(testName + ".xml");
+        this.cp = cp;
+        this.minimized = minimized;
+
+        this.path = Paths.get("pollution-data").resolve(minimized.dependentTest() + "-" + minimized.expected() + ".xml");
     }
 
     @Override
@@ -35,16 +47,14 @@ public class Pollution extends FileCache<Pollution> {
     }
 
     @Override
-    protected Pollution load() {
+    protected Map<String, DiffContainer.Diff> load() {
         // This is actually safe...sorry
-        data = (Map<String, DiffContainer.Diff>) TestResult.getXStreamInstance().fromXML(path().toFile());
-
-        return this;
+        return (Map<String, DiffContainer.Diff>) TestResult.getXStreamInstance().fromXML(path().toFile());
     }
 
     @Override
     protected void save() {
-        final String s = TestResult.getXStreamInstance().toXML(data());
+        final String s = TestResult.getXStreamInstance().toXML(get());
 
         try {
             Files.createDirectories(path().getParent());
@@ -55,33 +65,45 @@ public class Pollution extends FileCache<Pollution> {
     }
 
     @Override
-    protected Pollution generate() {
+    protected @NonNull Map<String, DiffContainer.Diff> generate() {
         try {
-            final Map<String, DiffContainer> diffs = runner.runList(Collections.singletonList(testName)).get().diffs();
-            if (diffs.containsKey(testName)) {
-                this.data = diffs.get(testName).getDiffs();
-            }
+            Files.createDirectories(POLLUTION_STORAGE_PATH);
+            FileUtils.deleteDirectory(StaticFieldInfo.STATIC_FIELD_INFO_PATH.toFile());
+            Files.createDirectories(StaticFieldInfo.STATIC_FIELD_INFO_PATH);
+
+            final Path withDeps = POLLUTION_STORAGE_PATH.resolve(minimized.getPath("with-deps"));
+            final Path withoutDeps = POLLUTION_STORAGE_PATH.resolve(minimized.getPath("without-deps"));
+
+            // Run with dependencies and monitor first access, then run without and monitor first access
+            // If they values of some fields are different, then that's likely the source of the
+            // difference in behavior
+            StaticTracer.inMode(TracerMode.FIRST_ACCESS, () -> {
+                Configuration.config().properties().setProperty("statictracer.first_access.test", minimized.dependentTest());
+
+                runner.runListWithCp(cp, minimized.withDeps());
+                Files.move(StaticFieldInfo.STATIC_FIELD_INFO_PATH.resolve(minimized.dependentTest()), withDeps);
+
+                runner.runListWithCp(cp, Collections.singletonList(minimized.dependentTest()));
+                Files.move(StaticFieldInfo.STATIC_FIELD_INFO_PATH.resolve(minimized.dependentTest()), withoutDeps);
+
+                return null;
+            });
+
+            FileUtils.deleteDirectory(StaticFieldInfo.STATIC_FIELD_INFO_PATH.toFile());
+
+            final Map<String, String> before = StaticTracer.from(withDeps).firstAccessVals();
+            final Map<String, String> after = StaticTracer.from(withoutDeps).firstAccessVals();
+
+            return new DiffContainer(minimized.dependentTest(), before, after).getDiffs();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return this;
-    }
-
-    public Map<String, DiffContainer.Diff> data() {
-        return data;
-    }
-
-    public String testName() {
-        return testName;
-    }
-
-    public void forEach(final BiConsumer<String, DiffContainer.Diff> consumer) {
-        data.forEach(consumer);
+        return new HashMap<>();
     }
 
     public void forEachFiltered(final BiConsumer<String, DiffContainer.Diff> consumer) {
-        data.forEach((fieldName, diff) -> {
+        get().forEach((fieldName, diff) -> {
             if (shouldConsume(fieldName, diff)) {
                 consumer.accept(fieldName, diff);
             }
@@ -109,7 +131,39 @@ public class Pollution extends FileCache<Pollution> {
         return !varName.toUpperCase().equals(varName);
     }
 
-    public boolean exists() {
-        return hasResult();
+    public static String formatDiff(final String fieldName, final DiffContainer.Diff diff) {
+        return String.format("%s: (%s, %s)", fieldName,
+                StringEscapeUtils.escapeJava(StringUtils.abbreviate(String.valueOf(diff.getBefore()), 30)),
+                StringEscapeUtils.escapeJava(StringUtils.abbreviate(String.valueOf(diff.getAfter()), 30)));
+    }
+
+    private boolean different(final DiffContainer.Diff diff) {
+        // If getBefore or getAfter is null, then that means there is no value for either one
+        // If the value itself IS null, then getBefore or getAfter will give "<null/>"
+        if (diff.getBefore() != null && diff.getAfter() != null) {
+            return !diff.getBefore().equals(diff.getAfter());
+        } else {
+            return false;
+        }
+    }
+
+    public Map<String, DiffContainer.Diff> findPollutions(final Map<String, StaticAccessInfo> fieldList) {
+        final Map<String, DiffContainer.Diff> pollutions = new HashMap<>();
+
+        forEachFiltered((fieldName, diff) -> {
+            if (fieldList.containsKey(fieldName)) {
+                if (different(diff)) {
+                    System.out.println("-----------------------------------------------------------");
+                    System.out.println("-- Accessed by test " + formatDiff(fieldName, diff));
+                    System.out.println("-----------------------------------------------------------");
+
+                    fieldList.get(fieldName).stackTrace().forEach(System.out::println);
+
+                    pollutions.put(fieldName, diff);
+                }
+            }
+        });
+
+        return pollutions;
     }
 }

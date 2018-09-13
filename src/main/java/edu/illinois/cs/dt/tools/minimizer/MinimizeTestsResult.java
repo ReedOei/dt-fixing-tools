@@ -10,6 +10,7 @@ import com.reedoei.testrunner.runner.Runner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class MinimizeTestsResult {
         this.deps = deps;
     }
 
-    private boolean isExpected(final Runner runner, final List<String> deps) throws Exception {
+    private boolean isExpected(final Runner runner, final List<String> deps) {
         final List<String> order = new ArrayList<>(deps);
         order.add(dependentTest());
 
@@ -138,5 +139,29 @@ public class MinimizeTestsResult {
 
     public Result expected() {
         return expected;
+    }
+
+    public List<String> withDeps() {
+        final List<String> order = new ArrayList<>(deps());
+        order.add(dependentTest());
+        return order;
+    }
+
+    public Path getPath() {
+        return getPath(null);
+    }
+
+    /**
+     * @param modifier A string to add to the end of the path. Can be null or blank to specify there is no modifier.
+     * @return A (relative) path to be used whenever storing results relevant to this particular dependent test,
+     *         usually inside of some other folder.
+     */
+    public Path getPath(final String modifier) {
+        if (modifier == null || modifier.isEmpty()) {
+            return Paths.get(String.format("%s-%s", dependentTest(), expected()));
+        } else {
+
+            return Paths.get(String.format("%s-%s-%s", dependentTest(), expected(), modifier));
+        }
     }
 }

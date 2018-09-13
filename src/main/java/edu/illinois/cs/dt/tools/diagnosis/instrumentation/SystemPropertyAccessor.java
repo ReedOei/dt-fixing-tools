@@ -21,7 +21,11 @@ public class SystemPropertyAccessor implements FieldAccessor {
 
     @Override
     public void set(final Object o) {
-        System.setProperty(propertyName, o.toString());
+        if (o == null) {
+            System.clearProperty(propertyName);
+        } else {
+            System.setProperty(propertyName, String.valueOf(o));
+        }
     }
 
     @Override

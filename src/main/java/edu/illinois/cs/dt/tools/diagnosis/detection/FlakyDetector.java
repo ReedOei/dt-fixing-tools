@@ -19,6 +19,6 @@ public class FlakyDetector extends ExecutingDetector {
 
     @Override
     public List<DependentTest> results() throws Exception {
-        return makeDts(tests, origResult, tests, runner.runList(tests).get());
+        return makeDts(tests, origResult, tests, runSilent(tests));
     }
 }

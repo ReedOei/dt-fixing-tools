@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 public class MinimizeTestList extends TestPlugin {
@@ -25,6 +24,7 @@ public class MinimizeTestList extends TestPlugin {
     public MinimizeTestList(final Runner runner) {
         super();
         this.runner = runner;
+        this.builder = new TestMinimizerBuilder(runner);
     }
 
     private Stream<TestMinimizer> fromDtList(final Path path) {

@@ -2,6 +2,8 @@ package edu.illinois.cs.dt.tools.diagnosis.detection;
 
 import com.reedoei.eunomia.collections.RandomList;
 import com.reedoei.eunomia.collections.StreamUtil;
+import com.reedoei.eunomia.io.capture.CaptureOutStream;
+import com.reedoei.eunomia.io.capture.CapturedOutput;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.SmartRunner;
@@ -22,7 +24,7 @@ public class RandomDetector extends ExecutingDetector {
         this.tests = tests;
 
         System.out.println("[INFO] Getting original results (" + tests.size() + " tests).");
-        this.origResult = runner.runList(tests).get();
+        this.origResult = runSilent(tests);
 
         System.out.println("[INFO] Detecting flaky tests.");
         StreamUtil.seq(new FlakyDetector(runner, rounds, tests, origResult).detect());
@@ -45,6 +47,6 @@ public class RandomDetector extends ExecutingDetector {
     @Override
     public List<DependentTest> results() throws Exception {
         final RandomList<String> order = new RandomList<>(tests).shuffled();
-        return makeDts(tests, origResult, order, runner.runList(order).get());
+        return makeDts(tests, origResult, order, runSilent(order));
     }
 }

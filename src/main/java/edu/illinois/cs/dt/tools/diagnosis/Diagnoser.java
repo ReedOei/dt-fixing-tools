@@ -1,6 +1,5 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
-import com.reedoei.eunomia.collections.StreamUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.runner.Runner;
@@ -9,16 +8,20 @@ import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.diagnosis.detection.Detector;
 import edu.illinois.cs.dt.tools.diagnosis.detection.DetectorFactory;
 import edu.illinois.cs.dt.tools.diagnosis.detection.ExecutingDetector;
-import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutionContainer;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestList;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import org.apache.maven.project.MavenProject;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 // TODO: Make all files cache inside of a dir like .dtfixingtools
@@ -26,6 +29,14 @@ public class Diagnoser extends TestPlugin {
     private MavenProject project;
     private Path javaAgent;
     private Runner runner;
+
+    public static String cp() {
+        final URLClassLoader contextClassLoader = (URLClassLoader)Thread.currentThread().getContextClassLoader();
+        return String.join(File.pathSeparator,
+                Arrays.stream(contextClassLoader.getURLs())
+                      .map(URL::getPath)
+                      .collect(Collectors.toList()));
+    }
 
     @Override
     public void execute(final MavenProject project) {
@@ -36,14 +47,14 @@ public class Diagnoser extends TestPlugin {
         this.runner = RunnerFactory$.MODULE$.from(project).get();
 
         try {
-            StreamUtil.seq(diagnose());
+            diagnose();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public Stream<PollutionContainer> diagnose() throws Exception {
-        return results().map(result -> new TestDiagnoser(project, runner, result).run());
+    public void diagnose() throws Exception {
+        results().forEach(result -> new TestDiagnoser(project, runner, result).run());
     }
 
     private Stream<MinimizeTestsResult> results() throws Exception {

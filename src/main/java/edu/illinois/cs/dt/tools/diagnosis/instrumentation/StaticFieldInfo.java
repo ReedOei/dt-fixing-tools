@@ -5,59 +5,42 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.subject.classpath.Classpath;
 import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.testrunner.runner.Runner;
-import com.reedoei.testrunner.runner.RunnerFactory$;
-import com.reedoei.testrunner.testobjects.TestLocator;
 import com.reedoei.testrunner.util.MavenClassLoader;
+import edu.illinois.cs.dt.tools.diagnosis.Diagnoser;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.project.MavenProject;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import scala.collection.immutable.Stream;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 
-public class StaticFieldInfo extends FileCache<Map<String, StaticTracer>> {
+public class StaticFieldInfo extends FileCache<StaticTracer> {
+    // NOTE: If this is changed, then will have to instrument everything
     public static final Path STATIC_FIELD_INFO_PATH = Paths.get("static-field-info").toAbsolutePath();
 
     private final MavenProject project;
+    private final Runner runner;
     private final MinimizeTestsResult minimized;
 
-    public StaticFieldInfo(final MavenProject project, final MinimizeTestsResult minimized) {
+    public StaticFieldInfo(final MavenProject project, final Runner runner, final MinimizeTestsResult minimized) {
         this.project = project;
+        this.runner = runner;
         this.minimized = minimized;
     }
 
     @Override
     public @NonNull Path path() {
-        return STATIC_FIELD_INFO_PATH;
+        return Paths.get(STATIC_FIELD_INFO_PATH.toString() + "-" + String.valueOf(TracerMode.TRACK))
+                .resolve(minimized.dependentTest());
     }
 
     @Override
-    protected Map<String, StaticTracer> load() {
-        final Map<String, StaticTracer> result = new HashMap<>();
-
-        new RuntimeThrower<>(() -> {
-            Files.walk(STATIC_FIELD_INFO_PATH).forEach(path -> {
-                    if (Files.isRegularFile(path)) {
-                        try {
-                            if (path.getFileName().toString().equals(minimized.dependentTest())) {
-                                result.put(path.getFileName().toString(), StaticTracer.from(path));
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-
-                return null;
-        }).run();
-
-        return result;
+    protected StaticTracer load() {
+        return new RuntimeThrower<>(() -> StaticTracer.from(path())).run();
     }
 
     @Override
@@ -66,37 +49,35 @@ public class StaticFieldInfo extends FileCache<Map<String, StaticTracer>> {
     }
 
     @Override
-    protected @NonNull Map<String, StaticTracer> generate() {
+    protected @NonNull StaticTracer generate() {
         return new RuntimeThrower<>(() -> {
-            generateStaticFieldInfo(STATIC_FIELD_INFO_PATH);
+            generateStaticFieldInfo();
             return load();
         }).run();
     }
 
-    private void generateStaticFieldInfo(final Path staticFieldInfoPath) throws Exception {
+    private void generateStaticFieldInfo() throws Exception {
+        FileUtils.deleteDirectory(StaticFieldInfo.STATIC_FIELD_INFO_PATH.toFile());
         Files.createDirectories(STATIC_FIELD_INFO_PATH);
+        Files.createDirectories(path().getParent());
 
         System.out.println("[INFO] Instrumenting to get lists of static fields.");
-
-        if (FileUtil.isEmpty(Paths.get("sootOutput"))) {
-            final String sootCp = new MavenClassLoader(project).classpath() + Classpath.build(System.getProperty("java.home") + "/lib/*");
-
-            System.out.println("[INFO] Instrumenting test classes.");
-            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getTestOutputDirectory()), staticFieldInfoPath);
-            System.out.println("[INFO] Instrumenting classes.");
-            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getOutputDirectory()), staticFieldInfoPath);
-        }
+        Instrumentation.instrumentProject(project);
 
         final String sootOutputCp =
                 Classpath.build(
                         Paths.get("").resolve("sootOutput").toAbsolutePath().toString(),
                         project.getBuild().getDirectory() + "/dependency/*") + File.pathSeparator +
-                        System.getProperty("java.class.path");
+                        Diagnoser.cp();
 
-        System.out.println("[INFO] Running dts.");
+        System.out.println("[INFO] Running tests.");
 
-        final Runner runner = RunnerFactory$.MODULE$.from(project).get();
-        final Stream<String> tests = TestLocator.tests(project);
-        runner.runWithCp(sootOutputCp, tests);
+        StaticTracer.inMode(TracerMode.TRACK, () -> {
+            runner.runListWithCp(sootOutputCp, Collections.singletonList(minimized.dependentTest()));
+
+            return null;
+        });
+
+        Files.move(STATIC_FIELD_INFO_PATH.resolve(minimized.dependentTest()), path());
     }
 }

@@ -2,6 +2,8 @@ package edu.illinois.cs.dt.tools.diagnosis.detection;
 
 import com.google.common.collect.Streams;
 import com.reedoei.eunomia.io.VerbosePrinter;
+import com.reedoei.eunomia.io.capture.CaptureErrStream;
+import com.reedoei.eunomia.io.capture.CaptureOutStream;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.string.StringUtil;
 import com.reedoei.testrunner.data.results.Result;
@@ -46,6 +48,10 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         } else {
             return new ArrayList<>();
         }
+    }
+
+    protected TestRunResult runSilent(final List<String> tests) {
+        return new CaptureErrStream<>(() -> new CaptureOutStream<>(() -> runner.runList(tests).get()).run().valueRequired()).run().valueRequired();
     }
 
     public List<DependentTest> makeDts(final List<String> intendedOrder, final TestRunResult intended,

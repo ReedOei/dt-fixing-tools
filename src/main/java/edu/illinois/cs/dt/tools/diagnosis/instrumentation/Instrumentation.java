@@ -1,15 +1,19 @@
 package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
 import com.reedoei.eunomia.io.files.FileUtil;
-import com.reedoei.eunomia.util.ProcessUtil;
+import com.reedoei.eunomia.subject.classpath.Classpath;
+import com.reedoei.eunomia.util.ExecutionInfoBuilder;
 import com.reedoei.eunomia.util.StandardMain;
-import com.reedoei.eunomia.util.Util;
+import com.reedoei.testrunner.util.MavenClassLoader;
+import edu.illinois.cs.dt.tools.diagnosis.Diagnoser;
+import org.apache.maven.project.MavenProject;
 import soot.Main;
 import soot.Pack;
 import soot.PackManager;
 import soot.Scene;
 import soot.Transform;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,17 +25,29 @@ public class Instrumentation extends StandardMain {
 
     public static void instrument(final String sootCp, final Path inputPath, final Path outputPath)
             throws IOException, InterruptedException {
-        final Process process = ProcessUtil.runClass(Instrumentation.class,
+        new ProcessBuilder(new ExecutionInfoBuilder(Instrumentation.class).classpath(sootCp).build().args(
                 "--soot-cp", sootCp,
                 "--input-dir", inputPath.toString(),
-                "--output-dir", outputPath.toString());
-        process.waitFor();
+                "--output-dir", outputPath.toString())).inheritIO().start().waitFor();
+    }
+
+    public static void instrumentProject(final MavenProject project) throws IOException, InterruptedException {
+        if (FileUtil.isEmpty(Paths.get("sootOutput"))) {
+            final String sootCp = new MavenClassLoader(project).classpath() + File.pathSeparator +
+                    Diagnoser.cp() + File.pathSeparator +
+                    Classpath.build(System.getProperty("java.home") + "/lib/*");
+
+            System.out.println("[INFO] Instrumenting test classes.");
+            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getTestOutputDirectory()), StaticFieldInfo.STATIC_FIELD_INFO_PATH);
+            System.out.println("[INFO] Instrumenting classes.");
+            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getOutputDirectory()), StaticFieldInfo.STATIC_FIELD_INFO_PATH);
+        }
     }
 
     private Instrumentation(String[] args) {
         super(args);
 
-        this.sootCp = Util.buildClassPath(getArg("soot-cp").orElse(System.getProperty("java.class.path")));
+        this.sootCp = getArg("soot-cp").orElse(System.getProperty("java.class.path"));
         this.inputPath = Paths.get(getArgRequired("input-dir"));
         this.outputPath = Paths.get(getArg("output-dir").orElse("."));
     }
