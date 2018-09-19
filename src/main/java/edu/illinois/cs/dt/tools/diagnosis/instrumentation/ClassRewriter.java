@@ -3,11 +3,8 @@ package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 public class ClassRewriter extends ClassVisitor {
-
     private String className;
 
     public ClassRewriter(int api, ClassWriter cv) {

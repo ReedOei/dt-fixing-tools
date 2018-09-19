@@ -30,15 +30,14 @@ public class StaticTracer {
     private static Map<TracerMode, Consumer<String>> tracerModes = new ConcurrentHashMap<>();
 
     static {
-        tracerModes.put(TracerMode.NONE, StaticTracer::track);
+        tracerModes.put(TracerMode.NONE, Cons.ignore());
         tracerModes.put(TracerMode.FIRST_ACCESS, StaticTracer::monitorFirstAccess);
         tracerModes.put(TracerMode.REWRITE, StaticTracer::rewrite);
         tracerModes.put(TracerMode.TRACK, StaticTracer::track);
     }
 
     public static <T> T inMode(final TracerMode mode, final Callable<T> c) throws Exception {
-        final TracerMode currentMode =
-                TracerMode.valueOf(Configuration.config().getProperty("statictracer.mode", String.valueOf(TracerMode.NONE)));
+        final TracerMode currentMode = mode();
 
         Configuration.config().properties().setProperty("statictracer.mode", String.valueOf(mode));
 
@@ -68,6 +67,11 @@ public class StaticTracer {
         this.staticFields.putAll(staticFields);
     }
 
+    public static TracerMode mode() {
+        return TracerMode.valueOf(
+                Configuration.config().getProperty("statictracer.mode", String.valueOf(TracerMode.NONE)));
+    }
+
     public Map<String, String> firstAccessVals() {
         return firstAccessVals;
     }
@@ -82,9 +86,7 @@ public class StaticTracer {
 
     public static void logStatic(final String fieldName) {
         tracerModes
-            .getOrDefault(TracerMode.valueOf(
-                    Configuration.config().getProperty("statictracer.mode", String.valueOf(TracerMode.NONE))),
-                    Cons.ignore())
+            .getOrDefault(mode(), Cons.ignore())
             .accept(fieldName);
     }
 
@@ -119,6 +121,7 @@ public class StaticTracer {
     private static void rewrite(final String fieldName) {
         final @NonNull String currentTest = Configuration.config().getProperty("testrunner.current_test", "");
 
+        // Using "none" as default so the two defaults don't match
         final @NonNull String testToCheck = Configuration.config().getProperty("statictracer.rewrite.test", "none");
 
         if (!currentTest.equals(testToCheck)) {
@@ -148,21 +151,21 @@ public class StaticTracer {
         final @NonNull String testToCheck = Configuration.config().getProperty("statictracer.first_access.test", "none");
 
         if (currentTest.equals(testToCheck)) {
-            FieldAccessorFactory.accessorFor(fieldName).ifPresent(accessor -> {
-                final String serialized = sanitizeXmlChars(TestResult.getXStreamInstance().toXML(accessor.get()));
-//
-//                if (!tracer().firstAccessVals().containsKey(fieldName)) {
-//                    System.out.printf("REED %s: %s\n", fieldName, serialized);
-//                }
-
-                tracer().firstAccessVals().putIfAbsent(fieldName, serialized);
-            });
+            if (!tracer().firstAccessVals().containsKey(fieldName)) {
+                FieldAccessorFactory.accessorFor(fieldName).ifPresent(accessor -> {
+                    final String serialized = sanitizeXmlChars(TestResult.getXStreamInstance().toXML(accessor.get()));
+                    tracer().firstAccessVals().putIfAbsent(fieldName, serialized);
+                });
+            }
         }
     }
 
     // Note: We use a String here rather than a Path simply for ease of inserting the method with Soot.
     public static void output(final String path) {
         try {
+            final @NonNull String currentTest = Configuration.config().getProperty("testrunner.current_test", "");
+            final String without = Configuration.config().getProperty("statictracer.first_access.without", "");
+
             Files.write(Paths.get(path), new Gson().toJson(tracer()).getBytes());
             tracer().staticFields().clear();
             tracer().firstAccessVals().clear();

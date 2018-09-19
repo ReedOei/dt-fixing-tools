@@ -30,12 +30,10 @@ public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
     private final Path path;
 
     private final Runner runner;
-    private final String cp;
     private final MinimizeTestsResult minimized;
 
-    public Pollution(final Runner runner, final String cp, final MinimizeTestsResult minimized) {
+    public Pollution(final Runner runner, final MinimizeTestsResult minimized) {
         this.runner = runner;
-        this.cp = cp;
         this.minimized = minimized;
 
         this.path = Paths.get("pollution-data").resolve(minimized.dependentTest() + "-" + minimized.expected() + ".xml");
@@ -80,10 +78,10 @@ public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
             StaticTracer.inMode(TracerMode.FIRST_ACCESS, () -> {
                 Configuration.config().properties().setProperty("statictracer.first_access.test", minimized.dependentTest());
 
-                runner.runListWithCp(cp, minimized.withDeps());
+                runner.runList(minimized.withDeps());
                 Files.move(StaticFieldInfo.STATIC_FIELD_INFO_PATH.resolve(minimized.dependentTest()), withDeps);
 
-                runner.runListWithCp(cp, Collections.singletonList(minimized.dependentTest()));
+                runner.runList(Collections.singletonList(minimized.dependentTest()));
                 Files.move(StaticFieldInfo.STATIC_FIELD_INFO_PATH.resolve(minimized.dependentTest()), withoutDeps);
 
                 return null;

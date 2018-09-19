@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
 import com.reedoei.testrunner.configuration.Configuration;
+import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -60,6 +61,7 @@ public class StaticFieldAccessor implements FieldAccessor {
     @Override
     public void set(final Object o) {
         try {
+            FieldUtils.removeFinalModifier(field, true);
             field.setAccessible(true);
             field.set(null, o);
         } catch (IllegalAccessException e) {
@@ -70,6 +72,7 @@ public class StaticFieldAccessor implements FieldAccessor {
     @Override
     public Object get() {
         try {
+            field.setAccessible(true);
             return field.get(null);
         } catch (IllegalAccessException e) {
             return null;

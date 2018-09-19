@@ -61,19 +61,10 @@ public class StaticFieldInfo extends FileCache<StaticTracer> {
         Files.createDirectories(STATIC_FIELD_INFO_PATH);
         Files.createDirectories(path().getParent());
 
-        System.out.println("[INFO] Instrumenting to get lists of static fields.");
-        Instrumentation.instrumentProject(project);
-
-        final String sootOutputCp =
-                Classpath.build(
-                        Paths.get("").resolve("sootOutput").toAbsolutePath().toString(),
-                        project.getBuild().getDirectory() + "/dependency/*") + File.pathSeparator +
-                        Diagnoser.cp();
-
-        System.out.println("[INFO] Running tests.");
+        System.out.println("[INFO] Tracking static field access for: " + minimized.dependentTest());
 
         StaticTracer.inMode(TracerMode.TRACK, () -> {
-            runner.runListWithCp(sootOutputCp, Collections.singletonList(minimized.dependentTest()));
+            runner.runList(Collections.singletonList(minimized.dependentTest()));
 
             return null;
         });

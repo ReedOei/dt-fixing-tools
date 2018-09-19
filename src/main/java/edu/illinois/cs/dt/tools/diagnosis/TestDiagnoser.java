@@ -1,33 +1,31 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
+import com.reedoei.eunomia.collections.PairStream;
 import com.reedoei.eunomia.subject.classpath.Classpath;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
-import edu.illinois.cs.dt.tools.diagnosis.instrumentation.Instrumentation;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.Pollution;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class TestDiagnoser {
     private final StaticTracer tracer; // The static fields used by the dependent test.
     private final MinimizeTestsResult minimized;
-
-//    private final PollutionContainer pollutionContainer;
 
     private final MavenProject project;
     private final Runner runner;
@@ -38,8 +36,6 @@ public class TestDiagnoser {
         this.minimized = minimized;
 
         this.tracer = new StaticFieldInfo(project, runner, minimized).get();
-
-//        this.pollutionContainer = new PollutionContainer(runner, minimized.deps());
     }
 
     public void run() {
@@ -50,20 +46,13 @@ public class TestDiagnoser {
             System.out.println("[INFO] Polluting dts in dependencies of " + minimized.dependentTest());
         }
 
-//        return pollutionContainer.with(container -> container.print(tracer));
-
-
         try {
-//            runner.runList(minimized.withDeps());
-//            Instrumentation.instrumentProject(project);
 
-            final Optional<Map.Entry<String, DiffContainer.Diff>> rootCauseField =
-                    new Pollution(runner, sootClassPath(), minimized).findPollutions(tracer.staticFields())
-                    .entrySet().stream()
-                    .filter(entry -> {
-                        final String fieldName = entry.getKey();
-                        final DiffContainer.Diff diff = entry.getValue();
-
+            final Map<String, DiffContainer.Diff> pollutions =
+                    new Pollution(runner, minimized).findPollutions(tracer.staticFields());
+            final Optional<Pair<String, DiffContainer.Diff>> rootCauseField =
+                    PairStream.fromMap(pollutions)
+                    .filter((fieldName, diff) -> {
                         try {
                             // This is necessary, otherwise the instrumented code is not executed.
                             // Not sure why
@@ -77,12 +66,12 @@ public class TestDiagnoser {
 
                                 System.out.println("Trying to reset " + fieldName + " to " + diff.getAfter());
 
-                                final Option<TestRunResult> testRunResultOption = runner.runListWithCp(sootClassPath(), minimized.withDeps());
+                                final Option<TestRunResult> testRunResultOption = runner.runList(minimized.withDeps());
 
                                 if (testRunResultOption.isDefined()) {
                                     final TestResult testResult = testRunResultOption.get().results().get(minimized.dependentTest());
 
-                                    System.out.println("Got " + testResult.result() + ", expected: " + minimized.expected());
+                                    System.out.println("After resetting, got: " + testResult.result() + ", without resetting, got: " + minimized.expected());
 
                                     return !minimized.expected().equals(testResult.result());
                                 }
@@ -96,7 +85,13 @@ public class TestDiagnoser {
                         return false;
                     }).findFirst();
 
-            rootCauseField.ifPresent(f -> System.out.println(Pollution.formatDiff(f.getKey(), f.getValue())));
+            if (rootCauseField.isPresent()) {
+                System.out.println("The cause is: " + rootCauseField.get().getKey());
+            } else {
+                System.out.println("Could not narrow down results to a single field.");
+                System.out.println("All polluted fields are:");
+                pollutions.forEach((fieldName, v) -> System.out.println(Pollution.formatDiff(fieldName, v)));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

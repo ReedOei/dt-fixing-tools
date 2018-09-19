@@ -10,6 +10,8 @@ import edu.illinois.cs.dt.tools.diagnosis.detection.DetectorFactory;
 import edu.illinois.cs.dt.tools.diagnosis.detection.ExecutingDetector;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestList;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
+import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
+import edu.illinois.cs.dt.tools.runner.RunnerListener;
 import org.apache.maven.project.MavenProject;
 
 import java.io.File;
@@ -43,8 +45,9 @@ public class Diagnoser extends TestPlugin {
         this.project = project;
 
         this.javaAgent = Paths.get(Configuration.config().getProperty("dtfixingtools.javaagent", ""));
+        this.runner = InstrumentingSmartRunner.fromRunner(RunnerFactory$.MODULE$.from(project).get());
 
-        this.runner = RunnerFactory$.MODULE$.from(project).get();
+        Configuration.config().properties().setProperty("testrunner.testlistener_class", RunnerListener.class.getCanonicalName());
 
         try {
             diagnose();

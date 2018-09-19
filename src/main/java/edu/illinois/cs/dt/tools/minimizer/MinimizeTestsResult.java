@@ -143,7 +143,9 @@ public class MinimizeTestsResult {
 
     public List<String> withDeps() {
         final List<String> order = new ArrayList<>(deps());
-        order.add(dependentTest());
+        if (!order.contains(dependentTest())) {
+            order.add(dependentTest());
+        }
         return order;
     }
 
