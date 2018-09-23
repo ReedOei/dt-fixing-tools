@@ -41,11 +41,13 @@ public class StaticFieldAccessor implements FieldAccessor {
             final int i = fieldName.lastIndexOf(".");
             final String className = fieldName.substring(0, i);
 
-            final Class<?> fieldClz = loader().loadClass(className);
-            final Field field = fieldClz.getDeclaredField(fieldName.substring(i + 1));
+            final Class<?> fieldClz = Class.forName(className);
 
-            return Optional.of(new StaticFieldAccessor(field));
-        } catch (NoSuchFieldException | ClassNotFoundException e) {
+            // getField can return null if the field does not exist
+            return Optional.ofNullable(FieldUtils.getField(fieldClz, fieldName.substring(i + 1), true))
+                    .map(StaticFieldAccessor::new);
+        } catch (ClassNotFoundException e) {
+            System.out.println("Field name: " + fieldName);
             e.printStackTrace();
         }
 

@@ -152,7 +152,7 @@ public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
             if (fieldList.containsKey(fieldName)) {
                 if (different(diff)) {
                     System.out.println("-----------------------------------------------------------");
-                    System.out.println("-- Accessed by test " + formatDiff(fieldName, diff));
+                    System.out.println("-- Polluted: " + formatDiff(fieldName, diff));
                     System.out.println("-----------------------------------------------------------");
 
                     fieldList.get(fieldName).stackTrace().forEach(System.out::println);

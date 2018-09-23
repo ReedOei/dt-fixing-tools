@@ -56,7 +56,7 @@ public class Diagnoser extends TestPlugin {
         }
     }
 
-    public void diagnose() throws Exception {
+    private void diagnose() throws Exception {
         results().forEach(result -> new TestDiagnoser(project, runner, result).run());
     }
 

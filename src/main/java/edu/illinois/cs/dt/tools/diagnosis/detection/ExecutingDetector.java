@@ -51,7 +51,8 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
     }
 
     protected TestRunResult runSilent(final List<String> tests) {
-        return new CaptureErrStream<>(() -> new CaptureOutStream<>(() -> runner.runList(tests).get()).run().valueRequired()).run().valueRequired();
+//        return new CaptureErrStream<>(() -> new CaptureOutStream<>(() -> runner.runList(tests).get()).run().valueRequired()).run().valueRequired();
+        return runner.runList(tests).get();
     }
 
     public List<DependentTest> makeDts(final List<String> intendedOrder, final TestRunResult intended,

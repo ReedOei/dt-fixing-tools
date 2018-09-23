@@ -1,6 +1,8 @@
 package edu.illinois.cs.dt.tools.runner;
 
+import com.reedoei.eunomia.io.capture.CaptureOutStream;
 import com.reedoei.testrunner.data.framework.TestFramework;
+import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.SmartRunner;
 import com.reedoei.testrunner.runner.TestInfoStore;
@@ -10,6 +12,7 @@ import edu.illinois.cs.dt.tools.diagnosis.instrumentation.JavaAgent;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import org.apache.maven.project.MavenProject;
+import scala.Option;
 import scala.collection.immutable.Stream;
 
 import java.io.IOException;
@@ -22,7 +25,8 @@ import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 public class InstrumentingSmartRunner extends SmartRunner {
-    private String javaAgent;
+    private final String prefixes;
+    private final String javaAgent;
 
     public static InstrumentingSmartRunner fromRunner(final Runner runner) {
         if (runner instanceof SmartRunner) {
@@ -37,6 +41,8 @@ public class InstrumentingSmartRunner extends SmartRunner {
 
         final URL url = JavaAgent.class.getProtectionDomain().getCodeSource().getLocation();
         this.javaAgent = url.getFile();
+
+        this.prefixes = getPrefixes();
     }
 
     private String getPrefixes() {
@@ -91,8 +97,6 @@ public class InstrumentingSmartRunner extends SmartRunner {
 
     @Override
     public ExecutionInfo execution(final Stream<String> testOrder, final ExecutionInfoBuilder executionInfoBuilder) {
-        final String prefixes = getPrefixes();
-
         // NOTE: If you're trying to do something inside the executor and it's not printing, the calls to inheritIO
         // are probably the cause. You probably want to use true instead.
         if (!StaticTracer.mode().equals(TracerMode.NONE) && javaAgent != null) {
@@ -104,7 +108,12 @@ public class InstrumentingSmartRunner extends SmartRunner {
         } else {
             return super.execution(testOrder, executionInfoBuilder
                     .inheritIO(false));
-//            ;
+//            );
         }
+    }
+
+    @Override
+    public Option<TestRunResult> runWithCp(final String cp, final Stream<String> testOrder) {
+        return new CaptureOutStream<>(() -> super.runWithCp(cp, testOrder)).run().valueRequired();
     }
 }

@@ -7,6 +7,7 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.codehaus.plexus.util.StringUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -131,7 +132,7 @@ public class StaticTracer {
         if (fieldName.equals(Configuration.config().getProperty("statictracer.rewrite.field", null))) {
             if (!tracer().rewrittenProperties.contains(fieldName)) {
                 final String rewriteValue = Configuration.config().getProperty("statictracer.rewrite.value", null);
-                System.out.println("Rewriting " + fieldName + " using value " + rewriteValue);
+//                System.out.println("Rewriting " + fieldName + " using value " + StringUtils.abbreviate(rewriteValue, 50));
                 final Object o = TestResult.getXStreamInstance().fromXML(
                         rewriteValue);
 
@@ -163,9 +164,6 @@ public class StaticTracer {
     // Note: We use a String here rather than a Path simply for ease of inserting the method with Soot.
     public static void output(final String path) {
         try {
-            final @NonNull String currentTest = Configuration.config().getProperty("testrunner.current_test", "");
-            final String without = Configuration.config().getProperty("statictracer.first_access.without", "");
-
             Files.write(Paths.get(path), new Gson().toJson(tracer()).getBytes());
             tracer().staticFields().clear();
             tracer().firstAccessVals().clear();

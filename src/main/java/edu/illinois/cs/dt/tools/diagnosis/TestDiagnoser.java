@@ -12,6 +12,7 @@ import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.Pollution;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
@@ -21,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class TestDiagnoser {
     private final StaticTracer tracer; // The static fields used by the dependent test.
@@ -47,9 +47,9 @@ public class TestDiagnoser {
         }
 
         try {
-
             final Map<String, DiffContainer.Diff> pollutions =
                     new Pollution(runner, minimized).findPollutions(tracer.staticFields());
+
             final Optional<Pair<String, DiffContainer.Diff>> rootCauseField =
                     PairStream.fromMap(pollutions)
                     .filter((fieldName, diff) -> {
@@ -64,14 +64,15 @@ public class TestDiagnoser {
                                 Configuration.config().properties().setProperty("statictracer.rewrite.field", fieldName);
                                 Configuration.config().properties().setProperty("statictracer.rewrite.value", String.valueOf(diff.getAfter()));
 
-                                System.out.println("Trying to reset " + fieldName + " to " + diff.getAfter());
+                                System.err.println("Trying to reset " + fieldName + " to " +
+                                        StringUtils.abbreviate(String.valueOf(diff.getAfter()), 50));
 
                                 final Option<TestRunResult> testRunResultOption = runner.runList(minimized.withDeps());
 
                                 if (testRunResultOption.isDefined()) {
                                     final TestResult testResult = testRunResultOption.get().results().get(minimized.dependentTest());
 
-                                    System.out.println("After resetting, got: " + testResult.result() + ", without resetting, got: " + minimized.expected());
+                                    System.err.println("After resetting, got: " + testResult.result() + ", without resetting, got: " + minimized.expected());
 
                                     return !minimized.expected().equals(testResult.result());
                                 }
