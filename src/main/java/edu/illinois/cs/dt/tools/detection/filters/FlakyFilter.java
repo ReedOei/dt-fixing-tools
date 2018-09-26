@@ -1,6 +1,5 @@
-package edu.illinois.cs.dt.tools.diagnosis.detection.filters;
+package edu.illinois.cs.dt.tools.detection.filters;
 
-import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 

@@ -1,18 +1,13 @@
 package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
 import com.reedoei.eunomia.data.caching.FileCache;
-import com.reedoei.eunomia.io.files.FileUtil;
-import com.reedoei.eunomia.subject.classpath.Classpath;
 import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.testrunner.runner.Runner;
-import com.reedoei.testrunner.util.MavenClassLoader;
-import edu.illinois.cs.dt.tools.diagnosis.Diagnoser;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.project.MavenProject;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;

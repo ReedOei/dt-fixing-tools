@@ -5,7 +5,7 @@ import com.reedoei.eunomia.subject.classpath.Classpath;
 import com.reedoei.eunomia.util.ExecutionInfoBuilder;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.util.MavenClassLoader;
-import edu.illinois.cs.dt.tools.diagnosis.Diagnoser;
+import edu.illinois.cs.dt.tools.diagnosis.DiagnoserPlugin;
 import org.apache.maven.project.MavenProject;
 import soot.Main;
 import soot.Pack;
@@ -34,7 +34,7 @@ public class Instrumentation extends StandardMain {
     public static void instrumentProject(final MavenProject project) throws IOException, InterruptedException {
         if (FileUtil.isEmpty(Paths.get("sootOutput"))) {
             final String sootCp = new MavenClassLoader(project).classpath() + File.pathSeparator +
-                    Diagnoser.cp() + File.pathSeparator +
+                    DiagnoserPlugin.cp() + File.pathSeparator +
                     Classpath.build(System.getProperty("java.home") + "/lib/*");
 
             System.out.println("[INFO] Instrumenting test classes.");

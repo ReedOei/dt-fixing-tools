@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.diagnosis.detection.filters;
+package edu.illinois.cs.dt.tools.detection.filters;
 
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 

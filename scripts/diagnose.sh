@@ -22,6 +22,6 @@
 
     mvn testrunner:testplugin
     # NOTE: JAVA_HOME libraries must come first in classpath (not sure why, but Soot fails otherwise).
-    # java -cp "$JAVA_HOME/jre/lib/*:$CLASSPATH:$SUBJ_CLASSPATH:" edu.illinois.cs.dt.tools.diagnosis.Diagnoser --outputDir "$OUTPUT_DIR" --javaagent "$JAVA_AGENT" $@
+    # java -cp "$JAVA_HOME/jre/lib/*:$CLASSPATH:$SUBJ_CLASSPATH:" edu.illinois.cs.dt.tools.diagnosis.DiagnoserPlugin --outputDir "$OUTPUT_DIR" --javaagent "$JAVA_AGENT" $@
 ) |& tee log.txt
 

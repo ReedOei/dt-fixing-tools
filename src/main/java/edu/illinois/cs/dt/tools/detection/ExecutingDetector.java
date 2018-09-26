@@ -1,9 +1,7 @@
-package edu.illinois.cs.dt.tools.diagnosis.detection;
+package edu.illinois.cs.dt.tools.detection;
 
 import com.google.common.collect.Streams;
 import com.reedoei.eunomia.io.VerbosePrinter;
-import com.reedoei.eunomia.io.capture.CaptureErrStream;
-import com.reedoei.eunomia.io.capture.CaptureOutStream;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.string.StringUtil;
 import com.reedoei.testrunner.data.results.Result;
@@ -30,7 +28,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
     public static final Path DT_LISTS_PATH = Paths.get("dt-lists.json");
     protected Runner runner;
 
-    private int rounds;
+    protected int rounds;
     private List<Predicate<DependentTest>> filters = new ArrayList<>();
 
     public ExecutingDetector(final Runner runner, final int rounds) {
@@ -50,7 +48,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         }
     }
 
-    protected TestRunResult runSilent(final List<String> tests) {
+    protected TestRunResult runList(final List<String> tests) {
 //        return new CaptureErrStream<>(() -> new CaptureOutStream<>(() -> runner.runList(tests).get()).run().valueRequired()).run().valueRequired();
         return runner.runList(tests).get();
     }

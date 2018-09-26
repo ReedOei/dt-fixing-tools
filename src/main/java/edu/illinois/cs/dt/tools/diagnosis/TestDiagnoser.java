@@ -15,7 +15,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.project.MavenProject;
-import scala.Option;
+import scala.util.Try;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -64,20 +64,15 @@ public class TestDiagnoser {
                                 Configuration.config().properties().setProperty("statictracer.rewrite.field", fieldName);
                                 Configuration.config().properties().setProperty("statictracer.rewrite.value", String.valueOf(diff.getAfter()));
 
-                                System.err.println("Trying to reset " + fieldName + " to " +
+                                System.out.println("Trying to reset " + fieldName + " to " +
                                         StringUtils.abbreviate(String.valueOf(diff.getAfter()), 50));
 
-                                final Option<TestRunResult> testRunResultOption = runner.runList(minimized.withDeps());
+                                final Try<TestRunResult> testRunResult = runner.runList(minimized.withDeps());
+                                final TestResult testResult = testRunResult.get().results().get(minimized.dependentTest());
 
-                                if (testRunResultOption.isDefined()) {
-                                    final TestResult testResult = testRunResultOption.get().results().get(minimized.dependentTest());
+                                System.out.println("After resetting, got: " + testResult.result() + ", without resetting, got: " + minimized.expected());
 
-                                    System.err.println("After resetting, got: " + testResult.result() + ", without resetting, got: " + minimized.expected());
-
-                                    return !minimized.expected().equals(testResult.result());
-                                }
-
-                                return false;
+                                return !minimized.expected().equals(testResult.result());
                             });
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -102,6 +97,6 @@ public class TestDiagnoser {
         return Classpath.build(
                 Paths.get("").resolve("sootOutput").toAbsolutePath().toString(),
                 project.getBuild().getDirectory() + "/dependency/*") + File.pathSeparator +
-                Diagnoser.cp();
+                DiagnoserPlugin.cp();
     }
 }

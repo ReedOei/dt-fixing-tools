@@ -17,11 +17,11 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class MinimizeTestList extends TestPlugin {
+public class MinimizerPlugin extends TestPlugin {
     private TestMinimizerBuilder builder;
     private Runner runner;
 
-    public MinimizeTestList(final Runner runner) {
+    public MinimizerPlugin(final Runner runner) {
         super();
         this.runner = runner;
         this.builder = new TestMinimizerBuilder(runner);

@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.diagnosis.detection;
+package edu.illinois.cs.dt.tools.detection;
 
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
@@ -19,6 +19,6 @@ public class FlakyDetector extends ExecutingDetector {
 
     @Override
     public List<DependentTest> results() throws Exception {
-        return makeDts(tests, origResult, tests, runSilent(tests));
+        return makeDts(tests, origResult, tests, runList(tests));
     }
 }

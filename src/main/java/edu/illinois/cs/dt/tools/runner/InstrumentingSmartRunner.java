@@ -12,8 +12,8 @@ import edu.illinois.cs.dt.tools.diagnosis.instrumentation.JavaAgent;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import org.apache.maven.project.MavenProject;
-import scala.Option;
 import scala.collection.immutable.Stream;
+import scala.util.Try;
 
 import java.io.IOException;
 import java.net.URL;
@@ -113,7 +113,8 @@ public class InstrumentingSmartRunner extends SmartRunner {
     }
 
     @Override
-    public Option<TestRunResult> runWithCp(final String cp, final Stream<String> testOrder) {
-        return new CaptureOutStream<>(() -> super.runWithCp(cp, testOrder)).run().valueRequired();
+    public Try<TestRunResult> runWithCp(final String cp, final Stream<String> testOrder) {
+//        return new CaptureOutStream<>(() -> super.runWithCp(cp, testOrder)).run().valueRequired();
+        return super.runWithCp(cp, testOrder);
     }
 }

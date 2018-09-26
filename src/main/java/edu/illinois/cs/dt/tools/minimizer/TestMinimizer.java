@@ -9,6 +9,7 @@ import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.runner.Runner;
 import scala.Option;
+import scala.util.Try;
 
 import javax.annotation.Nullable;
 import java.nio.file.Path;
@@ -71,7 +72,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         }
 
         return runner.runList(actualOrder)
-                .flatMap(r -> Option.apply(r.results().get(dependentTest)))
+                .flatMap(r -> Try.apply(() -> r.results().get(dependentTest)))
                 .map(TestResult::result)
                 .get();
     }
