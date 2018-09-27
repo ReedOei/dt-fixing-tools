@@ -11,7 +11,7 @@ public class FlakyDetector extends ExecutingDetector {
     private final TestRunResult origResult;
 
     public FlakyDetector(final Runner runner, final int rounds, final List<String> tests, final TestRunResult origResult) {
-        super(runner, rounds);
+        super(runner, rounds, "flaky");
 
         this.tests = tests;
         this.origResult = origResult;

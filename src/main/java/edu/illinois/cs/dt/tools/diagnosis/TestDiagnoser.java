@@ -11,14 +11,12 @@ import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.Pollution;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.project.MavenProject;
 import scala.util.Try;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
@@ -35,7 +33,7 @@ public class TestDiagnoser {
         this.runner = r;
         this.minimized = minimized;
 
-        this.tracer = new StaticFieldInfo(project, runner, minimized).get();
+        this.tracer = new StaticFieldInfo(runner, minimized).get();
     }
 
     public void run() {
@@ -56,8 +54,8 @@ public class TestDiagnoser {
                         try {
                             // This is necessary, otherwise the instrumented code is not executed.
                             // Not sure why
-                            FileUtils.deleteDirectory(StaticFieldInfo.STATIC_FIELD_INFO_PATH.toFile());
-                            Files.createDirectories(StaticFieldInfo.STATIC_FIELD_INFO_PATH);
+//                            FileUtils.deleteDirectory(StaticFieldPathManager.STATIC_FIELD_INFO_PATH.toFile());
+//                            Files.createDirectories(StaticFieldPathManager.STATIC_FIELD_INFO_PATH);
 
                             return StaticTracer.inMode(TracerMode.REWRITE, () -> {
                                 Configuration.config().properties().setProperty("statictracer.rewrite.test", minimized.dependentTest());

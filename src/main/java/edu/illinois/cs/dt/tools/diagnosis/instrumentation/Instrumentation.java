@@ -38,9 +38,9 @@ public class Instrumentation extends StandardMain {
                     Classpath.build(System.getProperty("java.home") + "/lib/*");
 
             System.out.println("[INFO] Instrumenting test classes.");
-            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getTestOutputDirectory()), StaticFieldInfo.STATIC_FIELD_INFO_PATH);
+//            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getTestOutputDirectory()), StaticFieldInfo.STATIC_FIELD_INFO_PATH);
             System.out.println("[INFO] Instrumenting classes.");
-            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getOutputDirectory()), StaticFieldInfo.STATIC_FIELD_INFO_PATH);
+//            Instrumentation.instrument(sootCp, Paths.get(project.getBuild().getOutputDirectory()), StaticFieldInfo.STATIC_FIELD_INFO_PATH);
         }
     }
 

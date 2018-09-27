@@ -1,6 +1,5 @@
 package edu.illinois.cs.dt.tools.detection;
 
-import com.reedoei.eunomia.collections.RandomList;
 import com.reedoei.eunomia.collections.StreamUtil;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
@@ -9,14 +8,10 @@ import edu.illinois.cs.dt.tools.detection.filters.FlakyFilter;
 import edu.illinois.cs.dt.tools.detection.filters.UniqueFilter;
 import edu.illinois.cs.dt.tools.detection.filters.VerifyFilter;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class RandomDetector extends ExecutingDetector {
@@ -28,7 +23,7 @@ public class RandomDetector extends ExecutingDetector {
     private final TestShuffler testShuffler;
 
     public RandomDetector(final Runner runner, final int rounds, final List<String> tests) {
-        super(runner, rounds);
+        super(runner, rounds, "random");
 
         this.tests = tests;
 
@@ -51,7 +46,7 @@ public class RandomDetector extends ExecutingDetector {
 
         addFilter(new FlakyFilter(smartRunner));
         addFilter(new UniqueFilter());
-        addFilter(new VerifyFilter(runner));
+        addFilter(new VerifyFilter(name, runner));
         addFilter(new UniqueFilter());
     }
 

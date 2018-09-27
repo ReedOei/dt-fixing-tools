@@ -5,7 +5,7 @@ import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 
 import java.util.function.Predicate;
 
-public class FlakyFilter implements Predicate<DependentTest> {
+public class FlakyFilter implements Filter {
     private final SmartRunner runner;
 
     public FlakyFilter(final SmartRunner runner) {
@@ -13,7 +13,7 @@ public class FlakyFilter implements Predicate<DependentTest> {
     }
 
     @Override
-    public boolean test(final DependentTest dependentTest) {
+    public boolean keep(final DependentTest dependentTest, final int absoluteRound) {
         return !runner.info().isFlaky(dependentTest.name());
     }
 }

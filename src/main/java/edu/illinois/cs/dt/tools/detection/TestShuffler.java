@@ -2,6 +2,7 @@ package edu.illinois.cs.dt.tools.detection;
 
 import com.google.common.math.IntMath;
 import com.reedoei.eunomia.collections.RandomList;
+import com.reedoei.testrunner.configuration.Configuration;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -11,11 +12,16 @@ import java.util.List;
 import java.util.Set;
 
 public class TestShuffler {
+    private final boolean ALLOW_METHOD_INTERLEAVING = Configuration.config().getProperty("detector.random.allow_method_interleaving", false);
+
     private final HashMap<String, List<String>> classToMethods;
 
     private final int permutationCount;
+    private final List<String> tests;
 
     public TestShuffler(final int rounds, final List<String> tests) {
+        this.tests = tests;
+
         classToMethods = new HashMap<>();
 
         for (final String test : tests) {
@@ -47,12 +53,16 @@ public class TestShuffler {
 
     public List<String> shuffledOrder(final Set<String> alreadySeenOrders) {
         while (true) {
-            @NonNull final RandomList<String> classOrder = new RandomList<>(classToMethods.keySet()).shuffled();
-
             final List<String> fullTestOrder = new ArrayList<>();
 
-            for (final String className : classOrder) {
-                fullTestOrder.addAll(new RandomList<>(classToMethods.get(className)).shuffled());
+            if (ALLOW_METHOD_INTERLEAVING) {
+                fullTestOrder.addAll(new RandomList<>(tests).shuffled());
+            } else {
+                @NonNull final RandomList<String> classOrder = new RandomList<>(classToMethods.keySet()).shuffled();
+
+                for (final String className : classOrder) {
+                    fullTestOrder.addAll(new RandomList<>(classToMethods.get(className)).shuffled());
+                }
             }
 
             final String hash = MD5(String.join("", fullTestOrder));
@@ -61,8 +71,6 @@ public class TestShuffler {
                 alreadySeenOrders.add(hash);
 
                 return fullTestOrder;
-            } else {
-                System.out.println("Skipping duplicate order");
             }
         }
     }

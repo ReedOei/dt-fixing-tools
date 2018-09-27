@@ -1,12 +1,13 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
-import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
+import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory$;
+import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
+import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.project.MavenProject;
 
 import java.io.IOException;
@@ -21,6 +22,13 @@ public class MinimizerPlugin extends TestPlugin {
     private TestMinimizerBuilder builder;
     private Runner runner;
 
+    /**
+     * This will clear all the cached test runs!
+     * Be careful when calling!
+     */
+    public MinimizerPlugin() {
+    }
+
     public MinimizerPlugin(final Runner runner) {
         super();
         this.runner = runner;
@@ -28,7 +36,7 @@ public class MinimizerPlugin extends TestPlugin {
     }
 
     private Stream<TestMinimizer> fromDtList(final Path path) {
-        System.out.println("[INFO] Creating minimizers for file: " + path);
+        TestPluginPlugin.mojo().getLog().info("Creating minimizers for file: " + path);
 
         try {
             return DependentTestList.fromFile(path).dts().stream()
@@ -45,17 +53,10 @@ public class MinimizerPlugin extends TestPlugin {
     }
 
     public Stream<MinimizeTestsResult> runDependentTestFile(final Path dtFile) {
-        final Path outputPath = Paths.get(Configuration.config().getProperty("testminimizer.output_dir", ""));
-
         return fromDtList(dtFile).flatMap(minimizer -> {
             try {
-                final String baseName = FilenameUtils.getBaseName(String.valueOf(dtFile.toAbsolutePath()));
-                final Path path = outputPath.resolve(baseName);
-
-                FileUtil.makeDirectoryDestructive(path);
-
                 final MinimizeTestsResult result = minimizer.get();
-                result.print(path);
+                result.save();
                 return Stream.of(result);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -67,7 +68,7 @@ public class MinimizerPlugin extends TestPlugin {
 
     @Override
     public void execute(final MavenProject project) {
-        this.runner = RunnerFactory$.MODULE$.from(project).get();
+        this.runner = InstrumentingSmartRunner.fromRunner(RunnerFactory$.MODULE$.from(project).get());
         this.builder = new TestMinimizerBuilder(runner);
 
         final Path order = Paths.get(Configuration.config().getProperty("testminimizer.order", null));
@@ -75,7 +76,7 @@ public class MinimizerPlugin extends TestPlugin {
             final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
             final String dependentTest = Configuration.config().getProperty("testminimizer.dt", testOrder.get(testOrder.size() - 1));
 
-            builder.testOrder(testOrder).dependentTest(dependentTest).build().get().print();
+            builder.testOrder(testOrder).dependentTest(dependentTest).build().get().save();
         } catch (Exception e) {
             e.printStackTrace();
         }

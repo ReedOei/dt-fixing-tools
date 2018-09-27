@@ -6,11 +6,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 
-public class UniqueFilter implements Predicate<DependentTest> {
+public class UniqueFilter implements Filter {
     private final Set<String> prevTests = new HashSet<>();
 
     @Override
-    public boolean test(final DependentTest dependentTest) {
+    public boolean keep(final DependentTest dependentTest, final int absoluteRound) {
         final boolean found = prevTests.contains(dependentTest.name());
         prevTests.add(dependentTest.name());
         return !found;

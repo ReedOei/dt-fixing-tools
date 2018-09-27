@@ -2,35 +2,26 @@ package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
 import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.util.RuntimeThrower;
+import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
-import org.apache.commons.io.FileUtils;
-import org.apache.maven.project.MavenProject;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 
 public class StaticFieldInfo extends FileCache<StaticTracer> {
-    // NOTE: If this is changed, then will have to instrument everything
-    public static final Path STATIC_FIELD_INFO_PATH = Paths.get("static-field-info").toAbsolutePath();
-
-    private final MavenProject project;
     private final Runner runner;
     private final MinimizeTestsResult minimized;
 
-    public StaticFieldInfo(final MavenProject project, final Runner runner, final MinimizeTestsResult minimized) {
-        this.project = project;
+    public StaticFieldInfo(final Runner runner, final MinimizeTestsResult minimized) {
         this.runner = runner;
         this.minimized = minimized;
     }
 
     @Override
     public @NonNull Path path() {
-        return Paths.get(STATIC_FIELD_INFO_PATH.toString() + "-" + String.valueOf(TracerMode.TRACK))
-                .resolve(minimized.dependentTest());
+        return StaticFieldPathManager.infoFor(TracerMode.TRACK, minimized.dependentTest());
     }
 
     @Override
@@ -52,18 +43,14 @@ public class StaticFieldInfo extends FileCache<StaticTracer> {
     }
 
     private void generateStaticFieldInfo() throws Exception {
-        FileUtils.deleteDirectory(StaticFieldInfo.STATIC_FIELD_INFO_PATH.toFile());
-        Files.createDirectories(STATIC_FIELD_INFO_PATH);
-        Files.createDirectories(path().getParent());
+        StaticFieldPathManager.createEmptyModePath(TracerMode.TRACK);
 
-        System.out.println("[INFO] Tracking static field access for: " + minimized.dependentTest());
+        TestPluginPlugin.mojo().getLog().info("Tracking static field access for: " + minimized.dependentTest());
 
         StaticTracer.inMode(TracerMode.TRACK, () -> {
             runner.runList(Collections.singletonList(minimized.dependentTest()));
 
             return null;
         });
-
-        Files.move(STATIC_FIELD_INFO_PATH.resolve(minimized.dependentTest()), path());
     }
 }

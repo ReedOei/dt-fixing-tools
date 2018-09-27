@@ -2,66 +2,55 @@ package edu.illinois.cs.dt.tools.minimizer;
 
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.data.caching.FileCache;
-import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.eunomia.util.Util;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestResult;
+import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
-import scala.Option;
 import scala.util.Try;
 
 import javax.annotation.Nullable;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class TestMinimizer extends FileCache<MinimizeTestsResult> implements VerbosePrinter {
+public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     private final List<String> testOrder;
     private final String dependentTest;
     private final Result expected;
     private final Runner runner;
 
-    private final int verbosity;
     private final Path path;
 
     @Nullable
     private MinimizeTestsResult minimizedResult = null;
 
-    public TestMinimizer(final List<String> testOrder, final Runner runner, final String dependentTest) throws Exception {
-        this(testOrder, runner, dependentTest, Paths.get(""));
+    private void debug(final String str) {
+        TestPluginPlugin.mojo().getLog().debug(str);
     }
 
-    public TestMinimizer(final List<String> testOrder, final Runner runner, final String dependentTest, final Path javaAgent)
-            throws Exception {
-        this(testOrder, runner, dependentTest, javaAgent, 1);
+    private void info(final String str) {
+        TestPluginPlugin.mojo().getLog().info(str);
     }
 
-    public TestMinimizer(final List<String> testOrder, final Runner runner, final String dependentTest, final Path javaAgent, int verbosity) {
+    public TestMinimizer(final List<String> testOrder, final Runner runner, final String dependentTest) {
         this.testOrder = testOrder;
         this.dependentTest = dependentTest;
-        this.verbosity = verbosity;
 
         this.runner = runner;
 
         // Run in given order to determine what the result should be.
-        println("[INFO] Getting expected result for: " + dependentTest);
-        print("[INFO]");
+        debug("Getting expected result for: " + dependentTest);
         this.expected = result(testOrder);
-        println(" Expected: " + expected);
+        debug("Expected: " + expected);
 
-        this.path = MinimizeTestsResult.path(dependentTest, expected, Paths.get("minimized"));
+        this.path = MinimizerPathManager.minimized(dependentTest, expected);
     }
 
     public Result expected() {
         return expected;
-    }
-
-    @Override
-    public int verbosity() {
-        return verbosity;
     }
 
     private Result result(final List<String> order) {
@@ -79,7 +68,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
 
     private MinimizeTestsResult run() throws Exception {
         if (minimizedResult == null) {
-            System.out.println("[INFO] Running minimizer for: " + dependentTest);
+            info("Running minimizer for: " + dependentTest);
 
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
@@ -95,11 +84,11 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         final List<String> deps = new ArrayList<>();
 
         if (order.isEmpty()) {
-            println("[INFO] Order is empty, so it is already minimized!");
+            debug("Order is empty, so it is already minimized!");
             return deps;
         }
 
-        println("[INFO] Trying dts as isolated dependencies.");
+        debug("Trying dts as isolated dependencies.");
         if (tryIsolated(deps, order)) {
             return deps;
         }
@@ -107,34 +96,28 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         final int origSize = order.size();
 
         while (order.size() > 1) {
-            print("\r\033[2K[INFO] Trying both halves, " + order.size() + " dts remaining.");
+            debug("Trying both halves, " + order.size() + " dts remaining.");
 
             final Result topResult = result(Util.prependAll(deps, Util.topHalf(order)));
-            print(" Top result: " + topResult);
+            debug("Top result: " + topResult);
 
             final Result botResult = result(Util.prependAll(deps, Util.botHalf(order)));
-            print(", Bottom result: " + botResult);
+            debug("Bottom result: " + botResult);
 
             if (topResult == expected && botResult != expected) {
                 order = Util.topHalf(order);
             } else if (topResult != expected && botResult == expected) {
                 order = Util.botHalf(order);
             } else {
-                println();
                 // It's not 100% obvious what to do in this case (could have weird dependencies that are hard to deal with).
                 // But sequential will definitely work (except because of flakiness for other reasons).
                 return runSequential(deps, order);
             }
         }
 
-        if (origSize > 1) {
-            println();
-        }
-
-        print("[INFO] ");
         final Result orderResult = result(order);
         if (order.size() == 1 || orderResult == expected) {
-            println(" Found dependencies: " + order);
+            debug("Found dependencies: " + order);
 
             deps.addAll(order);
         } else {
@@ -147,28 +130,25 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
     }
 
     private boolean tryIsolated(final List<String> deps, final List<String> order) {
-        print("[INFO] Trying dependent test '" + dependentTest + "' in isolation.");
+        debug("Trying dependent test '" + dependentTest + "' in isolation.");
         final Result isolated = result(Collections.singletonList(dependentTest));
-        println();
 
-        // TODO: Move to another method probably.
         if (isolated == expected) {
             deps.clear();
-            println("[INFO] Test has expected result in isolation.");
+            debug("Test has expected result in isolation.");
             return true;
         }
 
         for (int i = 0; i < order.size(); i++) {
             String test = order.get(i);
 
-            print("\r\033[2K[INFO] Running test " + i + " of " + order.size() + ". ");
+            debug("Running test " + i + " of " + order.size() + ". ");
             final Result r = result(Collections.singletonList(test));
 
             // Found an order where we get the expected result with just one test, can't be more
             // minimal than this.
             if (r == expected) {
-                println();
-                println("[INFO] Found dependency: " + test);
+                debug("Found dependency: " + test);
                 deps.add(test);
                 return true;
             }
@@ -181,21 +161,19 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
         final List<String> remainingTests = new ArrayList<>(testOrder);
 
         while (!remainingTests.isEmpty()) {
-            print(String.format("\r\033[2K[INFO] Running sequentially, %d tests left", remainingTests.size()));
+            debug(String.format("Running sequentially, %d tests left", remainingTests.size()));
             final String current = remainingTests.remove(0);
 
             final List<String> order = Util.prependAll(deps, remainingTests);
             final Result r = result(order);
 
             if (r != expected) {
-                println();
-                println("[INFO] Found dependency: " + current);
+                debug("Found dependency: " + current);
                 deps.add(current);
             }
         }
 
-        println();
-        println("[INFO] Found " + deps.size() + " dependencies.");
+        debug("Found " + deps.size() + " dependencies.");
 
         return deps;
     }
@@ -218,7 +196,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> implements Ver
     @Override
     protected void save() {
         if (minimizedResult != null) {
-            minimizedResult.print(path().getParent());
+            minimizedResult.save();
         }
     }
 

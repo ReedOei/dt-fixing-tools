@@ -7,10 +7,13 @@ import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticAccessInfo;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldPathManager;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
+import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
+import edu.illinois.cs.dt.tools.utility.PathManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -18,15 +21,13 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
-    private static final Path POLLUTION_STORAGE_PATH = Paths.get("pollution-data");
-
     private final Path path;
 
     private final Runner runner;
@@ -36,7 +37,7 @@ public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
         this.runner = runner;
         this.minimized = minimized;
 
-        this.path = Paths.get("pollution-data").resolve(minimized.dependentTest() + "-" + minimized.expected() + ".xml");
+        this.path = PollutionPathManager.pollutionData(minimized);
     }
 
     @Override
@@ -65,12 +66,12 @@ public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
     @Override
     protected @NonNull Map<String, DiffContainer.Diff> generate() {
         try {
-            Files.createDirectories(POLLUTION_STORAGE_PATH);
-            FileUtils.deleteDirectory(StaticFieldInfo.STATIC_FIELD_INFO_PATH.toFile());
-            Files.createDirectories(StaticFieldInfo.STATIC_FIELD_INFO_PATH);
+            Files.createDirectories(PollutionPathManager.pollutionData());
 
-            final Path withDeps = POLLUTION_STORAGE_PATH.resolve(minimized.getPath("with-deps"));
-            final Path withoutDeps = POLLUTION_STORAGE_PATH.resolve(minimized.getPath("without-deps"));
+            StaticFieldPathManager.createEmptyModePath(TracerMode.FIRST_ACCESS);
+
+            final Path withDeps = PollutionPathManager.pollutionData(minimized, "with-deps");
+            final Path withoutDeps = PollutionPathManager.pollutionData(minimized, "without-deps");
 
             // Run with dependencies and monitor first access, then run without and monitor first access
             // If they values of some fields are different, then that's likely the source of the
@@ -79,15 +80,13 @@ public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
                 Configuration.config().properties().setProperty("statictracer.first_access.test", minimized.dependentTest());
 
                 runner.runList(minimized.withDeps());
-                Files.move(StaticFieldInfo.STATIC_FIELD_INFO_PATH.resolve(minimized.dependentTest()), withDeps);
+                Files.move(StaticFieldPathManager.infoFor(TracerMode.FIRST_ACCESS, minimized.dependentTest()), withDeps);
 
                 runner.runList(Collections.singletonList(minimized.dependentTest()));
-                Files.move(StaticFieldInfo.STATIC_FIELD_INFO_PATH.resolve(minimized.dependentTest()), withoutDeps);
+                Files.move(StaticFieldPathManager.infoFor(TracerMode.FIRST_ACCESS, minimized.dependentTest()), withoutDeps);
 
                 return null;
             });
-
-            FileUtils.deleteDirectory(StaticFieldInfo.STATIC_FIELD_INFO_PATH.toFile());
 
             final Map<String, String> before = StaticTracer.from(withDeps).firstAccessVals();
             final Map<String, String> after = StaticTracer.from(withoutDeps).firstAccessVals();
@@ -100,33 +99,20 @@ public class Pollution extends FileCache<Map<String, DiffContainer.Diff>> {
         return new HashMap<>();
     }
 
-    public void forEachFiltered(final BiConsumer<String, DiffContainer.Diff> consumer) {
+    private void forEachFiltered(final BiConsumer<String, DiffContainer.Diff> consumer) {
         get().forEach((fieldName, diff) -> {
-            if (shouldConsume(fieldName, diff)) {
+            if (shouldConsume(fieldName)) {
                 consumer.accept(fieldName, diff);
             }
         });
     }
 
-    private boolean shouldConsume(final String fieldName, final DiffContainer.Diff diff) {
-        if (fieldName.startsWith("com.thoughtworks.xstream") ||
-                fieldName.startsWith("java.") ||
-                fieldName.startsWith("javax.") ||
-                fieldName.startsWith("jdk.") ||
-                fieldName.startsWith("sun.")) {
-            return false;
-        }
-
-        final String[] split = fieldName.split(".");
-
-        if (split.length == 0) {
-            return true;
-        }
-
-        final String varName = split[split.length - 1];
-
-        // e.g. FIELDS_NAMED_LIKE_THIS shouldn't be considered, because they're probably constants.
-        return !varName.toUpperCase().equals(varName);
+    private boolean shouldConsume(final String fieldName) {
+        return !fieldName.startsWith("com.thoughtworks.xstream") &&
+               !fieldName.startsWith("java.") &&
+               !fieldName.startsWith("javax.") &&
+               !fieldName.startsWith("jdk.") &&
+               !fieldName.startsWith("sun.");
     }
 
     public static String formatDiff(final String fieldName, final DiffContainer.Diff diff) {

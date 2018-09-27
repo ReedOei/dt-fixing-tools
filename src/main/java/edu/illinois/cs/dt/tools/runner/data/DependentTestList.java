@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.data.results.Result;
+import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -17,14 +18,11 @@ import java.util.stream.Stream;
 
 public class DependentTestList {
     public static DependentTestList fromFile(final Path path) throws IOException {
-        if (path.getFileName().toString().endsWith(".json")) {
-            System.out.println("[INFO] Reading dependent test list from " + path);
-            return new Gson().fromJson(FileUtil.readFile(path), DependentTestList.class);
-        } else {
-            return fromLines(Files.readAllLines(path, Charset.defaultCharset()));
-        }
+        TestPluginPlugin.mojo().getLog().info("Reading dependent test list from " + path);
+        return new Gson().fromJson(FileUtil.readFile(path), DependentTestList.class);
     }
 
+    @Deprecated
     public static DependentTestList fromLines(final List<String> lines) {
         final List<DependentTest> dts = new ArrayList<>();
 
@@ -50,7 +48,7 @@ public class DependentTestList {
             final List<String> modifiedOrder =
                     ListUtil.read(modifiedOrderLine.replace("when executed after: ", ""));
 
-            dts.add(new DependentTest(test, new TestRun(originalOrder, intended), new TestRun(modifiedOrder, revealed)));
+            dts.add(new DependentTest(test, new TestRun(originalOrder, intended, "unknown"), new TestRun(modifiedOrder, revealed, "unknown")));
         }
 
         return new DependentTestList(dts);

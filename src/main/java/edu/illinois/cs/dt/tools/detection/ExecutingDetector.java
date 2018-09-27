@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.detection;
 
 import com.google.common.collect.Streams;
+import com.google.gson.Gson;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.string.StringUtil;
@@ -8,6 +9,7 @@ import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.detection.filters.Filter;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import edu.illinois.cs.dt.tools.runner.data.TestRun;
@@ -15,25 +17,24 @@ import edu.illinois.cs.dt.tools.runner.data.TestRun;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class ExecutingDetector implements Detector, VerbosePrinter {
-    public static final Path DT_LISTS_PATH = Paths.get("dt-lists.json");
     protected Runner runner;
 
     protected int rounds;
-    private List<Predicate<DependentTest>> filters = new ArrayList<>();
+    private List<Filter> filters = new ArrayList<>();
+    protected final String name;
 
-    public ExecutingDetector(final Runner runner, final int rounds) {
+    public ExecutingDetector(final Runner runner, final int rounds, final String name) {
         this.runner = runner;
         this.rounds = rounds;
+        this.name = name;
     }
 
     public abstract List<DependentTest> results() throws Exception;
@@ -64,8 +65,8 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
                 final Result revealedResult = revealedResults.get(testName).result();
                 if (!revealedResult.equals(intendedResult.result())) {
                     result.add(new DependentTest(testName,
-                            new TestRun(before(intendedOrder, testName), intendedResult.result()),
-                            new TestRun(before(revealedOrder, testName), revealedResult)));
+                            new TestRun(before(intendedOrder, testName), intendedResult.result(), intended.id()),
+                            new TestRun(before(revealedOrder, testName), revealedResult, revealed.id())));
                 }
             }
         });
@@ -73,8 +74,8 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         return result;
     }
 
-    public ExecutingDetector addFilter(final Predicate<DependentTest> predicate) {
-        filters.add(predicate);
+    public ExecutingDetector addFilter(final Filter filter) {
+        filters.add(filter);
 
         return this;
     }
@@ -84,9 +85,9 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         return Streams.stream(new RunnerIterator());
     }
 
-    private Stream<DependentTest> filter(Stream<DependentTest> dts) {
-        for (final Predicate<DependentTest> filter : filters) {
-            dts = dts.filter(filter);
+    private Stream<DependentTest> filter(Stream<DependentTest> dts, final int absoluteRound) {
+        for (final Filter filter : filters) {
+            dts = dts.filter(t -> filter.keep(t, absoluteRound));
         }
 
         return dts;
@@ -97,7 +98,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         FileUtil.makeDirectoryDestructive(dir);
 
         final Path listPath = dir.resolve("list.txt");
-        final Path dtListPath = dir.resolve(DT_LISTS_PATH);
+        final Path dtListPath = dir.resolve(DetectorPathManager.DT_LIST_PATH);
 
         final DependentTestList dtList = new DependentTestList(detect().collect(Collectors.toList()));
         System.out.println(); // End the progress line.
@@ -111,8 +112,10 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
     private class RunnerIterator implements Iterator<DependentTest> {
         private final long origStartTimeMs = System.currentTimeMillis();
         private long startTimeMs = System.currentTimeMillis();
+        private long previousStopTimeMs = System.currentTimeMillis();
 
         private int i = 0;
+        private int absoluteI = 0; // This will not be reset ever, so we will have unique file names for rounds
 
         private final List<DependentTest> result = new ArrayList<>();
 
@@ -125,29 +128,62 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
             return !result.isEmpty();
         }
 
-        public void generate() {
+        private DetectionRound generateDetectionRound(final int absoluteI) {
+            final Path path = DetectorPathManager.detectionRoundPath(name, absoluteI);
+
+            // Load it if possible
+            try {
+                if (Files.exists(path)) {
+                    return new Gson().fromJson(FileUtil.readFile(path), DetectionRound.class);
+                }
+            } catch (IOException ignored) {}
+
+            // Otherwise run the detection round
+            final List<DependentTest> unfiltered;
             final List<DependentTest> currentRound;
             try {
-                currentRound = filter(results().stream()).collect(Collectors.toList());
+                unfiltered = results();
+                currentRound = filter(unfiltered.stream(), absoluteI).collect(Collectors.toList());
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
-            final double elapsed = System.currentTimeMillis() - startTimeMs;
-            final double totalElapsed = (System.currentTimeMillis() - origStartTimeMs) / 1000.0;
-            final long estimate = (long) (elapsed / (i + 1) * (rounds - i - 1) / 1000);
+            final long stopTime = System.currentTimeMillis();
 
-            if (!currentRound.isEmpty()) {
-                System.out.print(String.format("\r[INFO] Found %d tests in round %d of %d (%.1f seconds elapsed (%.1f total), %d seconds remaining).\n", currentRound.size(), i + 1, rounds, elapsed / 1000, totalElapsed, estimate));
-                result.addAll(currentRound);
+            final DetectionRound result = new DetectionRound(unfiltered, currentRound, (stopTime - previousStopTimeMs) / 1000.0);
+
+            try {
+                Files.createDirectories(path.getParent());
+                Files.write(path, result.toString().getBytes());
+            } catch (IOException ignored) {}
+
+            previousStopTimeMs = stopTime;
+
+            return result;
+        }
+
+        public void generate() {
+            final DetectionRound round = generateDetectionRound(absoluteI);
+
+            final double elapsed = previousStopTimeMs - startTimeMs;
+            final double totalElapsed = (System.currentTimeMillis() - origStartTimeMs) / 1000.0;
+            final double estimate = elapsed / (i + 1) * (rounds - i - 1) / 1000;
+
+            if (!round.filteredTests().dts().isEmpty()) {
+                System.out.print(String.format("\r[INFO] Found %d tests in round %d of %d (%.1f seconds elapsed (%.1f total), %.1f seconds remaining).\n",
+                        round.filteredTests().size(), i + 1, rounds, elapsed / 1000, totalElapsed, estimate));
+                result.addAll(round.filteredTests().dts());
                 i = 0;
                 startTimeMs = System.currentTimeMillis();
             } else {
-                System.out.print(String.format("\r[INFO] Found %d tests in round %d of %d (%.1f seconds elapsed (%.1f total), %d seconds remaining)", currentRound.size(), i + 1, rounds, elapsed / 1000, totalElapsed, estimate));
+                System.out.print(String.format("\r[INFO] Found %d tests in round %d of %d (%.1f seconds elapsed (%.1f total), %.1f seconds remaining)",
+                        round.filteredTests().size(), i + 1, rounds, elapsed / 1000, totalElapsed, estimate));
                 i++;
             }
+
+            absoluteI++;
         }
 
         @Override

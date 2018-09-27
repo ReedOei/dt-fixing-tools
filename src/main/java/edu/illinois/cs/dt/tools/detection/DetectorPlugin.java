@@ -1,25 +1,34 @@
 package edu.illinois.cs.dt.tools.detection;
 
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
+import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
+import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory$;
 import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
+import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import org.apache.maven.project.MavenProject;
+import scala.Option;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 public class DetectorPlugin extends TestPlugin {
-    public static final Path DT_FOLDER = Paths.get("detection-results").toAbsolutePath();
-
     private final Path outputPath;
     private InstrumentingSmartRunner runner;
 
+    /**
+     * This will clear all the cached test runs!
+     * Be careful when calling!
+     */
     public DetectorPlugin() {
-        outputPath = DT_FOLDER.toAbsolutePath();
+        outputPath = DetectorPathManager.detectionResults();
+
+        try {
+            RunnerPathManager.clearTestRuns();
+        } catch (IOException ignored) {}
     }
 
     public DetectorPlugin(final Path outputPath, final InstrumentingSmartRunner runner) {
@@ -29,21 +38,27 @@ public class DetectorPlugin extends TestPlugin {
 
     @Override
     public void execute(final MavenProject mavenProject) {
-        if (runner == null) {
-            this.runner = InstrumentingSmartRunner.fromRunner(RunnerFactory$.MODULE$.from(mavenProject).get());
-        }
+        final Option<Runner> runnerOption = RunnerFactory$.MODULE$.from(mavenProject);
 
-        final List<String> tests = scala.collection.JavaConverters.bufferAsJavaList(TestLocator.tests(mavenProject).toList().toBuffer());
+        if (runnerOption.isDefined()) {
+            if (this.runner == null) {
+                this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
+            }
 
-        try {
-            Files.createDirectories(outputPath);
+            final List<String> tests = scala.collection.JavaConverters.bufferAsJavaList(TestLocator.tests(mavenProject).toList().toBuffer());
 
-            final Detector detector = DetectorFactory.makeDetector(runner, tests);
-            System.out.println("[INFO] Created dependent test detector (" + detector.getClass() + ").");
+            try {
+                Files.createDirectories(outputPath);
 
-            detector.writeTo(outputPath);
-        } catch (IOException e) {
-            e.printStackTrace();
+                final Detector detector = DetectorFactory.makeDetector(runner, tests);
+                System.out.println("[INFO] Created dependent test detector (" + detector.getClass() + ").");
+
+                detector.writeTo(outputPath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            TestPluginPlugin.mojo().getLog().info("Module is not using a supported test framework (probably not JUnit)");
         }
     }
 }

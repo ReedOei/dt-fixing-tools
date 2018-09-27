@@ -10,15 +10,10 @@ import com.reedoei.testrunner.runner.Runner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MinimizeTestsResult {
-    public static Path path(final String dependentTest, final Result expected, final Path outputPath) {
-        return outputPath.resolve(dependentTest + "-" + expected + "-dependencies.json");
-    }
-
     private static final int VERIFY_REPEAT_COUNT = 1;
     private static final int MAX_SUBSEQUENCES = 1000;
 
@@ -27,7 +22,7 @@ public class MinimizeTestsResult {
     private final List<String> deps;
 
     public static MinimizeTestsResult fromPath(final Path path) throws IOException {
-        return new Gson().fromJson(FileUtil.readFile(path), MinimizeTestsResult.class);
+        return fromString(FileUtil.readFile(path));
     }
 
     public static MinimizeTestsResult fromString(final String jsonString) {
@@ -61,7 +56,7 @@ public class MinimizeTestsResult {
             int check = 1;
             int totalChecks = 2 + depLists.size() - 1;
 
-            IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
+            IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
             // Check that it's correct with the dependencies
             if (!isExpected(runner, deps)) {
                 throw new MinimizeTestListException("Got unexpected result when running with all dependencies!");
@@ -86,7 +81,7 @@ public class MinimizeTestsResult {
                                     final List<List<String>> depLists,
                                     int check,
                                     final int totalChecks) throws Exception {
-        IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
+        IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
         // Check that it's wrong without dependencies.
         if (isExpected(runner, new ArrayList<>())) {
             throw new MinimizeTestListException("Got expected result even without any dependencies!");
@@ -98,7 +93,7 @@ public class MinimizeTestsResult {
                 continue;
             }
 
-            IOUtil.printClearLine(String.format("[INFO] Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
+            IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
             if (isExpected(runner, depList)) {
                 throw new MinimizeTestListException("Got expected result without some dependencies! " + depList);
             }
@@ -110,22 +105,14 @@ public class MinimizeTestsResult {
         return new Gson().toJson(this);
     }
 
-    public Path path(final Path outputPath) {
-        return path(dependentTest, expected, outputPath);
-    }
+    public void save() {
+        final Path outputPath = MinimizerPathManager.minimized(dependentTest(), expected());
 
-    public void print() {
-        print(null);
-    }
-
-    public void print(final Path outputPath) {
-        if (outputPath != null) {
-            try {
-                Files.createDirectories(outputPath);
-                Files.write(path(outputPath), toString().getBytes());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try {
+            Files.createDirectories(outputPath.getParent());
+            Files.write(outputPath, toString().getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -147,23 +134,5 @@ public class MinimizeTestsResult {
             order.add(dependentTest());
         }
         return order;
-    }
-
-    public Path getPath() {
-        return getPath(null);
-    }
-
-    /**
-     * @param modifier A string to add to the end of the path. Can be null or blank to specify there is no modifier.
-     * @return A (relative) path to be used whenever storing results relevant to this particular dependent test,
-     *         usually inside of some other folder.
-     */
-    public Path getPath(final String modifier) {
-        if (modifier == null || modifier.isEmpty()) {
-            return Paths.get(String.format("%s-%s", dependentTest(), expected()));
-        } else {
-
-            return Paths.get(String.format("%s-%s-%s", dependentTest(), expected(), modifier));
-        }
     }
 }

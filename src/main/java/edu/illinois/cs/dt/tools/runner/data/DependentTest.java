@@ -6,6 +6,7 @@ import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizer;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizerBuilder;
 
+import java.nio.file.Path;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -62,7 +63,7 @@ public class DependentTest {
             final TestMinimizer minimizer = builder.testOrder(run.order()).build();
 
             if (VERIFY_DTS) {
-                if (!run.verify(name, runner,minimizer)) {
+                if (!run.verify(name, runner, null)) {
                     return Stream.empty();
                 }
             }
@@ -73,7 +74,7 @@ public class DependentTest {
         }
     }
 
-    public boolean verify(final Runner runner) {
-        return intended.verify(name, runner) && revealed.verify(name, runner);
+    public boolean verify(final Runner runner, final Path path) {
+        return intended.verify(name, runner, path) && revealed.verify(name, runner, path);
     }
 }

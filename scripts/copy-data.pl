@@ -13,20 +13,18 @@ run(Path) :-
     copy(Path, 'pollution-data'),
     copy(Path, 'minimized'),
     copy(Path, 'detection-results'),
-    copy(Path, 'static-field-info'),
+    copy(Path, 'static-field-info-TRACK'),
     zip('all-results', _).
 
 copy(BaseDir, Name) :-
     format('Looking for ~w in ~w~n', [Name, BaseDir]),
-    walk(BaseDir, Files),
-    findall(File,
-    (
-        member(File, Files),
-        file_base_name(File, Name),
-        file_directory_name(File, Dir),
-        file_base_name(Dir, DirName),
-        atomic_list_concat(['all-results/', DirName, '-', Name], '', OutName),
-        format('Copying ~w to ~w~n', [File, OutName]),
-        copy_directory(File, OutName)
-    ), _).
+    forall(walk(BaseDir, File),
+        (
+            file_base_name(File, Name),
+            file_directory_name(File, Dir),
+            file_base_name(Dir, DirName),
+            atomic_list_concat(['all-results/', DirName, '-', Name], '', OutName),
+            format('Copying ~w to ~w~n', [File, OutName]),
+            copy_directory(File, OutName)
+        )).
 
