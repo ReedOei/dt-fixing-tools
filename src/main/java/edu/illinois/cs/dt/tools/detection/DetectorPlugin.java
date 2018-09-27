@@ -19,16 +19,8 @@ public class DetectorPlugin extends TestPlugin {
     private final Path outputPath;
     private InstrumentingSmartRunner runner;
 
-    /**
-     * This will clear all the cached test runs!
-     * Be careful when calling!
-     */
     public DetectorPlugin() {
         outputPath = DetectorPathManager.detectionResults();
-
-        try {
-            RunnerPathManager.clearTestRuns();
-        } catch (IOException ignored) {}
     }
 
     public DetectorPlugin(final Path outputPath, final InstrumentingSmartRunner runner) {
