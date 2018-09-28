@@ -1,6 +1,5 @@
 package edu.illinois.cs.dt.tools.runner;
 
-import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.framework.TestFramework;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;

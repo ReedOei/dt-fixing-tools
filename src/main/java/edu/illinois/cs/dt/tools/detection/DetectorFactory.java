@@ -1,7 +1,6 @@
 package edu.illinois.cs.dt.tools.detection;
 
 import com.reedoei.testrunner.configuration.Configuration;
-import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 
 import java.util.List;

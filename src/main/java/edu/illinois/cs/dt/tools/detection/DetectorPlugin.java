@@ -6,7 +6,6 @@ import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory$;
 import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
-import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
 
