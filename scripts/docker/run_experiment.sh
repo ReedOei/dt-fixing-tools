@@ -17,5 +17,5 @@ su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh ${slu
 
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)
 modifiedslug=$(echo ${slug} | sed 's;/;.;')
-chown -R $(id -u) $(id -g) /home/awshi2/output/
+chown -R $(id -u):$(id -g) /home/awshi2/output/
 cp -r /home/awshi2/output/ /Scratch/${modifiedslug}_output/
