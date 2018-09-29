@@ -35,5 +35,5 @@ for line in $(cat ${projfile}); do
     fi
 
     # Run the Docker image
-    docker run -it --rm -v $(pwd):/Scratch detector-elasticjob.elastic-job-lite:latest /bin/bash /Scratch/run_experiment.sh ${slug}
+    docker run -it --rm -v $(pwd):/Scratch ${image} /bin/bash /home/awshi2/dt-fixing-tools/scripts/docker/run_experiment.sh ${slug}
 done
