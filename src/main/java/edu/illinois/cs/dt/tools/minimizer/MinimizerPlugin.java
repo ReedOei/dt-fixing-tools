@@ -4,9 +4,8 @@ import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
-import com.reedoei.testrunner.runner.RunnerFactory$;
+import com.reedoei.testrunner.runner.RunnerFactory;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
-import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import org.apache.maven.project.MavenProject;
 
@@ -68,7 +67,7 @@ public class MinimizerPlugin extends TestPlugin {
 
     @Override
     public void execute(final MavenProject project) {
-        this.runner = InstrumentingSmartRunner.fromRunner(RunnerFactory$.MODULE$.from(project).get());
+        this.runner = InstrumentingSmartRunner.fromRunner(RunnerFactory.from(project).get());
         this.builder = new TestMinimizerBuilder(runner);
 
         final Path order = Paths.get(Configuration.config().getProperty("testminimizer.order", null));
