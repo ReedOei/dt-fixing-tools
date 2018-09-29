@@ -11,16 +11,16 @@ fi
 slug=$1
 
 # Setup prolog stuff
-cd ${HOME}/dt-fixing-tools/scripts/
+cd /home/awshi2/dt-fixing-tools/scripts/
 ./setup
 
 # Incorporate tooling into the project 
-cd ${HOME}/${slug}
-${HOME}/dt-fixing-tools/scripts/add-detector-plugin.pl
+cd /home/awshi2/${slug}
+/home/awshi2/dt-fixing-tools/scripts/add-detector-plugin.pl
 
 # Run the plugin
 mvn testrunner:testplugin |& tee log
 
 # Gather the results, put them up top
-mkdir ${HOME}/output/
-${HOME}/dt-fixing-tools/scripts/gather-results $(pwd) ${HOME}/output/
+mkdir /home/awshi2/output/
+/home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) /home/awshi2/output/
