@@ -13,7 +13,7 @@ slug=$1
 date
 
 # Start the run_project.sh script using the awshi2 user
-su -m  awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh ${slug}"
+su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh ${slug}"
 
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)
 modifiedslug=$(echo ${slug} | sed 's;/;.;')
