@@ -3,7 +3,7 @@ package edu.illinois.cs.dt.tools.detection;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
-import com.reedoei.testrunner.runner.RunnerFactory$;
+import com.reedoei.testrunner.runner.RunnerFactory;
 import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import org.apache.maven.project.MavenProject;
@@ -29,7 +29,7 @@ public class DetectorPlugin extends TestPlugin {
 
     @Override
     public void execute(final MavenProject mavenProject) {
-        final Option<Runner> runnerOption = RunnerFactory$.MODULE$.from(mavenProject);
+        final Option<Runner> runnerOption = RunnerFactory.from(mavenProject);
 
         if (runnerOption.isDefined()) {
             if (this.runner == null) {
