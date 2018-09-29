@@ -47,3 +47,4 @@ RUN \
   echo 'export M2_HOME=${HOME}/apache-maven' >> ~/.bashrc && \
   echo 'export MAVEN_HOME=${HOME}/apache-maven' >> ~/.bashrc && \
   echo 'export PATH=${M2_HOME}/bin:${PATH}' >> ~/.bashrc
+

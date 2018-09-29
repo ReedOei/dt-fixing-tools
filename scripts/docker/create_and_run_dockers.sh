@@ -13,6 +13,12 @@ if  [ $?  == 1 ]; then
     docker build -t detectorbase:latest - < baseDockerfile
 fi
 
+# Create tooling Docker image if does not exist
+docker inspect toolingdetectorbase:latest > /dev/null 2>&1
+if  [ $?  == 1 ]; then
+    docker build -t toolingdetectorbase:latest - < toolingDockerfile
+fi
+
 # For each project,sha, make a Docker image for it
 for line in $(cat ${projfile}); do
     # Create the corresponding Dockerfile
@@ -29,5 +35,5 @@ for line in $(cat ${projfile}); do
     fi
 
     # Run the Docker image
-    # TBD
+    docker run -it --rm -v $(pwd):/Scratch detector-elasticjob.elastic-job-lite:latest /bin/bash /Scratch/run_experiment.sh ${slug}
 done
