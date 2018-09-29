@@ -22,7 +22,7 @@ cd /home/awshi2/${slug}
 /home/awshi2/dt-fixing-tools/scripts/add-detector-plugin.pl
 
 # Run the plugin
-mvn testrunner:testplugin |& tee log
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin |& tee log
 
 # Gather the results, put them up top
 mkdir /home/awshi2/output/
