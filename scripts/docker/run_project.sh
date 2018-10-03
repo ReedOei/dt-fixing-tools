@@ -10,6 +10,10 @@ fi
 
 slug=$1
 
+# Setup prolog stuff
+cd /home/awshi2/dt-fixing-tools/scripts/
+./setup
+
 # Set environment up, just in case
 source ~/.bashrc
 
