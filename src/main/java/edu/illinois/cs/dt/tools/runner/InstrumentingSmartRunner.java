@@ -22,12 +22,13 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 public class InstrumentingSmartRunner extends SmartRunner {
-    private final String prefixes;
+    private String prefixes;
     private final String javaAgent;
     private Path outputPath;
 
@@ -45,12 +46,24 @@ public class InstrumentingSmartRunner extends SmartRunner {
         final URL url = JavaAgent.class.getProtectionDomain().getCodeSource().getLocation();
         this.javaAgent = url.getFile();
 
-        this.prefixes = getPrefixes();
+        this.prefixes = null;
     }
 
     private String getPrefixes() {
-        return getPrefixes(Paths.get(project().getBuild().getOutputDirectory())) + "," +
-               getPrefixes(Paths.get(project().getBuild().getTestOutputDirectory()));
+        final List<String> allPrefixes = new ArrayList<>();
+
+        final Path outputDirectory = Paths.get(project().getBuild().getOutputDirectory());
+        final Path testOutputDirectory = Paths.get(project().getBuild().getTestOutputDirectory());
+
+        if (Files.isDirectory(outputDirectory)) {
+            allPrefixes.add(getPrefixes(outputDirectory));
+        }
+
+        if (Files.isDirectory(testOutputDirectory)) {
+            allPrefixes.add(getPrefixes(testOutputDirectory));
+        }
+
+        return String.join(",", allPrefixes);
     }
 
     private String getPrefixes(final Path dir) {
@@ -110,6 +123,10 @@ public class InstrumentingSmartRunner extends SmartRunner {
         // NOTE: If you're trying to do something inside the executor and it's not printing, the calls to inheritIO
         // are probably the cause. You probably want to use true instead.
         if (!StaticTracer.mode().equals(TracerMode.NONE) && javaAgent != null) {
+            if (prefixes == null) {
+                prefixes = getPrefixes();
+            }
+
             return super.execution(testOrder,
                     builder
                             .addProperty("statictracer.tracer_path", String.valueOf(StaticFieldPathManager.modePath(StaticTracer.mode())))

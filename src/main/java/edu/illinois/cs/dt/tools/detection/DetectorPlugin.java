@@ -39,12 +39,16 @@ public class DetectorPlugin extends TestPlugin {
             final List<String> tests = scala.collection.JavaConverters.bufferAsJavaList(TestLocator.tests(mavenProject).toList().toBuffer());
 
             try {
-                Files.createDirectories(outputPath);
+                if (!tests.isEmpty()) {
+                    Files.createDirectories(outputPath);
 
-                final Detector detector = DetectorFactory.makeDetector(runner, tests);
-                System.out.println("[INFO] Created dependent test detector (" + detector.getClass() + ").");
+                    final Detector detector = DetectorFactory.makeDetector(runner, tests);
+                    System.out.println("[INFO] Created dependent test detector (" + detector.getClass() + ").");
 
-                detector.writeTo(outputPath);
+                    detector.writeTo(outputPath);
+                } else {
+                    TestPluginPlugin.mojo().getLog().info("Found no tests in the module.");
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
