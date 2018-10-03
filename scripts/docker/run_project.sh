@@ -13,16 +13,12 @@ slug=$1
 # Set environment up, just in case
 source ~/.bashrc
 
-# Setup prolog stuff
-cd /home/awshi2/dt-fixing-tools/scripts/
-./setup
-
-# Incorporate tooling into the project 
+# Incorporate tooling into the project, using Java XML parsing
 cd /home/awshi2/${slug}
-/home/awshi2/dt-fixing-tools/scripts/add-detector-plugin.pl
+/home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
 # Run the plugin
-/home/awshi2/apache-maven/bin/mvn testrunner:testplugin |& tee log
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -fn |& tee log
 
 # Gather the results, put them up top
 mkdir /home/awshi2/output/
