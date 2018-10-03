@@ -12,6 +12,9 @@ slug=$1
 
 date
 
+# Update all tooling
+su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/update.sh"
+
 # Start the run_project.sh script using the awshi2 user
 su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh ${slug}"
 
