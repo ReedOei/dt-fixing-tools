@@ -226,11 +226,6 @@ public class PomFile {
 
     // Rewrite contents of own pom.xml, augmented with information about dependency srcs and dependency outputs
     public void rewrite(Set<String> dependencySrcs, Set<String> outputDirectories) {
-        // Only care about rewriting submodule with test classes
-        if (this.testClasses.isEmpty()) {
-            return;
-        }
-
         File pomFile = new File(this.pom);
     	DocumentBuilderFactory dbFactory = DocumentBuilderFactory
             .newInstance();
@@ -307,9 +302,9 @@ public class PomFile {
                             depArtifactId.setTextContent("dt-fixing-tools");
                             dependency.appendChild(depArtifactId);
 
-                            Node depVersionId = doc.createElement("versionId");
-                            depVersionId.setTextContent("1.0.0-SNAPSHOT");
-                            dependency.appendChild(depVersionId);
+                            Node depVersion = doc.createElement("version");
+                            depVersion.setTextContent("1.0.0-SNAPSHOT");
+                            dependency.appendChild(depVersion);
                         }
                         dependencies.appendChild(dependency);
                     }
@@ -319,7 +314,7 @@ public class PomFile {
                     Node configuration = doc.createElement("configuration");
                     {
                         Node className = doc.createElement("className");
-                        className.setTextContent("edu.illinois.cs.dt.tools.detection");
+                        className.setTextContent("edu.illinois.cs.dt.tools.detection.DetectorPlugin");
                         configuration.appendChild(className);
                     }
                     plugin.appendChild(configuration);
