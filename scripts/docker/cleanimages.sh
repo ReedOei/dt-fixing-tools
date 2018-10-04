@@ -17,3 +17,7 @@ done
 
 # Delete the base tooling
 docker rmi toolingdetectorbase:latest 2> /dev/null
+
+rm -rf *_Dockerfile
+rm -rf *_output/
+rm -rf run_output.log
