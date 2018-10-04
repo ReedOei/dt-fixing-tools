@@ -4,12 +4,10 @@ insert into test_result
   order_index,
   name,
   run_time,
-  result,
-  stack_trace
+  result
 )
 values
 (
-  ?,
   ?,
   ?,
   ?,

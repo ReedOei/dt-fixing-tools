@@ -106,7 +106,7 @@ public class Analysis extends StandardMain {
         final int count = Math.toIntExact(Files.list(testRunResults).count());
         System.out.println("[INFO] Inserting test runs for " + name + " (" + count + " runs)");
 
-        final AtomicInteger i = new AtomicInteger();
+        final AtomicInteger i = new AtomicInteger(1);
         Files.list(testRunResults).forEach(p -> {
             try {
                 System.out.print("\r[INFO] Inserting run " + i + " of " + count);
@@ -124,9 +124,14 @@ public class Analysis extends StandardMain {
         sqlite.statement(SQLStatements.INSERT_TEST_RUN_RESULT)
                 .param(name)
                 .param(testRunResult.id())
+                .param(0)
                 .executeUpdate();
 
         final Procedure statement = sqlite.statement(SQLStatements.INSERT_TEST_RESULT);
+
+        statement.beginTransaction();
+
+        final AtomicInteger count = new AtomicInteger();
         testRunResult.results().forEach((testName, testResult) -> {
             try {
                 statement.param(testRunResult.id())
@@ -134,13 +139,22 @@ public class Analysis extends StandardMain {
                         .param(testResult.name())
                         .param((float) testResult.time())
                         .param(String.valueOf(testResult.result()))
-                        .param(new Gson().toJson(testResult.stackTrace()))
                         .addBatch();
+                count.incrementAndGet();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         });
+
         statement.executeBatch();
+
+        statement.commit();
+        statement.endTransaction();
+
+        sqlite.statement(SQLStatements.UPDATE_TEST_RUN_RESULT_COUNT)
+                .param(count.get())
+                .param(testRunResult.id())
+                .executeUpdate();
     }
 
     private void insertTestResult(final String id, final int orderIndex, final TestResult testResult) throws IOException, SQLException {

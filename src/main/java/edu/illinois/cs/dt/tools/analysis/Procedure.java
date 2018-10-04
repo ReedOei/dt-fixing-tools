@@ -57,9 +57,22 @@ public class Procedure {
 
     public void addBatch() throws SQLException {
         index = 1;
+        statement.addBatch();
     }
 
     public int[] executeBatch() throws SQLException {
         return statement.executeBatch();
+    }
+
+    public void beginTransaction() throws SQLException {
+        connection.setAutoCommit(false);
+    }
+
+    public void endTransaction() throws SQLException {
+        connection.setAutoCommit(true);
+    }
+
+    public void commit() throws SQLException {
+        connection.commit();
     }
 }

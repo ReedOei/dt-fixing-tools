@@ -10,6 +10,7 @@ public class SQLStatements {
     public static final Path INSERT_SUBJECT = Paths.get("src/main/sql/subject_insert.sql");
 
     public static final Path INSERT_TEST_RUN_RESULT = Paths.get("src/main/sql/test_run_result_insert.sql");
+    public static final Path UPDATE_TEST_RUN_RESULT_COUNT = Paths.get("src/main/sql/test_run_result_count_update.sql");
     public static final Path INSERT_TEST_RESULT = Paths.get("src/main/sql/test_result_insert.sql");
 
     public static final Path INSERT_FLAKY_TEST_LIST = Paths.get("src/main/sql/flaky_test_list_insert.sql");
@@ -24,6 +25,7 @@ public class SQLStatements {
         ensureExists(INSERT_SUBJECT);
 
         ensureExists(INSERT_TEST_RUN_RESULT);
+        ensureExists(UPDATE_TEST_RUN_RESULT_COUNT);
         ensureExists(INSERT_TEST_RESULT);
 
         ensureExists(INSERT_FLAKY_TEST_LIST);

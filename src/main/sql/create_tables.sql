@@ -8,6 +8,7 @@ create table test_run_result
 (
   str_id text primary key,
   subject_name text not null,
+  test_count integer not null,
 
   foreign key(subject_name) references subject(name)
 );
@@ -55,7 +56,6 @@ create table test_result
   name text not null,
   run_time real not null,
   result text not null,
-  stack_trace text not null,
 
   foreign key(test_run_result_str_id) references test_run_result(str_id)
 );
