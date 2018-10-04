@@ -7,13 +7,13 @@ fi
 
 projfile=$1
 
-# Delete the base tooling
-docker rmi toolingdetectorbase:latest
-
 for line in $(cat ${projfile}); do
     # Create name of image for each project, then delete it
     slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
     modifiedslug=$(echo ${slug} | sed 's;/;.;')
     image=detector-${modifiedslug}:latest
-    docker rmi ${image}:latest
+    docker rmi ${image}
 done
+
+# Delete the base tooling
+docker rmi toolingdetectorbase:latest
