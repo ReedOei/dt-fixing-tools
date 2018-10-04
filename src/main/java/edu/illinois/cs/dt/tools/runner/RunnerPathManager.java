@@ -10,8 +10,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class RunnerPathManager extends PathManager {
+    public static final Path TEST_RUNS = Paths.get("test-runs");
+
     public static Path runResultPath(final TestRunResult testRunResult, final String modifier) {
-        return path(Paths.get("test-runs").resolve(modifier).resolve(testRunResult.id()));
+        return path(TEST_RUNS.resolve(modifier).resolve(testRunResult.id()));
     }
 
     public static void outputResult(final Path tempOutput, final TestRunResult testRunResult) throws Exception {

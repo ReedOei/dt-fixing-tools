@@ -36,6 +36,10 @@ public class TestRun {
         return result;
     }
 
+    public String testRunId() {
+        return testRunId;
+    }
+
     public boolean verify(final String name, final Runner runner, final Path path) {
         return verify(name, runner, null, path);
     }
