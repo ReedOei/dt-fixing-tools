@@ -12,8 +12,8 @@ for line in $(cat ${projfile}); do
     slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
     modifiedslug=$(echo ${slug} | sed 's;/;.;')
     image=detector-${modifiedslug}:latest
-    docker rmi ${image}
+    docker rmi ${image} 2> /dev/null
 done
 
 # Delete the base tooling
-docker rmi toolingdetectorbase:latest
+docker rmi toolingdetectorbase:latest 2> /dev/null
