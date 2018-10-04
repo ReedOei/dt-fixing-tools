@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,9 +31,7 @@ public class Analysis extends StandardMain {
         this.results = Paths.get(getArgRequired("results")).toAbsolutePath();
         final Path db = Paths.get(getArgRequired("db")).toAbsolutePath();
 
-        final Connection connection = DriverManager.getConnection("jdbc:sqlite:" + db);
-
-        this.sqlite = new SQLite(connection);
+        this.sqlite = new SQLite(db);
     }
 
     public static void main(final String[] args) {

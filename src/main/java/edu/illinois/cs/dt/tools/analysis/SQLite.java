@@ -5,6 +5,7 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -16,8 +17,8 @@ public class SQLite {
     private final Connection connection;
     private final Map<Path, PreparedStatement> statements = new HashMap<>();
 
-    public SQLite(final Connection connection) {
-        this.connection = connection;
+    public SQLite(final Path db) throws SQLException {
+        connection = DriverManager.getConnection("jdbc:sqlite:" + db);
     }
 
     public Procedure statement(final Path path) throws IOException, SQLException {
