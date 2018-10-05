@@ -31,14 +31,14 @@ for line in $(cat ${projfile}); do
     image=detector-${modifiedslug}:latest
     docker inspect ${image} > /dev/null 2>&1
     if [ $? == 1 ]; then
-        docker build -t ${image} - < ${modifiedslug}_Dockerfile
+	timeout 60m bash build_docker_image.sh ${image} ${modifiedslug}
     fi
 
     # Run the Docker image if it exists
     docker inspect ${image} > /dev/null 2>&1
     if [ $? == 1 ]; then
-        echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
+	echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
     else
-        docker run -t --rm -v $(pwd):/Scratch ${image} /bin/bash /home/awshi2/dt-fixing-tools/scripts/docker/run_experiment.sh ${slug}
-    fi
+	docker run -t --rm -v $(pwd):/Scratch ${image} /bin/bash /home/awshi2/dt-fixing-tools/scripts/docker/run_experiment.sh ${slug}
+     fi
 done
