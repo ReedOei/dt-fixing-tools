@@ -39,6 +39,6 @@ for line in $(cat ${projfile}); do
     if [ $? == 1 ]; then
         echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
     else
-        docker run -it --rm -v $(pwd):/Scratch ${image} /bin/bash /home/awshi2/dt-fixing-tools/scripts/docker/run_experiment.sh ${slug}
+        docker run -t --rm -v $(pwd):/Scratch ${image} /bin/bash /home/awshi2/dt-fixing-tools/scripts/docker/run_experiment.sh ${slug}
     fi
 done
