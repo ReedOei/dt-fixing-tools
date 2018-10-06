@@ -16,6 +16,7 @@ public class SQLStatements {
     public static final Path INSERT_FLAKY_TEST_LIST = Paths.get("src/main/sql/flaky_test_list_insert.sql");
     public static final Path INSERT_FLAKY_TEST = Paths.get("src/main/sql/flaky_test_insert.sql");
     public static final Path INSERT_DETECTION_ROUND = Paths.get("src/main/sql/detection_round_insert.sql");
+    public static final Path INSERT_DETECTION_ROUND_TEST_RUN = Paths.get("src/main/sql/detection_round_insert_test_run.sql");
 
     public static final Path INSERT_VERIFICATION_ROUND = Paths.get("src/main/sql/verify_round_insert.sql");
 
@@ -31,6 +32,7 @@ public class SQLStatements {
         ensureExists(INSERT_FLAKY_TEST_LIST);
         ensureExists(INSERT_FLAKY_TEST);
         ensureExists(INSERT_DETECTION_ROUND);
+        ensureExists(INSERT_DETECTION_ROUND_TEST_RUN);
 
         ensureExists(INSERT_VERIFICATION_ROUND);
     }

@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.detection;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Streams;
 import com.google.gson.Gson;
 import com.reedoei.eunomia.io.VerbosePrinter;
@@ -18,9 +19,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,6 +34,9 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
     protected int rounds;
     private List<Filter> filters = new ArrayList<>();
     protected final String name;
+    protected final AtomicInteger absoluteRound = new AtomicInteger(0);
+
+    private final Stopwatch stopwatch = Stopwatch.createUnstarted();
 
     public ExecutingDetector(final Runner runner, final int rounds, final String name) {
         this.runner = runner;
@@ -37,9 +44,9 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         this.name = name;
     }
 
-    public abstract List<DependentTest> results() throws Exception;
+    public abstract DetectionRound results() throws Exception;
 
-    public static <T> List<T> before(final List<T> ts, final T t) {
+    private static <T> List<T> before(final List<T> ts, final T t) {
         final int i = ts.indexOf(t);
 
         if (i != -1) {
@@ -50,12 +57,11 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
     }
 
     protected TestRunResult runList(final List<String> tests) {
-//        return new CaptureErrStream<>(() -> new CaptureOutStream<>(() -> runner.runList(tests).get()).run().valueRequired()).run().valueRequired();
         return runner.runList(tests).get();
     }
 
-    public List<DependentTest> makeDts(final List<String> intendedOrder, final TestRunResult intended,
-                                       final List<String> revealedOrder, final TestRunResult revealed) {
+    public DetectionRound makeDts(final List<String> intendedOrder, final TestRunResult intended,
+                                  final List<String> revealedOrder, final TestRunResult revealed) {
         final List<DependentTest> result = new ArrayList<>();
 
         intended.results().forEach((testName, intendedResult) -> {
@@ -71,7 +77,10 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
             }
         });
 
-        return result;
+        return new DetectionRound(Collections.singletonList(revealed.id()),
+                result,
+                filter(result.stream(), absoluteRound.get()).collect(Collectors.toList()),
+                stopwatch.elapsed(TimeUnit.NANOSECONDS) / 1E9);
     }
 
     public ExecutingDetector addFilter(final Filter filter) {
@@ -100,7 +109,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         final Path listPath = dir.resolve("list.txt");
         final Path dtListPath = dir.resolve(DetectorPathManager.DT_LIST_PATH);
 
-        final DependentTestList dtList = new DependentTestList(detect().collect(Collectors.toList()));
+        final DependentTestList dtList = new DependentTestList(detect());
         System.out.println(); // End the progress line.
 
         print(String.format("[INFO] Found %d tests, writing list to %s and dt lists to %s\n", dtList.size(), listPath, dtListPath));
@@ -115,7 +124,6 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         private long previousStopTimeMs = System.currentTimeMillis();
 
         private int i = 0;
-        private int absoluteI = 0; // This will not be reset ever, so we will have unique file names for rounds
 
         private final List<DependentTest> result = new ArrayList<>();
 
@@ -128,8 +136,8 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
             return !result.isEmpty();
         }
 
-        private DetectionRound generateDetectionRound(final int absoluteI) {
-            final Path path = DetectorPathManager.detectionRoundPath(name, absoluteI);
+        private DetectionRound generateDetectionRound() {
+            final Path path = DetectorPathManager.detectionRoundPath(name, absoluteRound.get());
 
             // Load it if possible
             try {
@@ -139,33 +147,28 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
             } catch (IOException ignored) {}
 
             // Otherwise run the detection round
-            final List<DependentTest> unfiltered;
-            final List<DependentTest> currentRound;
+            final long stopTime = System.currentTimeMillis();
+
             try {
-                unfiltered = results();
-                currentRound = filter(unfiltered.stream(), absoluteI).collect(Collectors.toList());
+                stopwatch.reset().start();
+                final DetectionRound result = results();
+                stopwatch.stop();
+
+                Files.createDirectories(path.getParent());
+                Files.write(path, result.toString().getBytes());
+
+                previousStopTimeMs = stopTime;
+
+                return result;
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
-            final long stopTime = System.currentTimeMillis();
-
-            final DetectionRound result = new DetectionRound(unfiltered, currentRound, (stopTime - previousStopTimeMs) / 1000.0);
-
-            try {
-                Files.createDirectories(path.getParent());
-                Files.write(path, result.toString().getBytes());
-            } catch (IOException ignored) {}
-
-            previousStopTimeMs = stopTime;
-
-            return result;
         }
 
         public void generate() {
-            final DetectionRound round = generateDetectionRound(absoluteI);
+            final DetectionRound round = generateDetectionRound();
 
             final double elapsed = previousStopTimeMs - startTimeMs;
             final double totalElapsed = (System.currentTimeMillis() - origStartTimeMs) / 1000.0;
@@ -183,7 +186,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
                 i++;
             }
 
-            absoluteI++;
+            absoluteRound.incrementAndGet();
         }
 
         @Override

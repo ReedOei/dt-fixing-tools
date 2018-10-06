@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
-import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
@@ -21,6 +20,12 @@ import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Analysis extends StandardMain {
+    public static int roundNumber(final String filename) {
+        // Files are named roundN.json, so strip extension and "round" and we'll have the number
+        final String fileName = FilenameUtils.removeExtension(filename);
+        return Integer.parseInt(fileName.substring("round".length()));
+    }
+
     private final Path results;
     private SQLite sqlite;
     private int dtListIndex = 0;
@@ -51,8 +56,7 @@ public class Analysis extends StandardMain {
         createTables();
 
         Files.walk(results)
-                .filter(p -> Files.isDirectory(p.resolve(DetectorPathManager.DETECTION_RESULTS)) &&
-                             Files.isDirectory(p.resolve(RunnerPathManager.TEST_RUNS)))
+                .filter(this::containsResultsFolders)
                 .forEach(p -> {
                     try {
                         insertResults(p);
@@ -62,8 +66,16 @@ public class Analysis extends StandardMain {
                 });
     }
 
+    private boolean containsResultsFolders(final Path p) {
+        final Path testRuns = p.resolve(RunnerPathManager.TEST_RUNS);
+        final Path detectionResults = p.resolve(DetectorPathManager.DETECTION_RESULTS);
+
+        return Files.exists(testRuns) && Files.exists(detectionResults) &&
+               Files.exists(detectionResults.resolve("flaky")) && Files.exists(detectionResults.resolve("random"));
+    }
+
     private void createTables() throws IOException {
-        System.out.println("[INFO] Creating tables");
+        System.out.println("[INFO] Creating tables and views");
 
         sqlite.statements(SQLStatements.CREATE_TABLES).forEach(ps -> {
             try {
@@ -80,12 +92,13 @@ public class Analysis extends StandardMain {
         final String parent = path.getParent().getFileName().toString();
 
         final String name = path.getFileName().toString();
-        final String slug = parent.substring(0, parent.indexOf('-')).replace('.', '/');
+        final String slug = parent.substring(0, parent.indexOf('_')).replace('.', '/');
 
         insertSubject(name, slug);
         insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
         insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("flaky"));
         insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random"));
+        insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random-class"));
         insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random-verify"));
 
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
@@ -153,18 +166,11 @@ public class Analysis extends StandardMain {
                 .executeUpdate();
     }
 
-    private void insertTestResult(final String id, final int orderIndex, final TestResult testResult) throws IOException, SQLException {
-        sqlite.statement(SQLStatements.INSERT_TEST_RESULT)
-                .executeUpdate();
-    }
-
-    private int roundNumber(final String filename) {
-        // Files are named roundN.json, so strip extension and "round" and we'll have the number
-        final String fileName = FilenameUtils.removeExtension(filename);
-        return Integer.parseInt(fileName.substring("round".length()));
-    }
-
     private void insertDetectionResults(final String name, final String roundType, final Path detectionResults) throws IOException {
+        if (!Files.exists(detectionResults)) {
+            return;
+        }
+
         final int count = Math.toIntExact(Files.list(detectionResults).count());
         System.out.println("[INFO] Inserting " + roundType + " detection results for " + name
                 + " (" + count + " results)");
@@ -187,14 +193,25 @@ public class Analysis extends StandardMain {
         final int unfilteredId = insertDependentTestList(round.unfilteredTests());
         final int filteredId = insertDependentTestList(round.filteredTests());
 
-        sqlite.statement(SQLStatements.INSERT_DETECTION_ROUND)
+        final int detectionRoundId =
+                sqlite.statement(SQLStatements.INSERT_DETECTION_ROUND)
                 .param(name)
                 .param(unfilteredId)
                 .param(filteredId)
                 .param(roundType)
                 .param(roundNumber)
                 .param((float) round.roundTime())
-                .executeUpdate();
+                .insertSingleRow();
+
+        // Might occur when using old results
+        if (round.testRunIds() != null) {
+            for (final String testRunId : round.testRunIds()) {
+                sqlite.statement(SQLStatements.INSERT_DETECTION_ROUND_TEST_RUN)
+                        .param(detectionRoundId)
+                        .param(testRunId)
+                        .executeUpdate();
+            }
+        }
     }
 
     private int insertDependentTestList(final DependentTestList dependentTestList) throws IOException, SQLException {
