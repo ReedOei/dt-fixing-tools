@@ -15,6 +15,7 @@ rounds=$2
 date
 
 # Update all tooling
+su - awshi2 -c "cd /home/awshi2/dt-fixing-tools/; git pull"
 su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/update.sh"
 
 # Start the run_project.sh script using the awshi2 user
