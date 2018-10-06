@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
-import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
