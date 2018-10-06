@@ -7,7 +7,6 @@ import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.detection.filters.FlakyFilter;
 import edu.illinois.cs.dt.tools.detection.filters.UniqueFilter;
 import edu.illinois.cs.dt.tools.detection.filters.VerifyFilter;
-import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -18,16 +17,14 @@ public class RandomDetector extends ExecutingDetector {
     private final List<String> tests;
     private final TestRunResult origResult;
 
-    private final Set<String> alreadySeenOrders = new HashSet<>();
-
     private final TestShuffler testShuffler;
 
-    public RandomDetector(final Runner runner, final int rounds, final List<String> tests) {
-        super(runner, rounds, "random");
+    public RandomDetector(final String type, final Runner runner, final int rounds, final List<String> tests) {
+        super(runner, rounds, type);
 
         this.tests = tests;
 
-        this.testShuffler = new TestShuffler(rounds, tests);
+        this.testShuffler = new TestShuffler(type, rounds, tests);
 
         System.out.println("[INFO] Getting original results (" + tests.size() + " tests).");
         this.origResult = runList(tests);
@@ -44,6 +41,7 @@ public class RandomDetector extends ExecutingDetector {
             smartRunner = SmartRunner.withFramework(runner.project(), runner.framework());
         }
 
+        // Filters to be applied in order
         addFilter(new FlakyFilter(smartRunner));
         addFilter(new UniqueFilter());
         addFilter(new VerifyFilter(name, runner));
@@ -51,17 +49,9 @@ public class RandomDetector extends ExecutingDetector {
     }
 
     @Override
-    public List<DependentTest> results() throws Exception {
-        if (hasMoreToRun()) {
-            final List<String> fullTestOrder = testShuffler.shuffledOrder(alreadySeenOrders);
+    public DetectionRound results() throws Exception {
+        final List<String> fullTestOrder = testShuffler.shuffledOrder(absoluteRound.get());
 
-            return makeDts(tests, origResult, fullTestOrder, runList(fullTestOrder));
-        } else {
-            return new ArrayList<>();
-        }
-    }
-
-    private boolean hasMoreToRun() {
-        return alreadySeenOrders.size() < testShuffler.permutationCount();
+        return makeDts(tests, origResult, fullTestOrder, runList(fullTestOrder));
     }
 }

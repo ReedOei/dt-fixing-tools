@@ -20,6 +20,12 @@ import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Analysis extends StandardMain {
+    public static int roundNumber(final String filename) {
+        // Files are named roundN.json, so strip extension and "round" and we'll have the number
+        final String fileName = FilenameUtils.removeExtension(filename);
+        return Integer.parseInt(fileName.substring("round".length()));
+    }
+
     private final Path results;
     private SQLite sqlite;
     private int dtListIndex = 0;
@@ -92,6 +98,7 @@ public class Analysis extends StandardMain {
         insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
         insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("flaky"));
         insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random"));
+        insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random-class"));
         insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random-verify"));
 
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
@@ -159,13 +166,11 @@ public class Analysis extends StandardMain {
                 .executeUpdate();
     }
 
-    private int roundNumber(final String filename) {
-        // Files are named roundN.json, so strip extension and "round" and we'll have the number
-        final String fileName = FilenameUtils.removeExtension(filename);
-        return Integer.parseInt(fileName.substring("round".length()));
-    }
-
     private void insertDetectionResults(final String name, final String roundType, final Path detectionResults) throws IOException {
+        if (!Files.exists(detectionResults)) {
+            return;
+        }
+
         final int count = Math.toIntExact(Files.list(detectionResults).count());
         System.out.println("[INFO] Inserting " + roundType + " detection results for " + name
                 + " (" + count + " results)");
@@ -188,14 +193,25 @@ public class Analysis extends StandardMain {
         final int unfilteredId = insertDependentTestList(round.unfilteredTests());
         final int filteredId = insertDependentTestList(round.filteredTests());
 
-        sqlite.statement(SQLStatements.INSERT_DETECTION_ROUND)
+        final int detectionRoundId =
+                sqlite.statement(SQLStatements.INSERT_DETECTION_ROUND)
                 .param(name)
                 .param(unfilteredId)
                 .param(filteredId)
                 .param(roundType)
                 .param(roundNumber)
                 .param((float) round.roundTime())
-                .executeUpdate();
+                .insertSingleRow();
+
+        // Might occur when using old results
+        if (round.testRunIds() != null) {
+            for (final String testRunId : round.testRunIds()) {
+                sqlite.statement(SQLStatements.INSERT_DETECTION_ROUND_TEST_RUN)
+                        .param(detectionRoundId)
+                        .param(testRunId)
+                        .executeUpdate();
+            }
+        }
     }
 
     private int insertDependentTestList(final DependentTestList dependentTestList) throws IOException, SQLException {

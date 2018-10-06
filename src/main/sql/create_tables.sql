@@ -48,6 +48,16 @@ create table detection_round
   foreign key(filtered_id) references flaky_test_list(flaky_test_list_id)
 );
 
+create table detection_round_test_runs
+(
+  id integer primary key,
+  detection_round_id integer not null,
+  test_run_result_id text not null,
+
+  foreign key(detection_round_id) references detection_round(id),
+  foreign key(test_run_result_id) references test_run_result(str_id)
+);
+
 create table test_result
 (
   id integer primary key,
