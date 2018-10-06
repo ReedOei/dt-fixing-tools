@@ -7,6 +7,14 @@ database="$2"
 
 scripts_folder=$(cd "$(dirname $BASH_SOURCE)"; pwd)
 
+if [[ ! "$results_folder" =~ "$/" ]]; then
+    results_folder="$(cd $results_folder; pwd)"
+fi
+
+if [[ ! "$database" =~ "$/" ]]; then
+    database="$(cd "$(dirname $database)"; pwd)/$(basename $database)"
+fi
+
 # Go to where the pom is
 cd "$scripts_folder/.."
 
@@ -21,3 +29,4 @@ if [[ -e "$database" ]]; then
 fi
 
 mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.Analysis" -Dexec.args="--results '$results_folder' --db '$database'"
+

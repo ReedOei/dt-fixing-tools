@@ -51,9 +51,7 @@ public class Analysis extends StandardMain {
         createTables();
 
         Files.walk(results)
-	    .filter(p -> Files.isDirectory(p.resolve(DetectorPathManager.DETECTION_RESULTS)) && Files.isDirectory(p.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("flaky")) &&
-		    Files.isDirectory(p.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random")) &&
-                             Files.isDirectory(p.resolve(RunnerPathManager.TEST_RUNS)))
+                .filter(this::containsResultsFolders)
                 .forEach(p -> {
                     try {
                         insertResults(p);
@@ -63,8 +61,16 @@ public class Analysis extends StandardMain {
                 });
     }
 
+    private boolean containsResultsFolders(final Path p) {
+        final Path testRuns = p.resolve(RunnerPathManager.TEST_RUNS);
+        final Path detectionResults = p.resolve(DetectorPathManager.DETECTION_RESULTS);
+
+        return Files.exists(testRuns) && Files.exists(detectionResults) &&
+               Files.exists(detectionResults.resolve("flaky")) && Files.exists(detectionResults.resolve("random"));
+    }
+
     private void createTables() throws IOException {
-        System.out.println("[INFO] Creating tables");
+        System.out.println("[INFO] Creating tables and views");
 
         sqlite.statements(SQLStatements.CREATE_TABLES).forEach(ps -> {
             try {
@@ -151,11 +157,6 @@ public class Analysis extends StandardMain {
         sqlite.statement(SQLStatements.UPDATE_TEST_RUN_RESULT_COUNT)
                 .param(count.get())
                 .param(testRunResult.id())
-                .executeUpdate();
-    }
-
-    private void insertTestResult(final String id, final int orderIndex, final TestResult testResult) throws IOException, SQLException {
-        sqlite.statement(SQLStatements.INSERT_TEST_RESULT)
                 .executeUpdate();
     }
 
