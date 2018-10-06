@@ -1,11 +1,15 @@
 #!/bin/bash
 
-if [[ $1 == "" ]]; then
+if [[ $1 == "" ]] || [[ $2 == "" ]]; then
     echo "arg1 - Path to CSV file with project,sha"
+    echo "arg2 - Number of rounds"
     exit
 fi
 
 projfile=$1
+rounds=$2
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 # Create base Docker image if does not exist
 docker inspect detectorbase:latest > /dev/null 2>&1
@@ -31,14 +35,14 @@ for line in $(cat ${projfile}); do
     image=detector-${modifiedslug}:latest
     docker inspect ${image} > /dev/null 2>&1
     if [ $? == 1 ]; then
-	timeout 60m bash build_docker_image.sh ${image} ${modifiedslug}
+        timeout 60m bash build_docker_image.sh ${image} ${modifiedslug}
     fi
 
     # Run the Docker image if it exists
     docker inspect ${image} > /dev/null 2>&1
     if [ $? == 1 ]; then
-	echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
+        echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
     else
-	docker run -t --rm -v $(pwd):/Scratch ${image} /bin/bash /home/awshi2/dt-fixing-tools/scripts/docker/run_experiment.sh ${slug}
+        docker run -t --rm -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash /Scratch/run_experiment.sh ${slug} ${rounds}
      fi
 done
