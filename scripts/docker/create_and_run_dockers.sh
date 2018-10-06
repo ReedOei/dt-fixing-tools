@@ -27,7 +27,7 @@ for line in $(cat ${projfile}); do
     ./create_dockerfile.sh ${slug} ${sha}
 
     # Build the Docker image if does not exist
-    modifiedslug=$(echo ${slug} | sed 's;/;.;')
+    modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
     image=detector-${modifiedslug}:latest
     docker inspect ${image} > /dev/null 2>&1
     if [ $? == 1 ]; then
