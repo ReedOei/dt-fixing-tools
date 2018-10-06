@@ -51,7 +51,8 @@ public class Analysis extends StandardMain {
         createTables();
 
         Files.walk(results)
-                .filter(p -> Files.isDirectory(p.resolve(DetectorPathManager.DETECTION_RESULTS)) &&
+	    .filter(p -> Files.isDirectory(p.resolve(DetectorPathManager.DETECTION_RESULTS)) && Files.isDirectory(p.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("flaky")) &&
+		    Files.isDirectory(p.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random")) &&
                              Files.isDirectory(p.resolve(RunnerPathManager.TEST_RUNS)))
                 .forEach(p -> {
                     try {
@@ -80,7 +81,7 @@ public class Analysis extends StandardMain {
         final String parent = path.getParent().getFileName().toString();
 
         final String name = path.getFileName().toString();
-        final String slug = parent.substring(0, parent.indexOf('-')).replace('.', '/');
+        final String slug = parent.substring(0, parent.indexOf('_')).replace('.', '/');
 
         insertSubject(name, slug);
         insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
