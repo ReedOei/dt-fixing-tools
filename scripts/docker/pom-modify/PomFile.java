@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
 import static java.nio.file.FileVisitResult.CONTINUE;
 
 public class PomFile {
-    
+
     private String pom;
     private String fullPath;
     private String groupId;
@@ -256,7 +256,7 @@ public class PomFile {
 
             NodeList buildChildren = build.getChildNodes();
 
-            
+
             // Search for <plugins>
             Node plugins = null;
             for (int i = 0; i < buildChildren.getLength(); i++) {
@@ -452,7 +452,11 @@ public class PomFile {
 
             // Go through all the objects and have them rewrite themselves using information from dependencies
             for (Map.Entry<String,PomFile> entry : mapping.entrySet()) {
+                final Set<String> checkedMappings = new HashSet<>();
+
                 PomFile p = entry.getValue();
+
+                System.out.println(p.fullPath);
 
                 // Obtain information (src classes, output directories) from all of its dependencies
                 Set<String> dependency_srcs = new HashSet<String>();
@@ -462,10 +466,14 @@ public class PomFile {
                     String dependency = allDependencies.remove(0);
                     PomFile o = mapping.get(dependency);
                     if (o != null){
-                        dependency_srcs.addAll(o.getSrcClasses());
-                        output_dirs.add(o.getFullPath() + "/" + o.getOutputDir());
+                        if (!checkedMappings.contains(o.fullPath)) {
+                            checkedMappings.add(o.fullPath);
 
-                        allDependencies.addAll(o.getDependencyIds());   // Get transitive dependencies
+                            dependency_srcs.addAll(o.getSrcClasses());
+                            output_dirs.add(o.getFullPath() + "/" + o.getOutputDir());
+
+                            allDependencies.addAll(o.getDependencyIds());   // Get transitive dependencies
+                        }
                     }
                 }
 
