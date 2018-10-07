@@ -93,23 +93,39 @@ from subject as s
 inner join test_run_result as trr on trr.subject_name = s.name
 group by s.name;
 
-create view flaky_test_info as
+create view unfiltered_flaky_tests as
 select dr.id as detection_round_id,
-       dr.subject_name as subject_name,
+       dr.subject_name,
        dr.round_type as flaky_type,
-       dr.round_number as round_number,
        ft.id as flaky_test_id,
        ft.name as test_name
-from detection_round as dr
-inner join flaky_test_list as ftl on dr.filtered_id = ftl.flaky_test_list_id
-inner join flaky_test as ft on ftl.flaky_test_id = ft.id;
+from flaky_test ft
+inner join flaky_test_list as ftl on ftl.flaky_test_id = ft.id
+inner join detection_round as dr on dr.unfiltered_id = ftl.flaky_test_list_id;
+
+create view filtered_flaky_tests as
+select dr.id as detection_round_id,
+       dr.subject_name,
+       dr.round_type as flaky_type,
+       ft.id as flaky_test_id,
+       ft.name as test_name
+from flaky_test ft
+inner join flaky_test_list as ftl on ftl.flaky_test_id = ft.id
+inner join detection_round as dr on dr.filtered_id = ftl.flaky_test_list_id;
+
+create view flaky_test_info as
+select distinct uft.detection_round_id,
+       uft.subject_name,
+       case
+        when fft.test_name is null then 'flaky' -- this means that it was filtered out for being and is NOT dependent
+        else uft.flaky_type
+       end as flaky_type,
+       uft.flaky_test_id,
+       uft.test_name
+from unfiltered_flaky_tests as uft
+left join filtered_flaky_tests as fft on uft.test_name = fft.test_name and uft.subject_name = fft.subject_name;
 
 create view flaky_test_counts as
-select dr.subject_name as subject_name,
-       dr.round_type as flaky_type,
-       count(distinct ft.name) as number,
-       count(distinct dr.round_number) as round_number
-from detection_round as dr
-left join flaky_test_list as ftl on dr.filtered_id = ftl.flaky_test_list_id
-left join flaky_test as ft on ftl.flaky_test_id = ft.id
-group by dr.subject_name, dr.round_type;
+select fti.subject_name, fti.flaky_type, count(distinct fti.test_name) as number
+from flaky_test_info as fti
+group by fti.subject_name, fti.flaky_type;
