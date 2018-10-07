@@ -16,8 +16,6 @@ rounds=$2
 cd /home/awshi2/dt-fixing-tools/scripts/
 ./setup
 
-echo "hello"
-
 # Set environment up, just in case
 source ~/.bashrc
 
