@@ -26,14 +26,29 @@ cd /home/awshi2/${slug}
 # Run the plugin, with timeout of 6 hours
 timedout=0
 timeout 6h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddt.randomize.rounds=${rounds} -fn -B |& tee log
-if [ $? -eq 124 ]; then 
+if [ $? -eq 124 ]; then
     timedout=1
 fi
-
 # Gather the results, put them up top
-mkdir /home/awshi2/output/
-/home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) /home/awshi2/output/
-mv log /home/awshi2/output/
+RESULTSDIR=/home/awshi2/output/randomizemethods/
+mkdir -p ${RESULTSDIR}
+/home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
+mv log ${RESULTSDIR}
 if [[ ${timedout} == 1 ]]; then
-    touch /home/awshi2/output/TIMEOUT   # Mark a file when it times out
+    touch ${RESULTSDIR}/TIMEOUT # Mark a file when it times out
+fi
+
+# Run the plugin with different random ordering
+timedout=0
+timeout 6h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=random-class -fn -B |& tee log
+if [ $? -eq 124 ]; then
+    timedout=1
+fi
+# Gather the results, put them up top
+RESULTSDIR=/home/awshi2/output/randomizeclasses/
+mkdir -p ${RESULTSDIR}
+/home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
+mv log ${RESULTSDIR}
+if [[ ${timedout} == 1 ]]; then
+    touch ${RESULTSDIR}/TIMEOUT # Mark a file when it times out
 fi
