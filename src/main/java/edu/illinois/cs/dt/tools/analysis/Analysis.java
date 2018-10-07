@@ -57,7 +57,6 @@ public class Analysis extends StandardMain {
 
         Files.walk(results)
                 .filter(this::containsResultsFolders)
-                .collect(Collectors.toList());
                 .forEach(p -> {
                     try {
                         insertResults(p);
