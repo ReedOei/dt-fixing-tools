@@ -25,14 +25,14 @@ public class SQLite {
 
         if (Files.exists(db)) {
             System.out.println("[INFO] Reading database from: " + db.toAbsolutePath());
-            connection.createStatement().executeUpdate("restore from " + db.toAbsolutePath() + ";");
+            connection.createStatement().executeUpdate("restore from " + db.toAbsolutePath());
         }
     }
 
     public void save() throws SQLException {
         System.out.println("[INFO] Writing database to: " + db.toAbsolutePath());
 
-        connection.createStatement().executeUpdate("backup to "+ db.toAbsolutePath() + ";");
+        connection.createStatement().executeUpdate("backup to "+ db.toAbsolutePath());
     }
 
     public Procedure statement(final Path path) throws IOException, SQLException {
