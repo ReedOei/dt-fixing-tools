@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,8 +63,8 @@ public class Analysis extends StandardMain {
                 .collect(Collectors.toList());
 
         for (int i = 0; i < allResultsFolders.size(); i++) {
-            System.out.println("[INFO] Inserting results for module " + (i + 1) + " of " + allResultsFolders.size());
             final Path p = allResultsFolders.get(i);
+            System.out.println("[INFO] Inserting results for module " + (i + 1) + " of " + allResultsFolders.size() + ": " + p);
             try {
                 insertResults(p);
             } catch (IOException | SQLException e) {
@@ -78,8 +79,19 @@ public class Analysis extends StandardMain {
         final Path testRuns = p.resolve(RunnerPathManager.TEST_RUNS);
         final Path detectionResults = p.resolve(DetectorPathManager.DETECTION_RESULTS);
 
-        return Files.exists(testRuns) && Files.exists(detectionResults) &&
-               Files.exists(detectionResults.resolve("flaky")) && Files.exists(detectionResults.resolve("random"));
+        final boolean containsResults =
+                Files.exists(testRuns) && Files.exists(detectionResults) &&
+                Files.exists(detectionResults.resolve("flaky")) && Files.exists(detectionResults.resolve("random"));
+
+        if (!containsResults) {
+            return false;
+        }
+
+        final Path parent = p.getParent();
+
+        // We only want to run randomizeclasses, not both, because otherwise we'll try to insert some runs twice
+        return !parent.getFileName().toString().equals("randomizemethods") ||
+               !Files.exists(parent.resolveSibling("randomizeclasses"));
     }
 
     private void createTables() throws IOException {
@@ -97,7 +109,11 @@ public class Analysis extends StandardMain {
     }
 
     private void insertResults(final Path path) throws IOException, SQLException {
-        final String parent = path.getParent().getFileName().toString();
+        final String parent = findParent(path);
+
+        if (parent == null) {
+            return;
+        }
 
         final String name = path.getFileName().toString();
         final String slug = parent.substring(0, parent.indexOf('_')).replace('.', '/');
@@ -113,10 +129,27 @@ public class Analysis extends StandardMain {
         System.out.println();
     }
 
+    private String findParent(final Path path) {
+        if (path == null) {
+            return null;
+        }
+
+        if (path.getFileName().toString().endsWith("_output")) {
+            return path.getFileName().toString();
+        } else {
+            return findParent(path.getParent());
+        }
+    }
+
     private void insertSubject(final String name, final String slug) throws IOException, SQLException {
         System.out.println("[INFO] Inserting results for " + name + " (" + slug + ")");
 
-        sqlite.statement(SQLStatements.INSERT_SUBJECT).param(name).param(slug).executeUpdate();
+        final ResultSet query = sqlite.statement(SQLStatements.GET_SUBJECT).param(name).query();
+
+        // If the subject does not already exist, insert it
+        if (!query.next()) {
+            sqlite.statement(SQLStatements.INSERT_SUBJECT).param(name).param(slug).executeUpdate();
+        }
     }
 
     private void insertTestRuns(final String name, final Path testRunResults) throws IOException {
@@ -138,6 +171,8 @@ public class Analysis extends StandardMain {
     }
 
     private void insertTestRunResult(final String name, final TestRunResult testRunResult) throws IOException, SQLException {
+        System.out.print(" " + testRunResult.id());
+
         sqlite.statement(SQLStatements.INSERT_TEST_RUN_RESULT)
                 .param(name)
                 .param(testRunResult.id())

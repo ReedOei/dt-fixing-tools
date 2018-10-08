@@ -8,6 +8,7 @@ public class SQLStatements {
     public static final Path CREATE_TABLES = Paths.get("src/main/sql/create_tables.sql");
 
     public static final Path INSERT_SUBJECT = Paths.get("src/main/sql/subject_insert.sql");
+    public static final Path GET_SUBJECT = Paths.get("src/main/sql/subject_get.sql");
 
     public static final Path INSERT_TEST_RUN_RESULT = Paths.get("src/main/sql/test_run_result_insert.sql");
     public static final Path UPDATE_TEST_RUN_RESULT_COUNT = Paths.get("src/main/sql/test_run_result_count_update.sql");
@@ -24,6 +25,7 @@ public class SQLStatements {
         ensureExists(CREATE_TABLES);
 
         ensureExists(INSERT_SUBJECT);
+        ensureExists(GET_SUBJECT);
 
         ensureExists(INSERT_TEST_RUN_RESULT);
         ensureExists(UPDATE_TEST_RUN_RESULT_COUNT);
