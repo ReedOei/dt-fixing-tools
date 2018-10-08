@@ -17,7 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class Analysis extends StandardMain {
     public static int roundNumber(final String filename) {
@@ -55,15 +57,21 @@ public class Analysis extends StandardMain {
     protected void run() throws Exception {
         createTables();
 
-        Files.walk(results)
+        final List<Path> allResultsFolders = Files.walk(results)
                 .filter(this::containsResultsFolders)
-                .forEach(p -> {
-                    try {
-                        insertResults(p);
-                    } catch (IOException | SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < allResultsFolders.size(); i++) {
+            System.out.println("[INFO] Inserting results for module " + (i + 1) + " of " + allResultsFolders.size());
+            final Path p = allResultsFolders.get(i);
+            try {
+                insertResults(p);
+            } catch (IOException | SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        sqlite.save();
     }
 
     private boolean containsResultsFolders(final Path p) {
