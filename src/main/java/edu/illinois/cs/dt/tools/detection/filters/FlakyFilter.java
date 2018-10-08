@@ -3,8 +3,6 @@ package edu.illinois.cs.dt.tools.detection.filters;
 import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 
-import java.util.function.Predicate;
-
 public class FlakyFilter implements Filter {
     private final SmartRunner runner;
 

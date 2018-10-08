@@ -3,6 +3,7 @@ package edu.illinois.cs.dt.tools.analysis;
 import com.reedoei.eunomia.io.files.FileUtil;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -16,9 +17,22 @@ import java.util.stream.Stream;
 public class SQLite {
     private final Connection connection;
     private final Map<Path, PreparedStatement> statements = new HashMap<>();
+    private final Path db;
 
     public SQLite(final Path db) throws SQLException {
-        connection = DriverManager.getConnection("jdbc:sqlite:" + db);
+        this.db = db;
+        connection = DriverManager.getConnection("jdbc:sqlite::memory:");
+
+        if (Files.exists(db)) {
+            System.out.println("[INFO] Reading database from: " + db.toAbsolutePath());
+            connection.createStatement().executeUpdate("restore from " + db.toAbsolutePath() + ";");
+        }
+    }
+
+    public void save() throws SQLException {
+        System.out.println("[INFO] Writing database to: " + db.toAbsolutePath());
+
+        connection.createStatement().executeUpdate("backup to "+ db.toAbsolutePath() + ";");
     }
 
     public Procedure statement(final Path path) throws IOException, SQLException {
