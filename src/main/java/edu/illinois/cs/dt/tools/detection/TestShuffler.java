@@ -1,7 +1,9 @@
 package edu.illinois.cs.dt.tools.detection;
 
+import com.google.common.collect.Lists;
 import com.google.common.math.IntMath;
 import com.google.gson.Gson;
+import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.collections.RandomList;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.configuration.Configuration;
@@ -22,7 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TestShuffler {
-    private static String className(final String testName) {
+    public static String className(final String testName) {
         return testName.substring(0, testName.lastIndexOf('.'));
     }
 
@@ -75,6 +77,10 @@ public class TestShuffler {
     }
 
     public List<String> shuffledOrder(final int i) {
+        if (type.startsWith("reverse")) {
+            return reverseOrder();
+        }
+
         final Path historicalRun = DetectorPathManager.detectionRoundPath(historicalType(), i);
 
         try {
@@ -84,6 +90,17 @@ public class TestShuffler {
         } catch (IOException ignored) {}
 
         return generateShuffled();
+    }
+
+    private List<String> reverseOrder() {
+        if ("reverse-class".equals(type)) {
+            final List<String> reversedClassNames =
+                    Lists.reverse(ListUtil.map(TestShuffler::className, tests).stream().distinct().collect(Collectors.toList()));
+
+            return reversedClassNames.stream().flatMap(c -> classToMethods.get(c).stream()).collect(Collectors.toList());
+        } else {
+            return Lists.reverse(tests);
+        }
     }
 
     private List<String> readHistorical(final Path historicalRun) throws IOException {

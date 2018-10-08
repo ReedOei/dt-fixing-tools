@@ -13,6 +13,12 @@ public class DetectorFactory {
     }
 
     public static Detector makeDetector(final Runner runner, final List<String> tests) {
-        return new RandomDetector(detectorType(), runner, ROUNDS, tests);
+        if (detectorType().startsWith("random")) {
+            return new RandomDetector(detectorType(), runner, ROUNDS, tests);
+        } else if (detectorType().startsWith("reverse")) {
+            return new ReverseDetector(runner, ROUNDS, detectorType(), tests);
+        }
+
+        return new RandomDetector("random", runner, ROUNDS, tests);
     }
 }
