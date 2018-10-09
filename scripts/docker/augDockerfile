@@ -8,8 +8,8 @@ USER awshi2
 
 # Download the project, checkout the SHA, install the project (with running tests)
 RUN \
-  git clone https://github.com/<SLUG> <SLUG> && cd <SLUG> && git checkout <SHA> && \
-  /home/awshi2/apache-maven/bin/mvn clean install -fn -B |& tee /home/awshi2/mvn-test.log && cd -
+  /bin/bash -xec 'git clone https://github.com/<SLUG> <SLUG> && cd <SLUG> && git checkout <SHA> && \
+  /home/awshi2/apache-maven/bin/mvn clean install -fn -B |& tee /home/awshi2/mvn-test.log'
 
 # Go back to root as to allow ease of later scripts to copy data back and forth
 USER root
