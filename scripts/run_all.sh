@@ -1,12 +1,11 @@
 subjNum="1"
-maxSubjNum="13"
+maxSubjNum="3"
 timesToRun="100"
-dataDir="data/all_split"
-
+dataDir="data/optimized_new_split"
+dirPath="docker"
 
 while [ $subjNum -le $maxSubjNum ]
 do
-  dirPath="docker/"
   # dirPath="docker_$subjNum/"
   # if [ ! -d "$dirPath" ]; then
   #   echo "$dirPath does not exist. Creating now..."
@@ -14,8 +13,10 @@ do
   # fi
 
   dataFile="$dataDir/sorted_subject_data_$subjNum.csv"
-  if [ ! -f "$dataFile" ]; then
-    echo "$dataFile does not exist. Skipping..."
+  dockerDataFile="$dirPath/$dataFile"
+  if [ ! -f "$dockerDataFile" ]; then
+    echo "$dockerDataFile does not exist. Skipping..."
+    subjNum=$[$subjNum+1]
     continue
   fi
 
