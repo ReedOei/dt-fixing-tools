@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.analysis;
 
 import com.google.gson.Gson;
+import com.opencsv.CSVReader;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
@@ -12,7 +13,12 @@ import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,9 +43,7 @@ public class Analysis extends StandardMain {
         super(args);
 
         this.results = Paths.get(getArgRequired("results")).toAbsolutePath();
-        final Path db = Paths.get(getArgRequired("db")).toAbsolutePath();
-
-        this.sqlite = new SQLite(db);
+        this.sqlite = new SQLite(Paths.get(getArgRequired("db")).toAbsolutePath());
     }
 
     public static void main(final String[] args) {
@@ -58,6 +62,9 @@ public class Analysis extends StandardMain {
     protected void run() throws Exception {
         createTables();
 
+        insertFullSubjectList("popular", Paths.get("scripts").resolve("docker").resolve("data").resolve("popular_150.csv"));
+        insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("new-subj.csv"));
+
         final List<Path> allResultsFolders = Files.walk(results)
                 .filter(this::containsResultsFolders)
                 .collect(Collectors.toList());
@@ -72,7 +79,47 @@ public class Analysis extends StandardMain {
             }
         }
 
+        runPostSetup();
+
         sqlite.save();
+    }
+
+    private void insertFullSubjectList(final String source, final Path fullList) throws IOException, SQLException {
+        if (!Files.exists(fullList)) {
+            throw new FileNotFoundException(fullList.toAbsolutePath().toString());
+        }
+
+        System.out.println("[INFO] Inserting " + source + " subject list from: " + fullList);
+
+        try (final FileInputStream fis = new FileInputStream(fullList.toAbsolutePath().toString());
+             final InputStreamReader isr = new InputStreamReader(fis);
+             final CSVReader reader = new CSVReader(isr)) {
+
+            String[] strings;
+            while ((strings = reader.readNext()) != null) {
+                if (strings.length == 2) {
+                    insertSubjectRaw(source, strings[0], strings[1]);
+                }
+            }
+        }
+    }
+
+    private void insertSubjectRaw(final String source, final String url, final String sha) throws MalformedURLException, SQLException {
+        // Get the slug. The path starts with a slash, so get rid of it via substring
+        final String slug = new URL(url).getPath().substring(1);
+
+        System.out.println("[INFO] Inserting " + url + " with slug " + slug + " and SHA " + sha);
+        sqlite.statement(SQLStatements.INSERT_RAW_SUBJECT)
+                .param(slug)
+                .param(source)
+                .param(url)
+                .param(sha)
+                .executeUpdate();
+    }
+
+    private void runPostSetup() throws IOException {
+        System.out.println("[INFO] Running post setup queries");
+        sqlite.executeFile(SQLStatements.POST_SETUP);
     }
 
     private boolean containsResultsFolders(final Path p) {
@@ -96,15 +143,7 @@ public class Analysis extends StandardMain {
 
     private void createTables() throws IOException {
         System.out.println("[INFO] Creating tables and views");
-
-        sqlite.statements(SQLStatements.CREATE_TABLES).forEach(ps -> {
-            try {
-                ps.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
+        sqlite.executeFile(SQLStatements.CREATE_TABLES);
         System.out.println();
     }
 
@@ -119,11 +158,17 @@ public class Analysis extends StandardMain {
         final String slug = parent.substring(0, parent.indexOf('_')).replace('.', '/');
 
         insertSubject(name, slug);
+
         insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
+
         insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("flaky"));
         insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random"));
         insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random-class"));
-        insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random-verify"));
+
+        insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+        insertVerificationResults(name, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+        insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+        insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
 
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
         System.out.println();
@@ -141,7 +186,7 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private void insertSubject(final String name, final String slug) throws IOException, SQLException {
+    private void insertSubject(final String name, final String slug) throws SQLException {
         System.out.println("[INFO] Inserting results for " + name + " (" + slug + ")");
 
         final ResultSet query = sqlite.statement(SQLStatements.GET_SUBJECT).param(name).query();
@@ -170,7 +215,7 @@ public class Analysis extends StandardMain {
         System.out.println();
     }
 
-    private void insertTestRunResult(final String name, final TestRunResult testRunResult) throws IOException, SQLException {
+    private void insertTestRunResult(final String name, final TestRunResult testRunResult) throws SQLException {
         System.out.print(" " + testRunResult.id());
 
         sqlite.statement(SQLStatements.INSERT_TEST_RUN_RESULT)
@@ -273,7 +318,7 @@ public class Analysis extends StandardMain {
         return index;
     }
 
-    private int insertDependentTest(final DependentTest dependentTest) throws IOException, SQLException {
+    private int insertDependentTest(final DependentTest dependentTest) throws SQLException {
         return sqlite.statement(SQLStatements.INSERT_FLAKY_TEST)
                 .param(dependentTest.name())
                 .param(dependentTest.intended().testRunId())
@@ -281,7 +326,9 @@ public class Analysis extends StandardMain {
                 .insertSingleRow();
     }
 
-    private void insertVerificationResults(final String name, final String roundType, final Path verificationResults) throws IOException {
+    private void insertVerificationResults(final String name, final String roundType, final Path basePath) throws IOException {
+        final Path verificationResults = basePath.resolve(roundType);
+
         if (!Files.isDirectory(verificationResults)) {
             return;
         }

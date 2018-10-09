@@ -1,7 +1,17 @@
+create table subject_raw
+(
+  slug text primary key,
+  source text not null,
+  url text not null,
+  sha text not null
+);
+
 create table subject
 (
   name text primary key,
-  slug text not null
+  slug text not null,
+
+  foreign key(slug) references subject_raw(slug)
 );
 
 create table test_run_result
@@ -86,6 +96,29 @@ create table verify_round
   foreign key(test_run_result_str_id) references test_run_result(str_id)
 );
 
+create table confirmation_results
+(
+  test_name text,
+  str_id text,
+  round_type text,
+  round_number integer,
+  verify_round_number integer,
+  expected_result text not null,
+  result text not null
+);
+
+create table confirmation_runs
+(
+  test_name text,
+  round_type text,
+  round_number integer,
+  verify_round_number integer,
+  passing_expected_result text not null,
+  failing_expected_result text not null,
+  passing_result text not null,
+  failing_result text not null
+);
+
 create view subject_info as
 select s.name as name,
        max(trr.test_count) as test_count
@@ -113,19 +146,81 @@ from flaky_test ft
 inner join flaky_test_list as ftl on ftl.flaky_test_id = ft.id
 inner join detection_round as dr on dr.filtered_id = ftl.flaky_test_list_id;
 
+create view confirmation_by_test as
+select cr.test_name,
+       sum(case
+            when cr.passing_result = cr.passing_expected_result and
+                 cr.failing_result = cr.failing_expected_result then 1
+            else 0
+           end) as confirmed_runs,
+       count(*) as total_runs
+from confirmation_runs as cr
+group by cr.test_name;
+
 create view flaky_test_info as
 select distinct uft.detection_round_id,
-       uft.subject_name,
-       case
-        when fft.test_name is null then 'flaky' -- this means that it was filtered out for being and is NOT dependent
-        else uft.flaky_type
-       end as flaky_type,
-       uft.flaky_test_id,
-       uft.test_name
+                uft.subject_name,
+                uft.flaky_type as round_type, -- This is really just the type of the round
+                case
+                  -- this means that it was filtered out for being flaky and is NOT dependent
+                  when fft.test_name is null then 'flaky'
+                  else uft.flaky_type
+                end as flaky_type,
+                uft.flaky_test_id,
+                uft.test_name
 from unfiltered_flaky_tests as uft
 left join filtered_flaky_tests as fft on uft.test_name = fft.test_name and uft.subject_name = fft.subject_name;
 
+create view flaky_test_classification as
+select subject_name,
+       test_name,
+       case
+        when all_confirmation_rounds = 0 then 'flaky_detector'
+
+        -- If we never found it with the method detector, then we must have found it in the class detector, and vice versa
+        when random_class_rounds = 0 then 'random_method_detector'
+        when random_rounds = 0 then 'random_class_detector'
+
+        -- But if we found it with both, then we can't definitively say it was found by one or the other
+        else 'random_detector'
+       end as classification_source,
+       case
+        when flaky_runs > 0 then 'flaky' -- If it was EVER flaky, then we should consider it a flaky test
+        else 'random'
+       end as flaky_type
+from
+(
+  select fti.subject_name,
+         fti.test_name,
+         sum(case when fti.round_type = 'random' then 1 else 0 end) as random_rounds,
+         sum(case when fti.round_type = 'random-class' then 1 else 0 end) as random_class_rounds,
+         sum(ifnull(cbt.total_runs, 0)) as all_confirmation_rounds,
+         sum(case
+              -- If total_runs is null, there were never any confirmation rounds (so it must be a flaky test)
+              when ifnull(cbt.total_runs, 0) > 0 and cbt.confirmed_runs = cbt.total_runs then 0
+              else 1
+             end) as flaky_runs,
+         count(*) as total_runs
+  from flaky_test_info as fti
+  left join confirmation_by_test as cbt on fti.test_name = cbt.test_name
+  group by fti.subject_name, fti.test_name
+) as info;
+
 create view flaky_test_counts as
-select fti.subject_name, fti.flaky_type, count(distinct fti.test_name) as number
-from flaky_test_info as fti
-group by fti.subject_name, fti.flaky_type;
+select subject_name, flaky_type, count(distinct test_name) as number
+from flaky_test_classification
+group by subject_name, flaky_type;
+
+create view subject_overview as
+select si.name,
+       si.test_count,
+	     count(distinct flaky_rounds.id) as flaky_round_num,
+	     count(distinct random_rounds.id) as random_round_num,
+	     ifnull(max(flaky.number), 0) as flaky_num,
+	     ifnull(max(random.number), 0) as random_num
+from subject_info as si
+inner join detection_round as flaky_rounds on flaky_rounds.subject_name = si.name and flaky_rounds.round_type = 'flaky'
+inner join detection_round as random_rounds on random_rounds.subject_name = si.name and random_rounds.round_type = 'random'
+left join flaky_test_counts as flaky on flaky.subject_name = si.name and flaky.flaky_type = 'flaky'
+left join flaky_test_counts as random on random.subject_name = si.name and random.flaky_type = 'random'
+group by si.name;

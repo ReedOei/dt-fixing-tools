@@ -35,7 +35,7 @@ public class SQLite {
         connection.createStatement().executeUpdate("backup to "+ db.toAbsolutePath());
     }
 
-    public Procedure statement(final Path path) throws IOException, SQLException {
+    public Procedure statement(final Path path) {
         final PreparedStatement ps = statements.computeIfAbsent(path, p -> {
             try {
                 return connection.prepareStatement(FileUtil.readFile(p));
@@ -62,6 +62,16 @@ public class SQLite {
             }
 
             return Stream.empty();
+        });
+    }
+
+    public void executeFile(final Path path) throws IOException {
+        statements(path).forEach(ps -> {
+            try {
+                ps.execute();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 }

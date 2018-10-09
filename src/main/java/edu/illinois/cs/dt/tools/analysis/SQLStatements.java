@@ -5,7 +5,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class SQLStatements {
+    public static final Path INSERT_RAW_SUBJECT = Paths.get("src/main/sql/subject_raw_insert.sql");
+
     public static final Path CREATE_TABLES = Paths.get("src/main/sql/create_tables.sql");
+    public static final Path POST_SETUP = Paths.get("src/main/sql/post_setup.sql");
 
     public static final Path INSERT_SUBJECT = Paths.get("src/main/sql/subject_insert.sql");
     public static final Path GET_SUBJECT = Paths.get("src/main/sql/subject_get.sql");
@@ -22,7 +25,10 @@ public class SQLStatements {
     public static final Path INSERT_VERIFICATION_ROUND = Paths.get("src/main/sql/verify_round_insert.sql");
 
     static {
+        ensureExists(INSERT_RAW_SUBJECT);
+
         ensureExists(CREATE_TABLES);
+        ensureExists(POST_SETUP);
 
         ensureExists(INSERT_SUBJECT);
         ensureExists(GET_SUBJECT);
