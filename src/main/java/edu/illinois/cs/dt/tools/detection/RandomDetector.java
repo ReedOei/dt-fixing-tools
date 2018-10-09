@@ -1,21 +1,26 @@
 package edu.illinois.cs.dt.tools.detection;
 
 import com.reedoei.eunomia.collections.StreamUtil;
+import com.reedoei.testrunner.configuration.Configuration;
+import com.reedoei.testrunner.data.results.Result;
+import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.detection.filters.FlakyFilter;
+import edu.illinois.cs.dt.tools.detection.filters.RandomVerifyFilter;
 import edu.illinois.cs.dt.tools.detection.filters.UniqueFilter;
 import edu.illinois.cs.dt.tools.detection.filters.VerifyFilter;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Stream;
 
 public class RandomDetector extends ExecutingDetector {
+    public static final double CONFIRMATION_SAMPLING_RATE =
+            Configuration.config().getProperty("detector.random.confirmation_sampling_rate", 0.1);
+
     private final List<String> tests;
-    private final TestRunResult origResult;
+    private TestRunResult origResult;
 
     private final TestShuffler testShuffler;
 
@@ -27,7 +32,22 @@ public class RandomDetector extends ExecutingDetector {
         this.testShuffler = new TestShuffler(type, rounds, tests);
 
         System.out.println("[INFO] Getting original results (" + tests.size() + " tests).");
-        this.origResult = runList(tests);
+
+        // Try to run it three times, to see if we can get everything to pass (except for ignored tests)
+        for (int i = 0; i < 3; i++) {
+            final TestRunResult origResult = runList(tests);
+            final Stream<TestResult> values = origResult.results().values().stream();
+
+            // Ignored tests will show up as SKIPPED, but that's fine because surefire would've skipped them too
+            if (values.allMatch(tr -> tr.result().equals(Result.PASS) || tr.result().equals(Result.SKIPPED))) {
+                this.origResult = origResult;
+                break;
+            }
+        }
+
+        if (this.origResult == null) {
+            throw new RuntimeException("No passing order for tests");
+        }
 
         System.out.println("[INFO] Detecting flaky tests.");
         StreamUtil.seq(new FlakyDetector(runner, rounds, tests, origResult).detect());
@@ -42,6 +62,7 @@ public class RandomDetector extends ExecutingDetector {
         }
 
         // Filters to be applied in order
+        addFilter(new RandomVerifyFilter(CONFIRMATION_SAMPLING_RATE, name, runner));
         addFilter(new FlakyFilter(smartRunner));
         addFilter(new UniqueFilter());
         addFilter(new VerifyFilter(name, runner));

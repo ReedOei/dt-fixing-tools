@@ -16,21 +16,24 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 public class ReplayPlugin extends TestPlugin {
+
+    private Path replayPath;
+
     @Override
     public void execute(final MavenProject mavenProject) {
         final Option<Runner> runnerOption = RunnerFactory.from(mavenProject);
 
         if (runnerOption.isDefined()) {
-            final Path replayPath = Paths.get(Configuration.config().getProperty("replay.path"));
+            replayPath = Paths.get(Configuration.config().getProperty("replay.path"));
             final Path outputPath = Paths.get(Configuration.config().properties().getProperty("replay.output_path"));
 
             try {
                 final Runner runner = runnerOption.get(); // safe because we checked above
-                final TestRunResult result = new Gson().fromJson(FileUtil.readFile(replayPath), TestRunResult.class);
 
-                final Try<TestRunResult> testRunResultTry = runner.runList(result.testOrder());
+                final Try<TestRunResult> testRunResultTry = runner.runList(testOrder());
 
                 if (testRunResultTry.isSuccess()) {
                     Files.write(outputPath, new Gson().toJson(testRunResultTry.get()).getBytes());
@@ -42,6 +45,14 @@ public class ReplayPlugin extends TestPlugin {
             }
         } else {
             TestPluginPlugin.mojo().getLog().info("Module is not using a supported test framework (probably not JUnit).");
+        }
+    }
+
+    private List<String> testOrder() throws IOException {
+        try {
+            return new Gson().fromJson(FileUtil.readFile(replayPath), TestRunResult.class).testOrder();
+        } catch (Exception e) {
+            return Files.readAllLines(replayPath);
         }
     }
 }

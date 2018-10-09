@@ -6,12 +6,16 @@ import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory;
 import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
+import edu.illinois.cs.dt.tools.utility.GetMavenTestOrder;
+import edu.illinois.cs.dt.tools.utility.TestClassData;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DetectorPlugin extends TestPlugin {
@@ -41,12 +45,13 @@ public class DetectorPlugin extends TestPlugin {
                 this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
             }
 
-            final List<String> tests = scala.collection.JavaConverters.bufferAsJavaList(TestLocator.tests(mavenProject).toList().toBuffer());
-
             try {
+                final List<String> tests = getOriginalOrder(mavenProject);
+
                 // If there are no tests, we can't run a flaky test detector
                 if (!tests.isEmpty()) {
                     Files.createDirectories(outputPath);
+                    Files.write(DetectorPathManager.originalOrderPath(), String.join(System.lineSeparator(), tests).getBytes());
 
                     final Detector detector = DetectorFactory.makeDetector(runner, tests);
                     TestPluginPlugin.mojo().getLog().info("Created dependent test detector (" + detector.getClass() + ").");
@@ -60,6 +65,28 @@ public class DetectorPlugin extends TestPlugin {
             }
         } else {
             TestPluginPlugin.mojo().getLog().info("Module is not using a supported test framework (probably not JUnit).");
+        }
+    }
+
+    private List<String> getOriginalOrder(final MavenProject mavenProject) throws IOException {
+        if (!Files.exists(DetectorPathManager.originalOrderPath())) {
+            final Path surefireReportsPath = Paths.get(mavenProject.getBuild().getDirectory()).resolve("surefire-reports");
+
+            // TODO: Make this a non-absolute path
+            final Path mvnTestLog = Paths.get("/home/awshi2/mvn-test.log");
+            final List<TestClassData> testClassData = new GetMavenTestOrder(surefireReportsPath, mvnTestLog).testClassDataList();
+
+            final List<String> tests = new ArrayList<>();
+
+            for (final TestClassData classData : testClassData) {
+                for (final String testName : classData.testNames) {
+                    tests.add(classData.className + "." + testName);
+                }
+            }
+
+            return tests;
+        } else {
+            return Files.readAllLines(DetectorPathManager.originalOrderPath());
         }
     }
 }

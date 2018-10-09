@@ -1,14 +1,13 @@
 package edu.illinois.cs.dt.tools.utility;
 
 import com.reedoei.eunomia.util.StandardMain;
-
-import junit.framework.Test;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -21,37 +20,15 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
-
 /**
  * Created by winglam on 10/8/18.
  */
 public class GetMavenTestOrder extends StandardMain {
-
-    @Override protected void run() throws Exception {
+    @Override
+    protected void run() throws Exception {
         final List<String> classOrder = getClassOrder(mvnTestLog.toFile());
 
-        final List<Path> allResultsFolders = Files.walk(sureFireDirectory)
-                                                     .filter(path -> path.toString().contains("TEST-"))
-                                                     .collect(Collectors.toList());
-
-        TreeMap<Long, List<TestClassData>> timeToTestClass = new TreeMap<>();
-        for (int i = 0; i < allResultsFolders.size(); i++) {
-            final Path p = allResultsFolders.get(i);
-
-            File f = p.toFile();
-            long time = f.lastModified();
-
-            List<TestClassData> currentList = timeToTestClass.get(time);
-            if (currentList == null) {
-                currentList = new ArrayList<>();
-            }
-            currentList.add(parseXML(f));
-
-            timeToTestClass.put(time, currentList);
-        }
+        TreeMap<Long, List<TestClassData>> timeToTestClass = testClassDataMap();
 
         StringBuilder sb = new StringBuilder();
         for (Long time : timeToTestClass.keySet()) {
@@ -60,8 +37,8 @@ public class GetMavenTestOrder extends StandardMain {
             List<TestClassData> dataList = timeToTestClass.get(time);
 
             if (dataList.size() > 1) {
-
                 TreeMap<Integer, List<TestClassData>> indexToTestClass = new TreeMap<>();
+
                 for (TestClassData data : dataList) {
                     int index = classOrder.indexOf(data.className);
                     List<TestClassData> currentList = indexToTestClass.get(index);
@@ -88,6 +65,68 @@ public class GetMavenTestOrder extends StandardMain {
                 setStringBuilderTestClassData(dataList.get(0), sb);
             }
         }
+    }
+
+    private TreeMap<Long, List<TestClassData>> testClassDataMap() throws IOException {
+        final List<Path> allResultsFolders = Files.walk(sureFireDirectory)
+                .filter(path -> path.toString().contains("TEST-"))
+                .collect(Collectors.toList());
+
+        TreeMap<Long, List<TestClassData>> timeToTestClass = new TreeMap<>();
+        for (final Path p : allResultsFolders) {
+            File f = p.toFile();
+            long time = f.lastModified();
+
+            List<TestClassData> currentList = timeToTestClass.get(time);
+            if (currentList == null) {
+                currentList = new ArrayList<>();
+            }
+            currentList.add(parseXML(f));
+
+            timeToTestClass.put(time, currentList);
+        }
+        return timeToTestClass;
+    }
+
+    public List<TestClassData> testClassDataList() throws IOException {
+        final List<String> classOrder = getClassOrder(mvnTestLog.toFile());
+
+        final TreeMap<Long, List<TestClassData>> timeToTestClass = testClassDataMap();
+
+        final List<TestClassData> result = new ArrayList<>();
+
+        for (Long time : timeToTestClass.keySet()) {
+            List<TestClassData> dataList = timeToTestClass.get(time);
+
+            if (dataList.size() > 1) {
+                TreeMap<Integer, List<TestClassData>> indexToTestClass = new TreeMap<>();
+
+                for (TestClassData data : dataList) {
+                    int index = classOrder.indexOf(data.className);
+                    List<TestClassData> currentList = indexToTestClass.get(index);
+                    if (currentList == null) {
+                        currentList = new ArrayList<>();
+                    }
+                    currentList.add(data);
+
+                    indexToTestClass.put(index, currentList);
+                }
+
+                for (Integer index : indexToTestClass.keySet()) {
+                    List<TestClassData> indexList = indexToTestClass.get(index);
+                    if (indexList.size() > 1) {
+                        result.addAll(indexList);
+                    } else {
+                        result.add(indexList.get(0));
+                    }
+                }
+
+            } else {
+                result.add(dataList.get(0));
+            }
+        }
+
+        return result;
     }
 
     private void setStringBuilderTestClassData(TestClassData data, StringBuilder sb) {
@@ -118,16 +157,6 @@ public class GetMavenTestOrder extends StandardMain {
         return classNames;
     }
 
-    private class TestClassData {
-        public String className;
-        public List<String> testNames;
-
-        public TestClassData(String className, List<String> testNames) {
-            this.className = className;
-            this.testNames = testNames;
-        }
-    }
-
     private TestClassData parseXML(File xmlFile) {
         List<String> testNames = new ArrayList<>();
         String className = "";
@@ -145,8 +174,7 @@ public class GetMavenTestOrder extends StandardMain {
             if (errors != 0 || failures != 0) {
                 // errors/failures found in the test suite from running mvn test.
                 // this test suite should not proceed to use detectors
-                // TODO
-
+                throw new RuntimeException("Failures or errors occurred in mvn test");
             }
 
             className = rootElement.getAttribute("name");
@@ -172,11 +200,19 @@ public class GetMavenTestOrder extends StandardMain {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return new TestClassData(className, testNames);
     }
 
     private final Path mvnTestLog;
     private final Path sureFireDirectory;
+
+    public GetMavenTestOrder(final Path sureFireDirectory, final Path mvnTestLog) {
+        super(new String[0]);
+
+        this.sureFireDirectory = sureFireDirectory;
+        this.mvnTestLog = mvnTestLog;
+    }
 
     private GetMavenTestOrder(final String[] args) {
         super(args);

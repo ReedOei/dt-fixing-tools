@@ -3,6 +3,7 @@ package edu.illinois.cs.dt.tools.detection;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.detection.filters.UniqueFilter;
+import edu.illinois.cs.dt.tools.detection.filters.VerifyFilter;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class ReverseDetector extends ExecutingDetector {
         testShuffler = new TestShuffler(name, rounds, tests);
 
         addFilter(new UniqueFilter());
+        addFilter(new VerifyFilter(name, runner));
     }
 
     @Override

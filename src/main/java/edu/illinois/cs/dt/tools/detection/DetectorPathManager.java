@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 public class DetectorPathManager extends PathManager {
     public static final Path DETECTION_RESULTS = Paths.get("detection-results");
     public static final Path DT_LIST_PATH  = Paths.get("dt-lists.json");
+    public static final Path ORIGINAL_ORDER = Paths.get("original-order");
 
     public static Path detectionResults() {
         return path(DETECTION_RESULTS);
@@ -31,5 +32,9 @@ public class DetectorPathManager extends PathManager {
 
     public static Path filterPath(final String detectorType, final String filterType, final int absoluteRound) {
         return detectionRoundPath(detectorType + "-" + filterType, absoluteRound);
+    }
+
+    public static Path originalOrderPath() {
+        return path(ORIGINAL_ORDER);
     }
 }
