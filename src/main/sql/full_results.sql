@@ -1,2 +1,5 @@
+.width 100
+
 select *
-from subject_overview;
+from subject_overview
+order by name;

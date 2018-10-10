@@ -28,6 +28,6 @@ write prefix l = do
     writeFile (prefix ++ "/" ++ n ++ ".csv") l
 
 main = do
-    createDirectoryIfMissing True "all-split"
-    mapM_ (write "all-split") =<< lines <$> (readFile =<< head <$> getArgs)
+    createDirectoryIfMissing True "individual-split"
+    mapM_ (write "individual-split") =<< lines <$> (readFile =<< head <$> getArgs)
 
