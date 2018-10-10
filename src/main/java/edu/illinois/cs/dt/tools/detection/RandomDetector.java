@@ -7,10 +7,8 @@ import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.SmartRunner;
-import edu.illinois.cs.dt.tools.detection.filters.FlakyFilter;
-import edu.illinois.cs.dt.tools.detection.filters.RandomVerifyFilter;
+import edu.illinois.cs.dt.tools.detection.filters.ConfirmationFilter;
 import edu.illinois.cs.dt.tools.detection.filters.UniqueFilter;
-import edu.illinois.cs.dt.tools.detection.filters.VerifyFilter;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -62,10 +60,7 @@ public class RandomDetector extends ExecutingDetector {
         }
 
         // Filters to be applied in order
-        addFilter(new RandomVerifyFilter(CONFIRMATION_SAMPLING_RATE, name, runner));
-        addFilter(new FlakyFilter(smartRunner));
-        addFilter(new UniqueFilter());
-        addFilter(new VerifyFilter(name, runner));
+        addFilter(new ConfirmationFilter(name, tests, smartRunner));
         addFilter(new UniqueFilter());
     }
 
