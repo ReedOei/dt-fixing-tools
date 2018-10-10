@@ -12,7 +12,9 @@ for d in $dirPath/$dataDir/*.csv ; do
     continue
   fi
 
+  filenamenoext="${filename%.*}"
+  
   cd $dirPath
-  nohup bash create_and_run_dockers.sh $dataFile $timesToRun > $filename.out 2>&1 &
+  nohup bash create_and_run_dockers.sh $dataFile $timesToRun > $filenamenoext.out 2>&1 &
   cd ../
 done
