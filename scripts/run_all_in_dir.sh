@@ -2,8 +2,9 @@ timesToRun="2"
 dataDir="data/test_inputs"
 dirPath="docker"
 
-for d in $dataDir/*.csv/ ; do
-  dataFile=$d
+for d in $dirPath/$dataDir/*.csv ; do
+  filename=$(basename -- "$d")
+  dataFile=$dataDir/$filename
   dockerDataFile="$dirPath/$dataFile"
   if [ ! -f "$dockerDataFile" ]; then
     echo "$dockerDataFile does not exist. Skipping..."
@@ -11,8 +12,6 @@ for d in $dataDir/*.csv/ ; do
     continue
   fi
 
-  filename=$(basename -- "$dataFile")
-  
   cd $dirPath
   nohup bash create_and_run_dockers.sh $dataFile $timesToRun > $filename.out 2>&1 &
   cd ../
