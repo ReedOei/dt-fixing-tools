@@ -12,10 +12,15 @@ fi
 slug=$1
 rounds=$2
 
+git rev-parse HEAD
 date
 
 # Update all tooling
 su - awshi2 -c "cd /home/awshi2/dt-fixing-tools/; git pull"
+
+echo "*******************REED************************"
+echo "Running update.sh"
+date
 su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/update.sh"
 
 # Start the run_project.sh script using the awshi2 user

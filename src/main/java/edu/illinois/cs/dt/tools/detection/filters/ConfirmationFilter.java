@@ -15,8 +15,8 @@ import java.util.Random;
 import java.util.Set;
 
 public class ConfirmationFilter implements Filter {
-    private static final double DEPENDENT_CONFIRMATION_SAMPLING_RATE = 0.1;
-    private static final double FLAKY_CONFIRMATION_SAMPLING_RATE = 0.5;
+    private static final double DEPENDENT_CONFIRMATION_SAMPLING_RATE = 0.2;
+    private static final double FLAKY_CONFIRMATION_SAMPLING_RATE = 0.2;
 
     private final Set<String> knownFlaky;
     private final Set<String> knownDep;

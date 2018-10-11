@@ -6,16 +6,27 @@ if [[ $1 == "" ]] || [[ $2 == "" ]]; then
     exit
 fi
 
+git rev-parse HEAD
+date
+
 projfile=$1
 rounds=$2
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+echo "*******************REED************************"
+echo "Making base image"
+date
 
 # Create base Docker image if does not exist
 docker inspect detectorbase:latest > /dev/null 2>&1
 if  [ $?  == 1 ]; then
     docker build -t detectorbase:latest - < baseDockerfile
 fi
+
+echo "*******************REED************************"
+echo "Making tooling image"
+date
 
 # Create tooling Docker image if does not exist
 docker inspect toolingdetectorbase:latest > /dev/null 2>&1
@@ -35,6 +46,9 @@ for line in $(cat ${projfile}); do
     image=detector-${modifiedslug}:latest
     docker inspect ${image} > /dev/null 2>&1
     if [ $? == 1 ]; then
+        echo "*******************REED************************"
+        echo "Building docker image for project"
+        date
         timeout 60m bash build_docker_image.sh ${image} ${modifiedslug}
     fi
 
