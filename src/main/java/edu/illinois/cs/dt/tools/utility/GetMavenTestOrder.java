@@ -160,6 +160,7 @@ public class GetMavenTestOrder extends StandardMain {
     private TestClassData parseXML(File xmlFile) {
         List<String> testNames = new ArrayList<>();
         String className = "";
+        double testTime = 0;
 
         try {
             DocumentBuilder dBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -178,6 +179,7 @@ public class GetMavenTestOrder extends StandardMain {
             }
 
             className = rootElement.getAttribute("name");
+            testTime = Long.parseLong(rootElement.getAttribute("time"));
 
             NodeList nList = doc.getElementsByTagName("testcase");
             for (int temp = 0; temp < nList.getLength(); temp++) {
@@ -201,7 +203,7 @@ public class GetMavenTestOrder extends StandardMain {
             e.printStackTrace();
         }
 
-        return new TestClassData(className, testNames);
+        return new TestClassData(className, testNames, testTime);
     }
 
     private final Path mvnTestLog;
