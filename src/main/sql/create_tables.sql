@@ -88,23 +88,13 @@ create table verify_round
   test_run_result_str_id text not null,
   round_type text not null,
   verify_round_number integer not null,
-  name text not null,
+  test_name text not null,
   expected_result text not null,
+  result text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(round_number) references detection_round(round_number),
   foreign key(test_run_result_str_id) references test_run_result(str_id)
-);
-
-create table confirmation_results
-(
-  test_name text,
-  str_id text,
-  round_type text,
-  round_number integer,
-  verify_round_number integer,
-  expected_result text not null,
-  result text not null
 );
 
 create table confirmation_runs
@@ -114,8 +104,8 @@ create table confirmation_runs
   round_number integer,
   verify_round_number integer,
   passing_expected_result text not null,
-  failing_expected_result text not null,
   passing_result text not null,
+  failing_expected_result text not null,
   failing_result text not null
 );
 
@@ -219,8 +209,30 @@ select si.name,
 	     ifnull(max(flaky.number), 0) as flaky_num,
 	     ifnull(max(random.number), 0) as random_num
 from subject_info as si
-inner join detection_round as flaky_rounds on flaky_rounds.subject_name = si.name and flaky_rounds.round_type = 'flaky'
-inner join detection_round as random_rounds on random_rounds.subject_name = si.name and random_rounds.round_type = 'random'
+left join detection_round as flaky_rounds on flaky_rounds.subject_name = si.name and flaky_rounds.round_type = 'flaky'
+left join detection_round as random_rounds on random_rounds.subject_name = si.name and random_rounds.round_type = 'random'
 left join flaky_test_counts as flaky on flaky.subject_name = si.name and flaky.flaky_type = 'flaky'
 left join flaky_test_counts as random on random.subject_name = si.name and random.flaky_type = 'random'
 group by si.name;
+
+create view confirmation_effectiveness as
+select ftc.test_name, ftc.flaky_type,
+       cr.round_type,
+	   sum(case
+		      when ftc.flaky_type = 'flaky' then
+            case
+              when cr.passing_result <> cr.passing_expected_result or
+                   cr.failing_result <> cr.failing_expected_result then 1
+              else 0
+            end
+          else
+            case
+              when cr.passing_result = cr.passing_expected_result and
+                   cr.failing_result = cr.failing_expected_result then 1
+              else 0
+            end
+           end) as confirmed_runs,
+	   count(*) as total_runs
+from flaky_test_classification as ftc
+inner join confirmation_runs as cr on ftc.test_name = cr.test_name
+group by ftc.test_name, ftc.flaky_type, cr.round_type;

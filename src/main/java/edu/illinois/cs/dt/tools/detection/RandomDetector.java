@@ -1,21 +1,21 @@
 package edu.illinois.cs.dt.tools.detection;
 
-import com.reedoei.eunomia.collections.StreamUtil;
-import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
-import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.detection.filters.ConfirmationFilter;
 import edu.illinois.cs.dt.tools.detection.filters.UniqueFilter;
+import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class RandomDetector extends ExecutingDetector {
-    public static final double CONFIRMATION_SAMPLING_RATE =
-            Configuration.config().getProperty("detector.random.confirmation_sampling_rate", 0.1);
+    private static final int ORIGINAL_ORDER_TRIES = 3;
 
     private final List<String> tests;
     private TestRunResult origResult;
@@ -32,9 +32,13 @@ public class RandomDetector extends ExecutingDetector {
         System.out.println("[INFO] Getting original results (" + tests.size() + " tests).");
 
         // Try to run it three times, to see if we can get everything to pass (except for ignored tests)
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < ORIGINAL_ORDER_TRIES; i++) {
             final TestRunResult origResult = runList(tests);
             final Stream<TestResult> values = origResult.results().values().stream();
+
+            try {
+                Files.write(DetectorPathManager.originalResultsLog(), (origResult.id() + "\n").getBytes(), StandardOpenOption.APPEND);
+            } catch (IOException ignored) {}
 
             // Ignored tests will show up as SKIPPED, but that's fine because surefire would've skipped them too
             if (values.allMatch(tr -> tr.result().equals(Result.PASS) || tr.result().equals(Result.SKIPPED))) {
@@ -44,23 +48,16 @@ public class RandomDetector extends ExecutingDetector {
         }
 
         if (this.origResult == null) {
-            throw new RuntimeException("No passing order for tests");
-        }
-
-        System.out.println("[INFO] Detecting flaky tests.");
-        StreamUtil.seq(new FlakyDetector(runner, rounds, tests, origResult).detect());
-        System.out.println();
-
-        final SmartRunner smartRunner;
-
-        if (runner instanceof SmartRunner) {
-            smartRunner = new SmartRunner(runner.project(), runner.framework(), ((SmartRunner) runner).info());
-        } else {
-            smartRunner = SmartRunner.withFramework(runner.project(), runner.framework());
+            throw new NoPassingOrderException("No passing order for tests (" + ORIGINAL_ORDER_TRIES + " runs)");
         }
 
         // Filters to be applied in order
-        addFilter(new ConfirmationFilter(name, tests, smartRunner));
+        if (runner instanceof InstrumentingSmartRunner) {
+            addFilter(new ConfirmationFilter(name, tests, (InstrumentingSmartRunner) runner));
+        } else {
+            addFilter(new ConfirmationFilter(name, tests, InstrumentingSmartRunner.fromRunner(runner)));
+        }
+
         addFilter(new UniqueFilter());
     }
 

@@ -11,12 +11,14 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
 public class SQLite {
     private final Connection connection;
     private final Map<Path, PreparedStatement> statements = new HashMap<>();
+    private final Map<String, String> primaryKeys = new HashMap<>();
     private final Path db;
 
     public SQLite(final Path db) throws SQLException {
@@ -73,5 +75,62 @@ public class SQLite {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private String checkExistsStatement(final String tableName, final String columnName) {
+        return "select 1 from " + tableName + " where " + columnName + " = ?";
+    }
+
+    private String primaryKey(final String tableName) throws SQLException {
+        if (!primaryKeys.containsKey(tableName)) {
+            final QueryResult queryResult =
+                    new Procedure(connection, connection.prepareStatement("pragma table_info(" + tableName + ")"))
+                            .tableQuery();
+
+            boolean found = false;
+
+            // Cannot do where clause on pragma, so we have to search it manually.
+            // However, this is cached and it's unlikely there's tons of rows anyway
+            for (final LinkedHashMap<String, String> row : queryResult.rows()) {
+                if ("1".equals(row.get("pk"))) {
+                    primaryKeys.put(tableName, row.get("name"));
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                throw new IllegalStateException("No primary key for table " + tableName);
+            }
+        }
+
+        return primaryKeys.get(tableName);
+    }
+
+    public boolean checkExists(final String tableName, final String val) throws SQLException {
+        return checkExists(tableName, primaryKey(tableName), val);
+    }
+
+    public boolean checkExists(final String tableName, final int val) throws SQLException {
+        return checkExists(tableName, primaryKey(tableName), val);
+    }
+
+    public boolean checkExists(final String tableName, final float val) throws SQLException {
+        return checkExists(tableName, primaryKey(tableName), val);
+    }
+
+    public boolean checkExists(final String tableName, final String columnName, final String val) throws SQLException {
+        return new Procedure(connection, connection.prepareStatement(checkExistsStatement(tableName, columnName)))
+                .param(val).exists();
+    }
+
+    public boolean checkExists(final String tableName, final String columnName, final int val) throws SQLException {
+        return new Procedure(connection, connection.prepareStatement(checkExistsStatement(tableName, columnName)))
+                .param(val).exists();
+    }
+
+    public boolean checkExists(final String tableName, final String columnName, final float val) throws SQLException {
+        return new Procedure(connection, connection.prepareStatement(checkExistsStatement(tableName, columnName)))
+                .param(val).exists();
     }
 }

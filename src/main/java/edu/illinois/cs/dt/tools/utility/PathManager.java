@@ -10,10 +10,14 @@ public class PathManager {
         return TestPluginPlugin.mavenProject().getBasedir().toPath();
     }
 
+    public static Path cachePath() {
+        return modulePath().resolve(".dtfixingtools");
+    }
+
     public static Path path(final Path relative) {
         Preconditions.checkState(!relative.isAbsolute(),
                 "PathManager.path: Cache paths must be relative, not absolute (%s)", relative);
 
-        return modulePath().resolve(".dtfixingtools").resolve(relative);
+        return cachePath().resolve(relative);
     }
 }

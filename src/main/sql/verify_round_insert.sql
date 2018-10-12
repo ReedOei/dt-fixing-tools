@@ -5,11 +5,13 @@ insert into verify_round
   test_run_result_str_id,
   round_type,
   verify_round_number,
-  name,
-  expected_result
+  test_name,
+  expected_result,
+  result
 )
 values
 (
+  ?,
   ?,
   ?,
   ?,

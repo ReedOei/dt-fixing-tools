@@ -17,6 +17,8 @@ public class DetectorFactory {
             return new RandomDetector(detectorType(), runner, ROUNDS, tests);
         } else if (detectorType().startsWith("reverse")) {
             return new ReverseDetector(runner, ROUNDS, detectorType(), tests);
+        } else if (detectorType().equals("flaky")) {
+            return new FlakyDetector(runner, ROUNDS, tests);
         }
 
         return new RandomDetector("random", runner, ROUNDS, tests);

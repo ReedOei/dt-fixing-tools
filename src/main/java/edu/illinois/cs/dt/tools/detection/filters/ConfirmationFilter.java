@@ -2,9 +2,9 @@ package edu.illinois.cs.dt.tools.detection.filters;
 
 import com.google.gson.Gson;
 import com.reedoei.eunomia.io.files.FileUtil;
-import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
+import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 
 import java.io.IOException;
@@ -21,11 +21,11 @@ public class ConfirmationFilter implements Filter {
     private final Set<String> knownFlaky;
     private final Set<String> knownDep;
     private final String detectorType;
-    private final SmartRunner runner;
+    private final InstrumentingSmartRunner runner;
 
     public ConfirmationFilter(final String detectorType,
                               final List<String> tests,
-                              final SmartRunner runner) {
+                              final InstrumentingSmartRunner runner) {
         this.detectorType = detectorType;
         this.runner = runner;
         this.knownFlaky = new HashSet<>();

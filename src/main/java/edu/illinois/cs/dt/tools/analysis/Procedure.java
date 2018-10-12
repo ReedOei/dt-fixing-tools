@@ -3,7 +3,11 @@ package edu.illinois.cs.dt.tools.analysis;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 public class Procedure {
     private final Connection connection;
@@ -35,6 +39,10 @@ public class Procedure {
         index++;
 
         return this;
+    }
+
+    public QueryResult tableQuery() throws SQLException {
+        return new QueryResult(query());
     }
 
     public boolean execute() throws SQLException {
@@ -74,5 +82,9 @@ public class Procedure {
 
     public void commit() throws SQLException {
         connection.commit();
+    }
+
+    public boolean exists() throws SQLException {
+        return query().next();
     }
 }

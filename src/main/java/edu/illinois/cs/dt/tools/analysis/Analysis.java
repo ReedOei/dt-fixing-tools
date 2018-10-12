@@ -2,6 +2,7 @@ package edu.illinois.cs.dt.tools.analysis;
 
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
+import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
@@ -22,17 +23,28 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Analysis extends StandardMain {
     public static int roundNumber(final String filename) {
         // Files are named roundN.json, so strip extension and "round" and we'll have the number
         final String fileName = FilenameUtils.removeExtension(filename);
         return Integer.parseInt(fileName.substring("round".length()));
+    }
+
+    // List files and close the directory streams
+    private static ListEx<Path> listFiles(final Path path) throws IOException {
+        final ListEx<Path> result = new ListEx<>();
+
+        try (final Stream<Path> stream = Files.list(path)) {
+            result.addAll(stream.collect(Collectors.toList()));
+        }
+
+        return result;
     }
 
     private final Path results;
@@ -127,8 +139,8 @@ public class Analysis extends StandardMain {
         final Path detectionResults = p.resolve(DetectorPathManager.DETECTION_RESULTS);
 
         final boolean containsResults =
-                Files.exists(testRuns) && Files.exists(detectionResults) &&
-                Files.exists(detectionResults.resolve("flaky")) && Files.exists(detectionResults.resolve("random"));
+                Files.exists(testRuns) && Files.exists(detectionResults);
+//                Files.exists(detectionResults.resolve("flaky")) && Files.exists(detectionResults.resolve("random"));
 
         if (!containsResults) {
             return false;
@@ -175,7 +187,7 @@ public class Analysis extends StandardMain {
     }
 
     private String findParent(final Path path) {
-        if (path == null) {
+        if (path == null || path.getFileName() == null) {
             return null;
         }
 
@@ -189,22 +201,21 @@ public class Analysis extends StandardMain {
     private void insertSubject(final String name, final String slug) throws SQLException {
         System.out.println("[INFO] Inserting results for " + name + " (" + slug + ")");
 
-        final ResultSet query = sqlite.statement(SQLStatements.GET_SUBJECT).param(name).query();
-
         // If the subject does not already exist, insert it
-        if (!query.next()) {
+        if (!sqlite.checkExists("subject", name)) {
             sqlite.statement(SQLStatements.INSERT_SUBJECT).param(name).param(slug).executeUpdate();
         }
     }
 
     private void insertTestRuns(final String name, final Path testRunResults) throws IOException {
-        final int count = Math.toIntExact(Files.list(testRunResults).count());
-        System.out.println("[INFO] Inserting test runs for " + name + " (" + count + " runs)");
+        final ListEx<Path> paths = listFiles(testRunResults);
+
+        System.out.println("[INFO] Inserting test runs for " + name + " (" + paths.size() + " runs)");
 
         final AtomicInteger i = new AtomicInteger(1);
-        Files.list(testRunResults).forEach(p -> {
+        paths.forEach(p -> {
             try {
-                System.out.print("\r[INFO] Inserting run " + i + " of " + count);
+                System.out.print("\r[INFO] Inserting run " + i + " of " + paths.size());
                 insertTestRunResult(name, new Gson().fromJson(FileUtil.readFile(p), TestRunResult.class));
                 i.getAndIncrement();
             } catch (IOException | SQLException e) {
@@ -216,7 +227,9 @@ public class Analysis extends StandardMain {
     }
 
     private void insertTestRunResult(final String name, final TestRunResult testRunResult) throws SQLException {
-        System.out.print(" " + testRunResult.id());
+        if (sqlite.checkExists("test_run_result", testRunResult.id())) {
+            return;
+        }
 
         sqlite.statement(SQLStatements.INSERT_TEST_RUN_RESULT)
                 .param(name)
@@ -259,11 +272,12 @@ public class Analysis extends StandardMain {
             return;
         }
 
-        final int count = Math.toIntExact(Files.list(detectionResults).count());
-        System.out.println("[INFO] Inserting " + roundType + " detection results for " + name
-                + " (" + count + " results)");
+        final ListEx<Path> paths = listFiles(detectionResults);
 
-        Files.list(detectionResults).forEach(p -> {
+        System.out.println("[INFO] Inserting " + roundType + " detection results for " + name
+                + " (" + paths.size() + " results)");
+
+        paths.forEach(p -> {
             final int roundNumber = roundNumber(p.getFileName().toString());
 
             try {
@@ -333,10 +347,11 @@ public class Analysis extends StandardMain {
             return;
         }
 
-        final int count = Math.toIntExact(Files.list(verificationResults).count());
-        System.out.println("[INFO] Inserting " + roundType + " verification results for " + name + " (" + count + " rounds)");
+        final ListEx<Path> paths = listFiles(verificationResults);
 
-        Files.list(verificationResults).forEach(p -> {
+        System.out.println("[INFO] Inserting " + roundType + " verification results for " + name + " (" + paths.size() + " rounds)");
+
+        paths.forEach(p -> {
             try {
                 insertVerificationRound(name, roundType, roundNumber(p.getFileName().toString()), p);
             } catch (IOException e) {
@@ -346,7 +361,7 @@ public class Analysis extends StandardMain {
     }
 
     private void insertVerificationRound(final String name, final String roundType, final int roundNumber, final Path p) throws IOException {
-        Files.list(p).forEach(verificationStep -> {
+        listFiles(p).forEach(verificationStep -> {
             final String filename = verificationStep.getFileName().toString();
             final String[] split = filename.split("-");
 
@@ -365,7 +380,10 @@ public class Analysis extends StandardMain {
                         .param(verificationRoundNumber)
                         .param(testName)
                         .param(String.valueOf(result))
+                        .param(String.valueOf(testRunResult.results().get(testName).result()))
                         .executeUpdate();
+
+                insertTestRunResult(name, testRunResult);
             } catch (IOException | SQLException e) {
                 throw new RuntimeException(e);
             }
