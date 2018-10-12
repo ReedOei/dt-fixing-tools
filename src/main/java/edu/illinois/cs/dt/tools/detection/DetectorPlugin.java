@@ -104,6 +104,14 @@ public class DetectorPlugin extends TestPlugin {
         return until(t, f, v -> f.apply(v) == null);
     }
 
+    private MavenProject getMavenProjectParent(MavenProject mavenProject) {
+        MavenProject parentProj = mavenProject;
+        while (parentProj.getParent() != null && parentProj.getParent().getBasedir() != null) {
+            parentProj = parentProj.getParent();
+        }
+        return parentProj;
+    }
+
     private static ListEx<ListEx<String>> transpose(final ListEx<ListEx<String>> rows) {
         final ListEx<ListEx<String>> result = new ListEx<>();
 
@@ -118,7 +126,7 @@ public class DetectorPlugin extends TestPlugin {
     }
 
     private long moduleTimeout(final MavenProject mavenProject) throws IOException {
-        final MavenProject parent = untilNull(mavenProject, MavenProject::getParent);
+        final MavenProject parent = getMavenProjectParent(mavenProject);
 
         final Path timeCsv = parent.getBasedir().toPath().resolve("module-test-time.csv");
         Files.copy(timeCsv, DetectorPathManager.detectionResults().resolve("module-test-time.csv"), StandardCopyOption.REPLACE_EXISTING);

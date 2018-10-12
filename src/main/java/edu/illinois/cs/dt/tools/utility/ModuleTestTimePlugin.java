@@ -67,7 +67,7 @@ public class ModuleTestTimePlugin  extends TestPlugin {
 
     private MavenProject getMavenProjectParent(MavenProject mavenProject) {
         MavenProject parentProj = mavenProject;
-        while (parentProj.getParent() != null) {
+        while (parentProj.getParent() != null && parentProj.getParent().getBasedir() != null) {
             parentProj = parentProj.getParent();
         }
         return parentProj;
