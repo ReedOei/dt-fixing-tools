@@ -5,12 +5,12 @@
 
 if [[ $1 == "" ]] || [[ $2 == "" ]]; then
     echo "arg1 - GitHub SLUG"
-    echo "arg2 - Number of rounds"
+    echo "arg2 - Timeout in seconds"
     exit
 fi
 
 slug=$1
-rounds=$2
+timeout=$2
 
 git rev-parse HEAD
 date
@@ -24,7 +24,7 @@ date
 su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/update.sh"
 
 # Start the run_project.sh script using the awshi2 user
-su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh ${slug} ${rounds}"
+su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh ${slug} ${timeout}"
 
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)
 modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')

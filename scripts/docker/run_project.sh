@@ -9,12 +9,12 @@ date
 
 if [[ $1 == "" ]] || [[ $2 == "" ]]; then
     echo "arg1 - GitHub SLUG"
-    echo "arg2 - Number of rounds"
+    echo "arg2 - Timeout in seconds"
     exit
 fi
 
 slug=$1
-rounds=$2
+timeout=$2
 
 # Setup prolog stuff
 cd /home/awshi2/dt-fixing-tools/scripts/
@@ -27,43 +27,42 @@ source ~/.bashrc
 cd /home/awshi2/${slug}
 /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
+# Run the plugin, get module test times
+echo "*******************REED************************"
+echo "Running testplugin for getting module test time"
+date
+
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.ModuleTestTimePlugin -fn -B -e |& tee module_test_time.log
+
+# Run the plugin, original order
+echo "*******************REED************************"
+echo "Running testplugin for original"
+date
+
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -Ddetector.detector_type=flaky -fn -B -e |& tee original.log
+
+# Run the plugin, random class first, method second
 echo "*******************REED************************"
 echo "Running testplugin for randomizemethods"
 date
 
-# Run the plugin, with timeout of 6 hours
-timedout=0
-timeout 6h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddt.randomize.rounds=${rounds} -fn -B |& tee log
-if [ $? -eq 124 ]; then
-    timedout=1
-fi
-# Gather the results, put them up top
-RESULTSDIR=/home/awshi2/output/randomizemethods/
-mkdir -p ${RESULTSDIR}
-/home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
-mv log ${RESULTSDIR}
-if [[ ${timedout} == 1 ]]; then
-    touch ${RESULTSDIR}/TIMEOUT # Mark a file when it times out
-fi
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -fn -B -e |& tee random_class_method.log
 
+# Run the plugin, random class only
 echo "*******************REED************************"
 echo "Running testplugin for randomizeclasses"
 date
 
-# Run the plugin with different random ordering
-timedout=0
-timeout 6h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=random-class -fn -B |& tee log
-if [ $? -eq 124 ]; then
-    timedout=1
-fi
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -Ddetector.detector_type=random-class -fn -B -e |& tee random_class.log
+
 # Gather the results, put them up top
-RESULTSDIR=/home/awshi2/output/randomizeclasses/
+RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 /home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
-mv log ${RESULTSDIR}
-if [[ ${timedout} == 1 ]]; then
-    touch ${RESULTSDIR}/TIMEOUT # Mark a file when it times out
-fi
+mv module_test_time.log ${RESULTSDIR}
+mv original.log ${RESULTSDIR}
+mv random_class_method.log ${RESULTSDIR}
+mv random_class.log ${RESULTSDIR}
 
 echo "*******************REED************************"
 echo "Finished run_project.sh"
