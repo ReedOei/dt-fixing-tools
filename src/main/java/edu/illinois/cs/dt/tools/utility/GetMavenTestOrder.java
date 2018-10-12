@@ -179,7 +179,7 @@ public class GetMavenTestOrder extends StandardMain {
             }
 
             className = rootElement.getAttribute("name");
-            testTime = Long.parseLong(rootElement.getAttribute("time"));
+            testTime = Double.parseDouble(rootElement.getAttribute("time"));
 
             NodeList nList = doc.getElementsByTagName("testcase");
             for (int temp = 0; temp < nList.getLength(); temp++) {

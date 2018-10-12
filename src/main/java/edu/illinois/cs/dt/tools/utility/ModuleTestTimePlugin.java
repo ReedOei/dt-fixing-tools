@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
@@ -20,19 +21,11 @@ import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
  * Created by winglam on 10/11/18.
  */
 public class ModuleTestTimePlugin  extends TestPlugin {
-    private final Path outputPath;
     private String coordinates;
-    private InstrumentingSmartRunner runner;
 
     // Don't delete this.
     // This is actually used, provided you call this class via Maven (used by the testrunner plugin)
     public ModuleTestTimePlugin() {
-        outputPath = DetectorPathManager.detectionResults();
-    }
-
-    public ModuleTestTimePlugin(final Path outputPath, final InstrumentingSmartRunner runner) {
-        this.outputPath = outputPath;
-        this.runner = runner;
     }
 
     @Override
@@ -42,20 +35,31 @@ public class ModuleTestTimePlugin  extends TestPlugin {
         final Path surefireReportsPath = Paths.get(mavenProject.getBuild().getDirectory()).resolve("surefire-reports");
         final Path mvnTestLog = Paths.get("/home/awshi2/mvn-test.log");
         try {
-            final List<TestClassData> testClassData = new GetMavenTestOrder(surefireReportsPath, mvnTestLog).testClassDataList();
-
-
             final Path outputFile = Paths.get(getMavenProjectParent(mavenProject).getBasedir().getAbsolutePath(),
-                                              "mvn_module_test_time.log");
-            double totalTime = 0;
-            for (TestClassData data : testClassData) {
-                totalTime += data.classTime;
-            }
+                    "module-test-time.csv");
 
-            String outputStr = coordinates + "," + totalTime;
+            if (Files.exists(surefireReportsPath)) {
+                final List<TestClassData> testClassData = new GetMavenTestOrder(surefireReportsPath, mvnTestLog).testClassDataList();
 
-            Files.write(outputFile, Arrays.asList(outputStr), StandardCharsets.UTF_8,
+                double totalTime = 0;
+                for (TestClassData data : testClassData) {
+                    totalTime += data.classTime;
+                }
+
+                String outputStr = coordinates + "," + totalTime;
+
+                System.out.println(outputStr);
+
+                Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
                         Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+            } else {
+                String outputStr = coordinates + "," + 0;
+
+                System.out.println(outputStr);
+
+                Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
+                        Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
