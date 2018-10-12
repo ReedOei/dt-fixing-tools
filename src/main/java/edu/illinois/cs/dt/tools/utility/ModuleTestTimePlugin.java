@@ -1,7 +1,6 @@
 package edu.illinois.cs.dt.tools.utility;
 
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
-
 import org.apache.maven.project.MavenProject;
 
 import java.io.IOException;
@@ -10,12 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
-import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 
 /**
  * Created by winglam on 10/11/18.

@@ -146,8 +146,20 @@ public class DetectorPlugin extends TestPlugin {
                         .map(row -> Double.valueOf(row.get(1)))
                         .orElse(0.0);
 
-        final double timeout =
-                Math.max(2.0, moduleTime / totalTime * Configuration.config().getProperty("detector.timeout", 6 * 3600)); // 6 hours
+        final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0);
+        double timeout =
+                Math.max(2.0, moduleTime / totalTime * mainTimeout); // 6 hours
+
+        // Can only happen when the totalTime is 0. This means it will occur for all projects.
+        // In this case, just allocate equal time to everyone.
+        if (Double.isNaN(timeout)) {
+            if (csv.size() > 0) {
+                timeout = mainTimeout / csv.size();
+            } else {
+                // This makes no sense, because this means there are no modules
+                throw new IllegalStateException("No modules/test times found in " + timeCsv + "!");
+            }
+        }
 
         TestPluginPlugin.mojo().getLog().info("TIMEOUT_CALCULATED: Giving " + coordinates + " " + timeout + " seconds to run for " +
             DetectorFactory.detectorType());
