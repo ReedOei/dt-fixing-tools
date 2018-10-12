@@ -7,14 +7,16 @@ date
 # This script is run inside the Docker image, for single experiment (one project)
 # Should only be invoked by the run_experiment.sh script
 
-if [[ $1 == "" ]] || [[ $2 == "" ]]; then
+if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]]; then
     echo "arg1 - GitHub SLUG"
-    echo "arg2 - Timeout in seconds"
+    echo "arg2 - Number of rounds"
+    echo "arg3 - Timeout in seconds"
     exit
 fi
 
 slug=$1
-timeout=$2
+rounds=$2
+timeout=$3
 
 # Setup prolog stuff
 cd /home/awshi2/dt-fixing-tools/scripts/
@@ -39,21 +41,21 @@ echo "*******************REED************************"
 echo "Running testplugin for original"
 date
 
-/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -Ddetector.detector_type=flaky -fn -B -e |& tee original.log
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=flaky -fn -B -e |& tee original.log
 
 # Run the plugin, random class first, method second
 echo "*******************REED************************"
 echo "Running testplugin for randomizemethods"
 date
 
-/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -fn -B -e |& tee random_class_method.log
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -Ddt.randomize.rounds=${rounds} -fn -B -e |& tee random_class_method.log
 
 # Run the plugin, random class only
 echo "*******************REED************************"
 echo "Running testplugin for randomizeclasses"
 date
 
-/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -Ddetector.detector_type=random-class -fn -B -e |& tee random_class.log
+/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Ddetector.timeout=${timeout} -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=random-class -fn -B -e |& tee random_class.log
 
 # Gather the results, put them up top
 RESULTSDIR=/home/awshi2/output/
