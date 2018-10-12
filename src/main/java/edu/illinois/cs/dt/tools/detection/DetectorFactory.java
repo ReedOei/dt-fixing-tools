@@ -8,7 +8,7 @@ import java.util.List;
 public class DetectorFactory {
     public static final int ROUNDS = Configuration.config().getProperty("dt.randomize.rounds", 20);
 
-    private static String detectorType() {
+    public static String detectorType() {
         return Configuration.config().getProperty("detector.detector_type", "random");
     }
 

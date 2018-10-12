@@ -1,6 +1,8 @@
 package edu.illinois.cs.dt.tools.detection;
 
 import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.opencsv.CSVReader;
+import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
@@ -12,18 +14,24 @@ import edu.illinois.cs.dt.tools.utility.TestClassData;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class DetectorPlugin extends TestPlugin {
     private final Path outputPath;
@@ -75,8 +83,68 @@ public class DetectorPlugin extends TestPlugin {
         }
     }
 
-    private long moduleTimeout(final MavenProject mavenProject) {
-        return Configuration.config().getProperty("detector.timeout", 6 * 3600); // 6 hours
+    // TODO: copy to eunomia
+    private static ListEx<ListEx<String>> csv(final Path path) throws IOException {
+        try (final FileInputStream fis = new FileInputStream(path.toAbsolutePath().toString());
+             final InputStreamReader isr = new InputStreamReader(fis);
+             final CSVReader reader = new CSVReader(isr)) {
+            return new ListEx<>(reader.readAll()).map(ListEx::fromArray);
+        }
+    }
+
+    private static <T> T until(final T t, final Function<T, T> f, final Predicate<T> pred) {
+        if (pred.test(t)) {
+            return t;
+        } else {
+            return until(f.apply(t), f, pred);
+        }
+    }
+
+    private static <T> T untilNull(final T t, final Function<T, T> f) {
+        return until(t, f, v -> f.apply(v) == null);
+    }
+
+    private static ListEx<ListEx<String>> transpose(final ListEx<ListEx<String>> rows) {
+        final ListEx<ListEx<String>> result = new ListEx<>();
+
+        final int len = rows.get(0).size();
+
+        for (int i = 0; i < len; i++) {
+            final int finalI = i;
+            result.add(rows.map(s -> s.get(finalI)));
+        }
+
+        return result;
+    }
+
+    private long moduleTimeout(final MavenProject mavenProject) throws IOException {
+        final MavenProject parent = untilNull(mavenProject, MavenProject::getParent);
+
+        final Path timeCsv = parent.getBasedir().toPath().resolve("module-test-time.csv");
+        Files.copy(timeCsv, DetectorPathManager.detectionResults().resolve("module-test-time.csv"), StandardCopyOption.REPLACE_EXISTING);
+        final ListEx<ListEx<String>> csv = csv(timeCsv);
+
+        // Skip the header row, sum the second column to get the total time
+        final double totalTime =
+                csv.stream()
+                        .mapToDouble(row -> Double.valueOf(row.get(1)))
+                        .sum();
+
+        // Lookup ourselves in the csv to see how long we took
+        final Double moduleTime =
+                csv.stream()
+                        .filter(row -> row.get(0).equals(coordinates))
+                        .findFirst()
+                        .map(row -> Double.valueOf(row.get(1)))
+                        .orElse(0.0);
+
+        final double timeout =
+                Math.max(2.0, moduleTime / totalTime * Configuration.config().getProperty("detector.timeout", 6 * 3600)); // 6 hours
+
+        TestPluginPlugin.mojo().getLog().info("TIMEOUT_CALCULATED: Giving " + coordinates + " " + timeout + " seconds to run for " +
+            DetectorFactory.detectorType());
+
+        return (long) timeout; // Allocate time proportionally
     }
 
     @Override
@@ -86,6 +154,7 @@ public class DetectorPlugin extends TestPlugin {
         try {
             Files.deleteIfExists(DetectorPathManager.errorPath());
             Files.createDirectories(DetectorPathManager.cachePath());
+            Files.createDirectories(DetectorPathManager.detectionResults());
 
             SimpleTimeLimiter.create(Executors.newCachedThreadPool())
                     .callWithTimeout(detectorExecute(mavenProject), moduleTimeout(mavenProject), TimeUnit.SECONDS);
@@ -139,6 +208,10 @@ public class DetectorPlugin extends TestPlugin {
     private List<String> getOriginalOrder(final MavenProject mavenProject) throws IOException {
         if (!Files.exists(DetectorPathManager.originalOrderPath())) {
             final Path surefireReportsPath = Paths.get(mavenProject.getBuild().getDirectory()).resolve("surefire-reports");
+
+            if (!Files.exists(surefireReportsPath)) {
+                return new ArrayList<>();
+            }
 
             // TODO: Make this a non-absolute path
             final Path mvnTestLog = Paths.get("/home/awshi2/mvn-test.log");
