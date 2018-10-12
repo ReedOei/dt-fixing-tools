@@ -33,31 +33,24 @@ public class ModuleTestTimePlugin  extends TestPlugin {
             final Path outputFile = Paths.get(getMavenProjectParent(mavenProject).getBasedir().getAbsolutePath(),
                     "module-test-time.csv");
 
-            if (Files.exists(surefireReportsPath)) {
-                final List<TestClassData> testClassData = new GetMavenTestOrder(surefireReportsPath, mvnTestLog).testClassDataList();
+            final String outputStr = coordinates + "," + timeFrom(surefireReportsPath, mvnTestLog);
 
-                double totalTime = 0;
-                for (TestClassData data : testClassData) {
-                    totalTime += data.classTime;
-                }
+            System.out.println(outputStr);
 
-                String outputStr = coordinates + "," + totalTime;
-
-                System.out.println(outputStr);
-
-                Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
-                        Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
-            } else {
-                String outputStr = coordinates + "," + 0;
-
-                System.out.println(outputStr);
-
-                Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
-                        Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
-            }
+            Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
+                    Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private double timeFrom(final Path path, final Path mvnTestLog) throws IOException {
+        if (Files.exists(path)) {
+            return new GetMavenTestOrder(path, mvnTestLog).testClassDataList().stream()
+                    .mapToDouble(TestClassData::classTime).sum();
+        }
+
+        return 0.0;
     }
 
     private MavenProject getMavenProjectParent(MavenProject mavenProject) {
