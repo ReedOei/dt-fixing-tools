@@ -23,6 +23,8 @@ public class SQLStatements {
 
     public static final Path INSERT_VERIFICATION_ROUND = Paths.get("src/main/sql/verify_round_insert.sql");
 
+    public static final Path INSERT_MODULE_TEST_TIME = Paths.get("src/main/sql/module_test_time_insert.sql");
+
     static {
         ensureExists(INSERT_RAW_SUBJECT);
 
@@ -41,6 +43,8 @@ public class SQLStatements {
         ensureExists(INSERT_DETECTION_ROUND_TEST_RUN);
 
         ensureExists(INSERT_VERIFICATION_ROUND);
+
+        ensureExists(INSERT_MODULE_TEST_TIME);
     }
 
     private static void ensureExists(final Path p) {

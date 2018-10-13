@@ -70,12 +70,23 @@ public class Analysis extends StandardMain {
         System.exit(1);
     }
 
+    // TODO: copy to eunomia
+    public static ListEx<ListEx<String>> csv(final Path path) throws IOException {
+        try (final FileInputStream fis = new FileInputStream(path.toAbsolutePath().toString());
+             final InputStreamReader isr = new InputStreamReader(fis);
+             final CSVReader reader = new CSVReader(isr)) {
+            return new ListEx<>(reader.readAll()).map(ListEx::fromArray);
+        }
+    }
+
     @Override
     protected void run() throws Exception {
         createTables();
 
         insertFullSubjectList("popular", Paths.get("scripts").resolve("docker").resolve("data").resolve("popular_150.csv"));
         insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("new-subj.csv"));
+
+        System.out.println();
 
         final List<Path> allResultsFolders = Files.walk(results)
                 .filter(this::containsResultsFolders)
@@ -135,12 +146,9 @@ public class Analysis extends StandardMain {
     }
 
     private boolean containsResultsFolders(final Path p) {
-        final Path testRuns = p.resolve(RunnerPathManager.TEST_RUNS);
         final Path detectionResults = p.resolve(DetectorPathManager.DETECTION_RESULTS);
 
-        final boolean containsResults =
-                Files.exists(testRuns) && Files.exists(detectionResults);
-//                Files.exists(detectionResults.resolve("flaky")) && Files.exists(detectionResults.resolve("random"));
+        final boolean containsResults = Files.exists(detectionResults) || Files.exists(p.resolve("error"));
 
         if (!containsResults) {
             return false;
@@ -169,6 +177,13 @@ public class Analysis extends StandardMain {
         final String name = path.getFileName().toString();
         final String slug = parent.substring(0, parent.indexOf('_')).replace('.', '/');
 
+        if (sqlite.checkExists("subject", name)) {
+            System.out.println("[INFO] "  + name + " already in the database, skipping.");
+            return;
+        }
+
+        insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
+
         insertSubject(name, slug);
 
         insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
@@ -182,8 +197,37 @@ public class Analysis extends StandardMain {
         insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
         insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
 
+        sqlite.save();
+
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
         System.out.println();
+    }
+
+    private void insertModuleTestTime(final String slug, final Path moduleTestTimePath) throws SQLException, IOException {
+        if (!Files.exists(moduleTestTimePath)) {
+            return;
+        }
+
+        System.out.println("[INFO] Inserting module test time for: " + slug);
+
+        if (!sqlite.checkExists("subject", "slug", slug)) {
+            final ListEx<ListEx<String>> rows = csv(moduleTestTimePath);
+
+            for (ListEx<String> row : rows) {
+                final String coordinates = row.get(0);
+                final double time = Double.parseDouble(row.get(1));
+
+                final String[] split = coordinates.split(":");
+
+                sqlite.statement(SQLStatements.INSERT_MODULE_TEST_TIME)
+                        .param(coordinates)
+                        .param(split[0])
+                        .param(split[1])
+                        .param(split[2])
+                        .param(time)
+                        .executeUpdate();
+            }
+        }
     }
 
     private String findParent(final Path path) {
@@ -207,26 +251,29 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private void insertTestRuns(final String name, final Path testRunResults) throws IOException {
+    private void insertTestRuns(final String name, final Path testRunResults) throws IOException, SQLException {
+        if (!Files.isDirectory(testRunResults)) {
+            return;
+        }
+
         final ListEx<Path> paths = listFiles(testRunResults);
 
         System.out.println("[INFO] Inserting test runs for " + name + " (" + paths.size() + " runs)");
 
-        final AtomicInteger i = new AtomicInteger(1);
-        paths.forEach(p -> {
-            try {
-                System.out.print("\r[INFO] Inserting run " + i + " of " + paths.size());
-                insertTestRunResult(name, new Gson().fromJson(FileUtil.readFile(p), TestRunResult.class));
-                i.getAndIncrement();
-            } catch (IOException | SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        for (int i = 0; i < paths.size(); i++) {
+            final Path p = paths.get(i);
+            System.out.print("\r[INFO] Inserting run " + (i + 1) + " of " + paths.size());
+            insertTestRunResult(name, new Gson().fromJson(FileUtil.readFile(p), TestRunResult.class));
+        }
 
         System.out.println();
     }
 
     private void insertTestRunResult(final String name, final TestRunResult testRunResult) throws SQLException {
+        if (testRunResult == null) {
+            return;
+        }
+
         if (sqlite.checkExists("test_run_result", testRunResult.id())) {
             return;
         }
@@ -292,6 +339,10 @@ public class Analysis extends StandardMain {
     private void insertDetectionRound(final String name, final String roundType,
                                        final int roundNumber, final DetectionRound round)
             throws IOException, SQLException {
+        if (round == null) {
+            return;
+        }
+
         final int unfilteredId = insertDependentTestList(round.unfilteredTests());
         final int filteredId = insertDependentTestList(round.filteredTests());
 
