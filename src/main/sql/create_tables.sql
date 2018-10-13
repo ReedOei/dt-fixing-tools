@@ -109,6 +109,15 @@ create table confirmation_runs
   failing_result text not null
 );
 
+create table module_test_time
+(
+  coordinates text not null,
+  groupId text not null,
+  artifactId text not null,
+  version text not null,
+  test_time real not null
+);
+
 create view subject_info as
 select s.name as name,
        max(trr.test_count) as test_count

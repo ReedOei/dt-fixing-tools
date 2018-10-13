@@ -20,6 +20,13 @@ public class Procedure {
         this.statement = statement;
     }
 
+    public Procedure param(final double d) throws SQLException {
+        statement.setDouble(index, d);
+        index++;
+
+        return this;
+    }
+
     public Procedure param(final int i) throws SQLException {
         statement.setInt(index, i);
         index++;
