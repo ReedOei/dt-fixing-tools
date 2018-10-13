@@ -104,6 +104,14 @@ public class DetectorPlugin extends TestPlugin {
         return until(t, f, v -> f.apply(v) == null);
     }
 
+    private MavenProject getMavenProjectParent(MavenProject mavenProject) {
+        MavenProject parentProj = mavenProject;
+        while (parentProj.getParent() != null && parentProj.getParent().getBasedir() != null) {
+            parentProj = parentProj.getParent();
+        }
+        return parentProj;
+    }
+
     private static ListEx<ListEx<String>> transpose(final ListEx<ListEx<String>> rows) {
         final ListEx<ListEx<String>> result = new ListEx<>();
 
@@ -118,7 +126,7 @@ public class DetectorPlugin extends TestPlugin {
     }
 
     private long moduleTimeout(final MavenProject mavenProject) throws IOException {
-        final MavenProject parent = untilNull(mavenProject, MavenProject::getParent);
+        final MavenProject parent = getMavenProjectParent(mavenProject);
 
         final Path timeCsv = parent.getBasedir().toPath().resolve("module-test-time.csv");
         Files.copy(timeCsv, DetectorPathManager.detectionResults().resolve("module-test-time.csv"), StandardCopyOption.REPLACE_EXISTING);
@@ -138,8 +146,21 @@ public class DetectorPlugin extends TestPlugin {
                         .map(row -> Double.valueOf(row.get(1)))
                         .orElse(0.0);
 
-        final double timeout =
-                Math.max(2.0, moduleTime / totalTime * Configuration.config().getProperty("detector.timeout", 6 * 3600)); // 6 hours
+        final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0); // 6 hours
+
+        double timeout =
+                Math.max(2.0, moduleTime * mainTimeout / totalTime);
+
+        // Can only happen when the totalTime is 0. This means it will occur for all projects.
+        // In this case, just allocate equal time to everyone.
+        if (Double.isNaN(timeout)) {
+            if (csv.size() > 0) {
+                timeout = mainTimeout / csv.size();
+            } else {
+                // This makes no sense, because this means there are no modules
+                throw new IllegalStateException("No modules/test times found in " + timeCsv);
+            }
+        }
 
         TestPluginPlugin.mojo().getLog().info("TIMEOUT_CALCULATED: Giving " + coordinates + " " + timeout + " seconds to run for " +
             DetectorFactory.detectorType());

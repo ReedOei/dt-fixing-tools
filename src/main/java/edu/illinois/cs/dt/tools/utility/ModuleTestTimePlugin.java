@@ -1,7 +1,6 @@
 package edu.illinois.cs.dt.tools.utility;
 
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
-
 import org.apache.maven.project.MavenProject;
 
 import java.io.IOException;
@@ -10,12 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
-import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 
 /**
  * Created by winglam on 10/11/18.
@@ -38,36 +33,29 @@ public class ModuleTestTimePlugin  extends TestPlugin {
             final Path outputFile = Paths.get(getMavenProjectParent(mavenProject).getBasedir().getAbsolutePath(),
                     "module-test-time.csv");
 
-            if (Files.exists(surefireReportsPath)) {
-                final List<TestClassData> testClassData = new GetMavenTestOrder(surefireReportsPath, mvnTestLog).testClassDataList();
+            final String outputStr = coordinates + "," + timeFrom(surefireReportsPath, mvnTestLog);
 
-                double totalTime = 0;
-                for (TestClassData data : testClassData) {
-                    totalTime += data.classTime;
-                }
+            System.out.println(outputStr);
 
-                String outputStr = coordinates + "," + totalTime;
-
-                System.out.println(outputStr);
-
-                Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
-                        Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
-            } else {
-                String outputStr = coordinates + "," + 0;
-
-                System.out.println(outputStr);
-
-                Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
-                        Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
-            }
+            Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
+                    Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private double timeFrom(final Path path, final Path mvnTestLog) throws IOException {
+        if (Files.exists(path)) {
+            return new GetMavenTestOrder(path, mvnTestLog).testClassDataList().stream()
+                    .mapToDouble(TestClassData::classTime).sum();
+        }
+
+        return 0.0;
+    }
+
     private MavenProject getMavenProjectParent(MavenProject mavenProject) {
         MavenProject parentProj = mavenProject;
-        while (parentProj.getParent() != null) {
+        while (parentProj.getParent() != null && parentProj.getParent().getBasedir() != null) {
             parentProj = parentProj.getParent();
         }
         return parentProj;

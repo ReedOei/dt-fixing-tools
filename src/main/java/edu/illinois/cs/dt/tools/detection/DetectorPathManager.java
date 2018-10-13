@@ -45,6 +45,6 @@ public class DetectorPathManager extends PathManager {
     }
 
     public static Path originalResultsLog() {
-        return path(ORIGINAL_RESULTS_LOG);
+        return detectionResults().resolve(ORIGINAL_RESULTS_LOG);
     }
 }

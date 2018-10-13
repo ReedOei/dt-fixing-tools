@@ -37,7 +37,8 @@ public class RandomDetector extends ExecutingDetector {
             final Stream<TestResult> values = origResult.results().values().stream();
 
             try {
-                Files.write(DetectorPathManager.originalResultsLog(), (origResult.id() + "\n").getBytes(), StandardOpenOption.APPEND);
+                Files.write(DetectorPathManager.originalResultsLog(), (origResult.id() + "\n").getBytes(),
+                        Files.exists(DetectorPathManager.originalOrderPath()) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
             } catch (IOException ignored) {}
 
             // Ignored tests will show up as SKIPPED, but that's fine because surefire would've skipped them too

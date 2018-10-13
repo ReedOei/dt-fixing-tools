@@ -12,4 +12,16 @@ public class TestClassData {
         this.testNames = testNames;
         this.classTime = classTime;
     }
+
+    public double classTime() {
+        return classTime;
+    }
+
+    public String className() {
+        return className;
+    }
+
+    public List<String> testNames() {
+        return testNames;
+    }
 }
