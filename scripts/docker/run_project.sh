@@ -34,7 +34,8 @@ echo "*******************REED************************"
 echo "Running testplugin for getting module test time"
 date
 
-/home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.ModuleTestTimePlugin -fn -B -e |& tee module_test_time.log
+# Optional timeout... In practice our tools really shouldn't need 1hr to parse a project's surefire reports. 
+timeout 1h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Denforcer.skip=true -Drat.skip=true -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.ModuleTestTimePlugin -fn -B -e |& tee module_test_time.log
 
 
 # Run the plugin, reversing the original order (reverse class and methods)
