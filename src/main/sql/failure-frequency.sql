@@ -1,4 +1,4 @@
-select round(avg(100 * i.perc), 2)
+select round(avg(100 * i.perc), 1)
 from
 (
   select distinct ti.test_name, ftc.flaky_type, cast(ti.failures as float) / rounds as perc, ti.failures, si.rounds

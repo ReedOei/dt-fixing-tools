@@ -1,6 +1,6 @@
 package edu.illinois.cs.dt.tools.detection;
 
-import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.google.common.collect.Lists;
 import com.opencsv.CSVReader;
 import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.testrunner.configuration.Configuration;
@@ -19,7 +19,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,9 +26,6 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -168,19 +164,23 @@ public class DetectorPlugin extends TestPlugin {
         return (long) timeout; // Allocate time proportionally
     }
 
-    private int moduleRounds(final MavenProject mavenProject) throws IOException {
-        final MavenProject parent = getMavenProjectParent(mavenProject);
+    private double readRealTime(final Path path) throws IOException {
+        for (final String line : Lists.reverse(Files.readAllLines(path))) {
+            final String[] split = line.split(" ");
 
-        final Path timeCsv = parent.getBasedir().toPath().resolve("module-test-time.csv");
-        Files.copy(timeCsv, DetectorPathManager.detectionResults().resolve("module-test-time.csv"), StandardCopyOption.REPLACE_EXISTING);
-        final ListEx<ListEx<String>> csv = csv(timeCsv);
+            if (split.length > 1 && split[0].equals("real")) {
+                return Double.parseDouble(split[1]);
+            }
+        }
 
-        // Skip the header row, sum the second column to get the total time
-        final double totalTime =
-                csv.stream()
-                        .mapToDouble(row -> Double.valueOf(row.get(1)))
-                        .sum();
+        return 0.0;
+    }
 
+    private int moduleRounds() throws IOException {
+        // TODO: Make path not absolute/hard-coded
+        final Path timeCsv = Paths.get("/home/awshi2/mvn-test-time.log");
+
+        final double totalTime = readRealTime(timeCsv);
         final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0); // 6 hours
 
         TestPluginPlugin.mojo().getLog().info("TIMEOUT_VALUE: Using a timeout of "
@@ -202,7 +202,7 @@ public class DetectorPlugin extends TestPlugin {
             Files.createDirectories(DetectorPathManager.cachePath());
             Files.createDirectories(DetectorPathManager.detectionResults());
 
-            detectorExecute(mavenProject, moduleRounds(mavenProject));
+            detectorExecute(mavenProject, moduleRounds());
         } catch (Throwable t) {
             writeError(t);
         }

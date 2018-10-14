@@ -1,27 +1,39 @@
 package edu.illinois.cs.dt.tools.analysis;
 
 import com.reedoei.eunomia.collections.ListEx;
-import com.reedoei.eunomia.functional.TriFunction;
 import com.reedoei.eunomia.latex.CellType;
 import com.reedoei.eunomia.latex.LatexTable;
 
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SQLTable {
+public abstract class SQLTable {
+    private final Procedure procedure;
 
-    public static LatexTable generateAndFormatTable(final TriFunction<List<String>, List<String>, LatexTable, LatexTable> f
-            , final Procedure procedure) throws SQLException {
+    public SQLTable(final Procedure procedure) {
+        this.procedure = procedure;
+    }
+
+    public abstract LatexTable formatTable(final List<String> columns, final List<String> rows, final LatexTable table);
+
+    public LatexTable generateTable() throws SQLException {
         final QueryResult queryResult = procedure.tableQuery();
 
         final ListEx<String> columnNames = queryResult.columns().map(QueryColumn::label);
         final List<String> rowNames = queryResult.table().map(l -> l.get(0));
 
         final LatexTable table = new LatexTable(columnNames, rowNames);
+
+        for (final QueryColumn queryColumn : queryResult.columns()) {
+            if (queryColumn.isIntegral()) {
+                table.setColumnDisplay(queryColumn.label(), CellType.VALUE_SINGLE_COL);
+            } else if (queryColumn.isDecimal()) {
+                table.setColumnDisplay(queryColumn.label(), CellType.VALUE_SINGLE_COL);
+            }
+        }
 
         int rowIndex = 0;
         for (final LinkedHashMap<String, String> rows : queryResult.rows()) {
@@ -49,11 +61,7 @@ public class SQLTable {
 
             // Set up display settings
             for (final String colLabel : rows.keySet()) {
-                if (queryResult.column(colLabel).isIntegral()) {
-                    table.setupCell(colLabel, rowNames.get(rowIndex), CellType.VALUE_SINGLE_COL);
-                } else if (queryResult.column(colLabel).isDecimal()) {
-                    table.setupCell(colLabel, rowNames.get(rowIndex), CellType.JUST_PERCENT);
-                } else {
+                if (!queryResult.column(colLabel).isIntegral() && !queryResult.column(colLabel).isDecimal()) {
                     // Override the default display with the value here
                     table.setupCell(colLabel, rowNames.get(rowIndex), rows.get(colLabel));
                 }
@@ -62,10 +70,6 @@ public class SQLTable {
             rowIndex++;
         }
 
-        return f.apply(columnNames, rowNames, table);
-    }
-
-    public static LatexTable generateTable(final Procedure procedure) throws SQLException {
-        return generateAndFormatTable((a, b, table) -> table, procedure);
+        return formatTable(columnNames, rowNames, table);
     }
 }

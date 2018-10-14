@@ -31,7 +31,8 @@ public class CommandGenerator extends StandardMain {
     protected void run() throws Exception {
         System.out.println(commandQuery("numTests", SQLStatements.COUNT_TESTS));
         System.out.println(commandQuery("numModules", SQLStatements.COUNT_MODULES));
-        System.out.println(commandQuery("numProjsResults", SQLStatements.COUNT_MODULES_RESULTS));
+        System.out.println(commandQuery("numModulesResults", SQLStatements.COUNT_MODULES_RESULTS));
+        System.out.println(commandQuery("numProjsResults", SQLStatements.COUNT_PROJECTS_RESULTS));
 
         System.out.println(commandQuery("numProjODTests",
                 sqlite.statement(SQLStatements.COUNT_PROJECTS_WITH_FLAKY).param("random")));
@@ -43,17 +44,14 @@ public class CommandGenerator extends StandardMain {
         System.out.println(commandQuery("numModuleNOTests",
                 sqlite.statement(SQLStatements.COUNT_MODULES_WITH_FLAKY).param("flaky")));
 
-        // TODO: Figure out exaclty how this should work
-//        System.out.println(commandQuery("numProjODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
-//        System.out.println(commandQuery("numModuleODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
+        System.out.println(commandQuery("numProjODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
+        System.out.println(commandQuery("numModuleODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
 
         System.out.println(commandQuery("numODTests",
                 sqlite.statement(SQLStatements.COUNT_FLAKY).param("random")));
         System.out.println(commandQuery("numNOTests",
                 sqlite.statement(SQLStatements.COUNT_FLAKY).param("flaky")));
-
-        // TODO: Figure out exaclty how this should work
-//        System.out.println(commandQuery("numODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
+        System.out.println(commandQuery("numODNOTests", SQLStatements.COUNT_ODNO_TESTS));
 
         System.out.println(commandQuery("percODTestFailOne", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FAILURE).param(1)));
@@ -64,8 +62,15 @@ public class CommandGenerator extends StandardMain {
 
         System.out.println(commandQuery("numNOTestAllRandOrig", SQLStatements.TOTAL_NO_ORIG_AND_RANDOM));
 
-        System.out.println(commandQuery("percODTests", "\\%",
+        System.out.println(commandQuery("percODTestsRandom", "\\%",
+                sqlite.statement(SQLStatements.PROBABILITY_FIND_RANDOM)));
+        System.out.println(commandQuery("percNOTestsRandom", "\\%",
+                sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY_NO_ORIGINAL)));
+        System.out.println(commandQuery("percNOTestsAll", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY)));
+
+        System.out.println(commandQuery("percBestODOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_RANDOM)));
+        System.out.println(commandQuery("percBestNOOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_FLAKY)));
 
         // TODO: Do the same for NO. Do we want to count all runs as reruns, or just original runs?
 //        System.out.println(commandQuery("percODTests",
