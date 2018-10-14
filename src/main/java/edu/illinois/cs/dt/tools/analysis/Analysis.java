@@ -8,7 +8,6 @@ import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
-import edu.illinois.cs.dt.tools.detection.Detector;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
@@ -26,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,9 +95,8 @@ public class Analysis extends StandardMain {
 
         System.out.println();
 
-        final List<Path> allResultsFolders = Files.walk(results)
-                .filter(this::containsResultsFolders)
-                .collect(Collectors.toList());
+        final List<Path> allResultsFolders = new ArrayList<>();
+        Files.walkFileTree(results, new ResultDirVisitor(allResultsFolders));
 
         for (int i = 0; i < allResultsFolders.size(); i++) {
             final Path p = allResultsFolders.get(i);
@@ -150,22 +149,6 @@ public class Analysis extends StandardMain {
     private void runPostSetup() throws IOException {
         System.out.println("[INFO] Running post setup queries");
         sqlite.executeFile(SQLStatements.POST_SETUP);
-    }
-
-    private boolean containsResultsFolders(final Path p) {
-        final Path detectionResults = p.resolve(DetectorPathManager.DETECTION_RESULTS);
-
-        final boolean containsResults = Files.exists(detectionResults) || Files.exists(p.resolve("error"));
-
-        if (!containsResults) {
-            return false;
-        }
-
-        final Path parent = p.getParent();
-
-        // We only want to run randomizeclasses, not both, because otherwise we'll try to insert some runs twice
-        return !parent.getFileName().toString().equals("randomizemethods") ||
-               !Files.exists(parent.resolveSibling("randomizeclasses"));
     }
 
     private void createTables() throws IOException {
@@ -480,4 +463,5 @@ public class Analysis extends StandardMain {
             }
         });
     }
+
 }
