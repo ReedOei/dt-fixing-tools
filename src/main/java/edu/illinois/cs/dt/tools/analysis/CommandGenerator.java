@@ -55,11 +55,11 @@ public class CommandGenerator extends StandardMain {
         // TODO: Figure out exaclty how this should work
 //        System.out.println(commandQuery("numODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
 
-        System.out.println(commandQuery("percODTestFail1", "\\%",
+        System.out.println(commandQuery("percODTestFailOne", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FAILURE).param(1)));
-        System.out.println(commandQuery("percODTestFail10", "\\%",
+        System.out.println(commandQuery("percODTestFailTen", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FAILURE).param(10)));
-        System.out.println(commandQuery("percODTestFail20", "\\%",
+        System.out.println(commandQuery("percODTestFailTwenty", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FAILURE).param(20)));
 
         System.out.println(commandQuery("numNOTestAllRandOrig", SQLStatements.TOTAL_NO_ORIG_AND_RANDOM));

@@ -88,6 +88,8 @@ mv random_class_method.log ${RESULTSDIR}
 mv random_class.log ${RESULTSDIR}
 mv reverse_original.log ${RESULTSDIR}
 mv reverse_class.log ${RESULTSDIR}
+mv /home/awshi2/mvn-test.log ${RESULTSDIR}
+mv /home/awshi2/mvn-test-time.log ${RESULTSDIR}
 
 
 echo "*******************REED************************"
