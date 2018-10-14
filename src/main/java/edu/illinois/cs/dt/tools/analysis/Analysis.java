@@ -8,7 +8,9 @@ import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
+import edu.illinois.cs.dt.tools.detection.Detector;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
+import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
@@ -191,22 +193,26 @@ public class Analysis extends StandardMain {
 
         insertSubject(name, slug, path);
 
-        insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
+        // If we got a no passing order exception, don't insert any of the other results
+        if (!Files.exists(path.resolve("error")) ||
+            !FileUtil.readFile(path.resolve("error")).contains(NoPassingOrderException.class.getSimpleName())) {
+            insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
 
-        insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("flaky"));
-        insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random"));
-        insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random-class"));
-        insertDetectionResults(name, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("reverse"));
-        insertDetectionResults(name, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("reverse-class"));
+            insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertDetectionResults(name, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertDetectionResults(name, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS));
 
-        insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-        insertVerificationResults(name, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-        insertVerificationResults(name, "reverse-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-        insertVerificationResults(name, "reverse-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-        insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-        insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-        insertVerificationResults(name, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-        insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "reverse-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "reverse-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+        }
 
 //        sqlite.save();
 
@@ -344,7 +350,9 @@ public class Analysis extends StandardMain {
                 .executeUpdate();
     }
 
-    private void insertDetectionResults(final String name, final String roundType, final Path detectionResults) throws IOException {
+    private void insertDetectionResults(final String name, final String roundType, final Path path) throws IOException {
+        final Path detectionResults = path.resolve(roundType);
+
         if (!Files.exists(detectionResults)) {
             return;
         }
