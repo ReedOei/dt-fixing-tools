@@ -168,6 +168,31 @@ public class DetectorPlugin extends TestPlugin {
         return (long) timeout; // Allocate time proportionally
     }
 
+    private int moduleRounds(final MavenProject mavenProject) throws IOException {
+        final MavenProject parent = getMavenProjectParent(mavenProject);
+
+        final Path timeCsv = parent.getBasedir().toPath().resolve("module-test-time.csv");
+        Files.copy(timeCsv, DetectorPathManager.detectionResults().resolve("module-test-time.csv"), StandardCopyOption.REPLACE_EXISTING);
+        final ListEx<ListEx<String>> csv = csv(timeCsv);
+
+        // Skip the header row, sum the second column to get the total time
+        final double totalTime =
+                csv.stream()
+                        .mapToDouble(row -> Double.valueOf(row.get(1)))
+                        .sum();
+
+        final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0); // 6 hours
+
+        TestPluginPlugin.mojo().getLog().info("TIMEOUT_VALUE: Using a timeout of "
+                + mainTimeout + ", and that the total mvn test time is: " + totalTime);
+
+        final int rounds = (int) (mainTimeout / totalTime);
+        TestPluginPlugin.mojo().getLog().info("ROUNDS_CALCULATED: Giving " + coordinates + " "
+                + rounds + " rounds to run for " + DetectorFactory.detectorType());
+
+        return rounds;
+    }
+
     @Override
     public void execute(final MavenProject mavenProject) {
         this.coordinates = mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
@@ -177,53 +202,48 @@ public class DetectorPlugin extends TestPlugin {
             Files.createDirectories(DetectorPathManager.cachePath());
             Files.createDirectories(DetectorPathManager.detectionResults());
 
-            SimpleTimeLimiter.create(Executors.newCachedThreadPool())
-                    .callWithTimeout(detectorExecute(mavenProject), moduleTimeout(mavenProject), TimeUnit.SECONDS);
+            detectorExecute(mavenProject, moduleRounds(mavenProject));
         } catch (Throwable t) {
             writeError(t);
         }
     }
 
-    private <T> Callable<T> detectorExecute(final MavenProject mavenProject) {
-        return () -> {
-            final Option<Runner> runnerOption = RunnerFactory.from(mavenProject);
+    private void detectorExecute(final MavenProject mavenProject, final int rounds) {
+        final Option<Runner> runnerOption = RunnerFactory.from(mavenProject);
 
-            // We need to do two checks to make sure that we can run this project
-            // Firstly, we must be able to run it's tests (if we get a runner from the RunnerFactory, we're good)
-            // Secondly, there must be some tests (see below)
-            if (runnerOption.isDefined()) {
-                if (this.runner == null) {
-                    this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
-                }
-
-                try {
-                    final List<String> tests = getOriginalOrder(mavenProject);
-
-                    // If there are no tests, we can't run a flaky test detector
-                    if (!tests.isEmpty()) {
-                        Files.createDirectories(outputPath);
-                        Files.write(DetectorPathManager.originalOrderPath(), String.join(System.lineSeparator(), tests).getBytes());
-
-                        final Detector detector = DetectorFactory.makeDetector(runner, tests);
-                        TestPluginPlugin.mojo().getLog().info("Created dependent test detector (" + detector.getClass() + ").");
-
-                        detector.writeTo(outputPath);
-                    } else {
-                        final String errorMsg = "Module has no tests, not running detector.";
-                        TestPluginPlugin.mojo().getLog().info(errorMsg);
-                        writeError(errorMsg);
-                    }
-                } catch (IOException e) {
-                    writeError(e);
-                }
-            } else {
-                final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
-                TestPluginPlugin.mojo().getLog().info(errorMsg);
-                writeError(errorMsg);
+        // We need to do two checks to make sure that we can run this project
+        // Firstly, we must be able to run it's tests (if we get a runner from the RunnerFactory, we're good)
+        // Secondly, there must be some tests (see below)
+        if (runnerOption.isDefined()) {
+            if (this.runner == null) {
+                this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
             }
 
-            return null;
-        };
+            try {
+                final List<String> tests = getOriginalOrder(mavenProject);
+
+                // If there are no tests, we can't run a flaky test detector
+                if (!tests.isEmpty()) {
+                    Files.createDirectories(outputPath);
+                    Files.write(DetectorPathManager.originalOrderPath(), String.join(System.lineSeparator(), tests).getBytes());
+
+                    final Detector detector = DetectorFactory.makeDetector(runner, tests, rounds);
+                    TestPluginPlugin.mojo().getLog().info("Created dependent test detector (" + detector.getClass() + ").");
+
+                    detector.writeTo(outputPath);
+                } else {
+                    final String errorMsg = "Module has no tests, not running detector.";
+                    TestPluginPlugin.mojo().getLog().info(errorMsg);
+                    writeError(errorMsg);
+                }
+            } catch (IOException e) {
+                writeError(e);
+            }
+        } else {
+            final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
+            TestPluginPlugin.mojo().getLog().info(errorMsg);
+            writeError(errorMsg);
+        }
     }
 
     private List<String> getOriginalOrder(final MavenProject mavenProject) throws IOException {

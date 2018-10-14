@@ -187,10 +187,6 @@ public class Analysis extends StandardMain {
             return;
         }
 
-        if (slug.contains("guava")) {
-            return;
-        }
-
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
         insertSubject(name, slug, path);
