@@ -13,5 +13,4 @@ fi
 cd "$scripts_folder/.."
 
 mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.CommandGenerator" -Dexec.args="--db '$database'"
-bash "$scripts_folder/count-failed-modules.sh"
 

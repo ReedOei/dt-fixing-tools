@@ -360,6 +360,8 @@ public class Analysis extends StandardMain {
         System.out.println("[INFO] Inserting " + roundType + " detection results for " + name
                 + " (" + paths.size() + " results)");
 
+        // TODO: Remove nonconsecutive runs
+
         paths.forEach(p -> {
             final int roundNumber = roundNumber(p.getFileName().toString());
 
