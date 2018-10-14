@@ -186,9 +186,30 @@ public class Analysis extends StandardMain {
 
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
+        if (Files.exists(path.resolve(DetectorPathManager.ORIGINAL_ORDER))) {
+            if (!sqlite.checkExists("original_order", "subject_name", name)) {
+                final List<String> originalOrder = Files.readAllLines(path.resolve(DetectorPathManager.ORIGINAL_ORDER));
+                System.out.println("[INFO] Inserting original order for " + name + " (" + originalOrder.size() + " tests)");
+
+                final Procedure statement = sqlite.statement(SQLStatements.INSERT_ORIGINAL_ORDER);
+
+                statement.beginTransaction();
+
+                for (int i = 0; i < originalOrder.size(); i++) {
+                    statement
+                            .param(name)
+                            .param(originalOrder.get(i))
+                            .param(i).addBatch();
+                }
+
+                statement.executeBatch();
+                statement.commit();
+                statement.endTransaction();
+            }
+        }
+
         if (!sqlite.checkExists("subject", name)) {
             insertSubject(name, slug, path);
-            return;
         }
 
         // If we got a no passing order exception, don't insert any of the other results
@@ -264,24 +285,6 @@ public class Analysis extends StandardMain {
         if (!sqlite.checkExists("subject", name)) {
             sqlite.statement(SQLStatements.INSERT_SUBJECT).param(name).param(slug).executeUpdate();
         }
-
-        if (Files.exists(path.resolve(DetectorPathManager.ORIGINAL_ORDER))) {
-            final List<String> originalOrder = Files.readAllLines(path.resolve(DetectorPathManager.ORIGINAL_ORDER));
-            System.out.println("[INFO] Inserting original order for " + name + " (" + originalOrder.size() + " tests)");
-
-            final Procedure statement = sqlite.statement(SQLStatements.INSERT_ORIGINAL_ORDER);
-
-            statement.beginTransaction();
-            for (int i = 0; i < originalOrder.size(); i++) {
-                statement
-                    .param(name)
-                    .param(originalOrder.get(i))
-                    .param(i).addBatch();
-            }
-            statement.executeBatch();
-            statement.commit();
-            statement.endTransaction();
-        }
     }
 
     private void insertTestRuns(final String name, final Path testRunResults) throws IOException, SQLException {
@@ -356,13 +359,12 @@ public class Analysis extends StandardMain {
         }
 
         final ListEx<Path> paths = listFiles(detectionResults);
-
         System.out.println("[INFO] Inserting " + roundType + " detection results for " + name
                 + " (" + paths.size() + " results)");
 
-        // TODO: Remove nonconsecutive runs
+        for (int i = 0; Files.exists(detectionResults.resolve("round" + i + ".json")); i++) {
 
-        paths.forEach(p -> {
+            final Path p = detectionResults.resolve("round" + i  + ".json");
             final int roundNumber = roundNumber(p.getFileName().toString());
 
             try {
@@ -371,7 +373,7 @@ public class Analysis extends StandardMain {
             } catch (IOException | SQLException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }
     }
 
     private void insertDetectionRound(final String name, final String roundType,
