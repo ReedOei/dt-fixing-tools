@@ -2,7 +2,6 @@ package edu.illinois.cs.dt.tools.detection;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Streams;
-import com.google.gson.Gson;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.string.StringUtil;
@@ -140,11 +139,11 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
             final Path path = DetectorPathManager.detectionRoundPath(name, absoluteRound.get());
 
             // Load it if possible
-            try {
-                if (Files.exists(path)) {
-                    return new Gson().fromJson(FileUtil.readFile(path), DetectionRound.class);
-                }
-            } catch (IOException ignored) {}
+//            try {
+//                if (Files.exists(path)) {
+//                    return new Gson().fromJson(FileUtil.readFile(path), DetectionRound.class);
+//                }
+//            } catch (IOException ignored) {}
 
             // Otherwise run the detection round
             final long stopTime = System.currentTimeMillis();

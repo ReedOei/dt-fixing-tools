@@ -2,6 +2,7 @@ package edu.illinois.cs.dt.tools.detection;
 
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 
 import java.util.List;
 
@@ -13,14 +14,18 @@ public class DetectorFactory {
     }
 
     public static Detector makeDetector(final Runner runner, final List<String> tests) {
+        return makeDetector(runner, tests, ROUNDS);
+    }
+
+    public static Detector makeDetector(final Runner runner, final List<String> tests, final int rounds) {
         if (detectorType().startsWith("random")) {
-            return new RandomDetector(detectorType(), runner, ROUNDS, tests);
+            return new RandomDetector(detectorType(), runner, rounds, tests);
         } else if (detectorType().startsWith("reverse")) {
-            return new ReverseDetector(runner, ROUNDS, detectorType(), tests);
+            return new ReverseDetector(runner, rounds, detectorType(), tests);
         } else if (detectorType().equals("flaky")) {
-            return new FlakyDetector(runner, ROUNDS, tests);
+            return new FlakyDetector(runner, rounds, tests);
         }
 
-        return new RandomDetector("random", runner, ROUNDS, tests);
+        return new RandomDetector("random", runner, rounds, tests);
     }
 }
