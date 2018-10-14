@@ -111,11 +111,53 @@ create table confirmation_runs
 
 create table module_test_time
 (
+  id integer primary key,
   coordinates text not null,
   groupId text not null,
   artifactId text not null,
   version text not null,
   test_time real not null
+);
+
+create table original_order
+(
+  id integer primary key,
+  subject_name text not null,
+  test_name text not null,
+  order_index integer not null,
+
+  foreign key(subject_name) references subject(name)
+);
+
+create table num_rounds
+(
+  name text not null,
+  round_type text not null,
+  number integer not null
+);
+
+create table flaky_test_classification
+(
+  subject_name text not null,
+  test_name text not null,
+  flaky_type text not null
+);
+
+create table flaky_test_failures
+(
+  subject_name text not null,
+  test_name text not null,
+  round_type text not null,
+  flaky_type text not null,
+  failures integer not null,
+  rounds integer not null
+);
+
+create table detection_round_failures
+(
+  detection_round_id integer not null,
+  round_type text not null,
+  failures integer not null
 );
 
 create view subject_info as
@@ -169,41 +211,6 @@ select distinct uft.detection_round_id,
                 uft.test_name
 from unfiltered_flaky_tests as uft
 left join filtered_flaky_tests as fft on uft.test_name = fft.test_name and uft.subject_name = fft.subject_name;
-
-create view flaky_test_classification as
-select subject_name,
-       test_name,
-       case
-        when all_confirmation_rounds = 0 then 'flaky_detector'
-
-        -- If we never found it with the method detector, then we must have found it in the class detector, and vice versa
-        when random_class_rounds = 0 then 'random_method_detector'
-        when random_rounds = 0 then 'random_class_detector'
-
-        -- But if we found it with both, then we can't definitively say it was found by one or the other
-        else 'random_detector'
-       end as classification_source,
-       case
-        when flaky_runs > 0 then 'flaky' -- If it was EVER flaky, then we should consider it a flaky test
-        else 'random'
-       end as flaky_type
-from
-(
-  select fti.subject_name,
-         fti.test_name,
-         sum(case when fti.round_type = 'random' then 1 else 0 end) as random_rounds,
-         sum(case when fti.round_type = 'random-class' then 1 else 0 end) as random_class_rounds,
-         sum(ifnull(cbt.total_runs, 0)) as all_confirmation_rounds,
-         sum(case
-              -- If total_runs is null, there were never any confirmation rounds (so it must be a flaky test)
-              when ifnull(cbt.total_runs, 0) > 0 and cbt.confirmed_runs = cbt.total_runs then 0
-              else 1
-             end) as flaky_runs,
-         count(*) as total_runs
-  from flaky_test_info as fti
-  left join confirmation_by_test as cbt on fti.test_name = cbt.test_name
-  group by fti.subject_name, fti.test_name
-) as info;
 
 create view flaky_test_counts as
 select subject_name, flaky_type, count(distinct test_name) as number

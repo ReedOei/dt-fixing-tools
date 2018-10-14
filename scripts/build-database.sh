@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-# Usage: bash build-database.sh RESULTS_FOLDER DATABASE
+# Usage: bash build-database.sh RESULTS_FOLDER DATABASE [MAX_TEST_RUNS]
 
 results_folder="$1"
 database="$2"
+max_test_runs="$3"
 
 scripts_folder=$(cd "$(dirname $BASH_SOURCE)"; pwd)
 
@@ -15,18 +16,12 @@ if [[ ! "$database" =~ "$/" ]]; then
     database="$(cd "$(dirname $database)"; pwd)/$(basename $database)"
 fi
 
+if [[ -z "$max_test_runs" ]]; then
+    max_test_runs="0"
+fi
+
 # Go to where the pom is
 cd "$scripts_folder/.."
 
-if [[ -e "$database" ]]; then
-    echo "$database already exists; overwrite (y/N)?"
-    read choice
-    if [[ "$choice" == "y" ]]; then
-        rm -rf "$database"
-    else
-        exit 0
-    fi
-fi
-
-mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.Analysis" -Dexec.args="--results '$results_folder' --db '$database'"
+mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.Analysis" -Dexec.args="--results '$results_folder' --db '$database' --max-test-runs $max_test_runs"
 

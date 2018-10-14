@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -48,18 +49,22 @@ public class Analysis extends StandardMain {
     }
 
     private final Path results;
-    private SQLite sqlite;
+    private final SQLite sqlite;
     private int dtListIndex = 0;
+    private final int maxTestRuns;
+
 
     private Analysis(final String[] args) throws SQLException {
         super(args);
 
         this.results = Paths.get(getArgRequired("results")).toAbsolutePath();
         this.sqlite = new SQLite(Paths.get(getArgRequired("db")).toAbsolutePath());
+        this.maxTestRuns = getArg("max-test-runs").map(Integer::parseInt).orElse(0);
     }
 
     public static void main(final String[] args) {
         try {
+            System.out.println(Arrays.asList(args));
             new Analysis(args).run();
 
             System.exit(0);
@@ -182,22 +187,28 @@ public class Analysis extends StandardMain {
             return;
         }
 
+        if (slug.contains("guava")) {
+            return;
+        }
+
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
-        insertSubject(name, slug);
+        insertSubject(name, slug, path);
 
         insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
 
         insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("flaky"));
         insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random"));
         insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("random-class"));
+        insertDetectionResults(name, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("reverse"));
+        insertDetectionResults(name, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("reverse-class"));
 
         insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
         insertVerificationResults(name, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
         insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
         insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
 
-        sqlite.save();
+//        sqlite.save();
 
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
         System.out.println();
@@ -242,12 +253,30 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private void insertSubject(final String name, final String slug) throws SQLException {
+    private void insertSubject(final String name, final String slug, final Path path) throws SQLException, IOException {
         System.out.println("[INFO] Inserting results for " + name + " (" + slug + ")");
 
         // If the subject does not already exist, insert it
         if (!sqlite.checkExists("subject", name)) {
             sqlite.statement(SQLStatements.INSERT_SUBJECT).param(name).param(slug).executeUpdate();
+        }
+
+        if (Files.exists(path.resolve(DetectorPathManager.ORIGINAL_ORDER))) {
+            final List<String> originalOrder = Files.readAllLines(path.resolve(DetectorPathManager.ORIGINAL_ORDER));
+            System.out.println("[INFO] Inserting original order for " + name + " (" + originalOrder.size() + " tests)");
+
+            final Procedure statement = sqlite.statement(SQLStatements.INSERT_ORIGINAL_ORDER);
+
+            statement.beginTransaction();
+            for (int i = 0; i < originalOrder.size(); i++) {
+                statement
+                    .param(name)
+                    .param(originalOrder.get(i))
+                    .param(i).addBatch();
+            }
+            statement.executeBatch();
+            statement.commit();
+            statement.endTransaction();
         }
     }
 
@@ -258,9 +287,10 @@ public class Analysis extends StandardMain {
 
         final ListEx<Path> paths = listFiles(testRunResults);
 
-        System.out.println("[INFO] Inserting test runs for " + name + " (" + paths.size() + " runs)");
+        final int limit = maxTestRuns > 0 ? Math.min(maxTestRuns, paths.size()) : paths.size();
+        System.out.println("[INFO] Inserting test runs for " + name + " (" + paths.size() + " runs, saving " + limit + ")");
 
-        for (int i = 0; i < paths.size(); i++) {
+        for (int i = 0; i < limit; i++) {
             final Path p = paths.get(i);
             System.out.print("\r[INFO] Inserting run " + (i + 1) + " of " + paths.size());
             insertTestRunResult(name, new Gson().fromJson(FileUtil.readFile(p), TestRunResult.class));

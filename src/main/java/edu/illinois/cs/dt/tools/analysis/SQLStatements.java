@@ -11,6 +11,7 @@ public class SQLStatements {
     public static final Path POST_SETUP = Paths.get("src/main/sql/post_setup.sql");
 
     public static final Path INSERT_SUBJECT = Paths.get("src/main/sql/subject_insert.sql");
+    public static final Path INSERT_ORIGINAL_ORDER = Paths.get("src/main/sql/original_order_insert.sql");
 
     public static final Path INSERT_TEST_RUN_RESULT = Paths.get("src/main/sql/test_run_result_insert.sql");
     public static final Path UPDATE_TEST_RUN_RESULT_COUNT = Paths.get("src/main/sql/test_run_result_count_update.sql");
@@ -25,6 +26,21 @@ public class SQLStatements {
 
     public static final Path INSERT_MODULE_TEST_TIME = Paths.get("src/main/sql/module_test_time_insert.sql");
 
+    public static final Path COUNT_TESTS = Paths.get("src/main/sql/count_tests.sql");
+    public static final Path COUNT_MODULES_RESULTS = Paths.get("src/main/sql/count_modules_results.sql");
+    public static final Path COUNT_MODULES = Paths.get("src/main/sql/count_modules.sql");
+
+    public static final Path COUNT_PROJECTS_WITH_FLAKY = Paths.get("src/main/sql/count_projects_with_flaky.sql");
+    public static final Path COUNT_MODULES_WITH_FLAKY = Paths.get("src/main/sql/count_projects_with_flaky.sql");
+
+    public static final Path COUNT_PROJECTS_WITH_ODNO = Paths.get("src/main/sql/count_projects_with_odno.sql");
+    public static final Path COUNT_MODULES_WITH_ODNO = Paths.get("src/main/sql/count_modules_with_odno.sql");
+    public static final Path COUNT_FLAKY = Paths.get("src/main/sql/count_flaky.sql");
+    public static final Path PROBABILITY_FAILURE = Paths.get("src/main/sql/failure-frequency.sql");
+    public static final Path TOTAL_NO_ORIG_AND_RANDOM = Paths.get("src/main/sql/total_no_original_and_random.sql");
+    public static final Path COUNT_TESTS_BY_ROUND_TYPE = Paths.get("src/main/sql/count_tests_by_round_type.sql");
+    public static final Path PROBABILITY_FIND_FLAKY = Paths.get("src/main/sql/probability_find_flaky.sql");
+
     static {
         ensureExists(INSERT_RAW_SUBJECT);
 
@@ -32,6 +48,7 @@ public class SQLStatements {
         ensureExists(POST_SETUP);
 
         ensureExists(INSERT_SUBJECT);
+        ensureExists(INSERT_ORIGINAL_ORDER);
 
         ensureExists(INSERT_TEST_RUN_RESULT);
         ensureExists(UPDATE_TEST_RUN_RESULT_COUNT);
@@ -45,6 +62,18 @@ public class SQLStatements {
         ensureExists(INSERT_VERIFICATION_ROUND);
 
         ensureExists(INSERT_MODULE_TEST_TIME);
+
+        ensureExists(COUNT_TESTS);
+        ensureExists(COUNT_MODULES_RESULTS);
+        ensureExists(COUNT_MODULES);
+        ensureExists(COUNT_PROJECTS_WITH_FLAKY);
+        ensureExists(COUNT_MODULES_WITH_FLAKY);
+        ensureExists(COUNT_PROJECTS_WITH_ODNO);
+        ensureExists(COUNT_MODULES_WITH_ODNO);
+        ensureExists(COUNT_FLAKY);
+        ensureExists(PROBABILITY_FAILURE);
+        ensureExists(TOTAL_NO_ORIG_AND_RANDOM);
+        ensureExists(COUNT_TESTS_BY_ROUND_TYPE);
     }
 
     private static void ensureExists(final Path p) {
