@@ -1,5 +1,5 @@
 select count(distinct s.slug)
-from flaky_test_counts flaky
-inner join flaky_test_counts random on flaky.subject_name = random.subject_name and random.flaky_type = 'random'
-inner join subject on s.name = ftc.subject_name
-where flaky.flaky_type = 'flaky' and flaky.number > 0 and random.number > 0
+from confirmation_by_test cbt
+inner join original_order o on o.test_name = cbt.test_name
+inner join subject s on o.subject_name = s.name
+where cbt.confirmed_runs <> cbt.total_runs and cbt.confirmed_runs > 0

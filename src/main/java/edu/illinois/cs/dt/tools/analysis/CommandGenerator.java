@@ -44,17 +44,14 @@ public class CommandGenerator extends StandardMain {
         System.out.println(commandQuery("numModuleNOTests",
                 sqlite.statement(SQLStatements.COUNT_MODULES_WITH_FLAKY).param("flaky")));
 
-        // TODO: Figure out exaclty how this should work
-//        System.out.println(commandQuery("numProjODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
-//        System.out.println(commandQuery("numModuleODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
+        System.out.println(commandQuery("numProjODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
+        System.out.println(commandQuery("numModuleODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
 
         System.out.println(commandQuery("numODTests",
                 sqlite.statement(SQLStatements.COUNT_FLAKY).param("random")));
         System.out.println(commandQuery("numNOTests",
                 sqlite.statement(SQLStatements.COUNT_FLAKY).param("flaky")));
-
-        // TODO: Figure out exaclty how this should work
-//        System.out.println(commandQuery("numODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
+        System.out.println(commandQuery("numODNOTests", SQLStatements.COUNT_ODNO_TESTS));
 
         System.out.println(commandQuery("percODTestFailOne", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FAILURE).param(1)));

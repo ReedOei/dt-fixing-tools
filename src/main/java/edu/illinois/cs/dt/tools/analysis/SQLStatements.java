@@ -45,6 +45,7 @@ public class SQLStatements {
     public static final Path PROBABILITY_BEST_FLAKY = Paths.get("src/main/sql/probability_best_flaky.sql");
     public static final Path PROBABILITY_FIND_RANDOM = Paths.get("src/main/sql/probability_find_random.sql");
     public static final Path PROBABILITY_FIND_FLAKY_NO_ORIGINAL = Paths.get("src/main/sql/probability_find_flaky_no_original.sql");
+    public static final Path COUNT_ODNO_TESTS = Paths.get("src/main/sql/count_odno_tests.sql");
 
     public static final Path SUBJECT_INFO_TABLE = Paths.get("src/main/sql/subject_information_table.sql");
 
@@ -87,6 +88,9 @@ public class SQLStatements {
         ensureExists(PROBABILITY_FIND_FLAKY);
         ensureExists(PROBABILITY_FIND_RANDOM);
         ensureExists(PROBABILITY_FIND_FLAKY_NO_ORIGINAL);
+        ensureExists(COUNT_ODNO_TESTS);
+
+        ensureExists(SUBJECT_INFO_TABLE);
     }
 
     private static void ensureExists(final Path p) {

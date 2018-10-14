@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.detection;
 
+import com.google.common.collect.Lists;
 import com.opencsv.CSVReader;
 import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.testrunner.configuration.Configuration;
@@ -164,7 +165,7 @@ public class DetectorPlugin extends TestPlugin {
     }
 
     private double readRealTime(final Path path) throws IOException {
-        for (final String line : Files.readAllLines(path)) {
+        for (final String line : Lists.reverse(Files.readAllLines(path))) {
             final String[] split = line.split(" ");
 
             if (split[0].equals("real")) {
