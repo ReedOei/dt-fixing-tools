@@ -31,7 +31,8 @@ public class CommandGenerator extends StandardMain {
     protected void run() throws Exception {
         System.out.println(commandQuery("numTests", SQLStatements.COUNT_TESTS));
         System.out.println(commandQuery("numModules", SQLStatements.COUNT_MODULES));
-        System.out.println(commandQuery("numProjsResults", SQLStatements.COUNT_MODULES_RESULTS));
+        System.out.println(commandQuery("numModulesResults", SQLStatements.COUNT_MODULES_RESULTS));
+        System.out.println(commandQuery("numProjsResults", SQLStatements.COUNT_PROJECTS_RESULTS));
 
         System.out.println(commandQuery("numProjODTests",
                 sqlite.statement(SQLStatements.COUNT_PROJECTS_WITH_FLAKY).param("random")));
@@ -64,12 +65,15 @@ public class CommandGenerator extends StandardMain {
 
         System.out.println(commandQuery("numNOTestAllRandOrig", SQLStatements.TOTAL_NO_ORIG_AND_RANDOM));
 
-        System.out.println(commandQuery("percODTests", "\\%",
+        System.out.println(commandQuery("percODTestsRandom", "\\%",
+                sqlite.statement(SQLStatements.PROBABILITY_FIND_RANDOM)));
+        System.out.println(commandQuery("percNOTestsRandom", "\\%",
+                sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY_NO_ORIGINAL)));
+        System.out.println(commandQuery("percNOTestsAll", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY)));
-        // probability of running the order that revealed the most unique number of OD tests (probably 1/100 in most cases) [\newcommand{\percBestODOrder}{5\%\xspace}]
+
         System.out.println(commandQuery("percBestODOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_RANDOM)));
         System.out.println(commandQuery("percBestNOOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_FLAKY)));
-
 
         // TODO: Do the same for NO. Do we want to count all runs as reruns, or just original runs?
 //        System.out.println(commandQuery("percODTests",

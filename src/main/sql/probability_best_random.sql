@@ -1,4 +1,4 @@
-select round(avg(100.0 * cast(i.same_best_random as float) / i.t), 2)
+select round(avg(100.0 * cast(i.same_best_random as float) / i.t), 1)
 from
 (
 	select dr.subject_name,
