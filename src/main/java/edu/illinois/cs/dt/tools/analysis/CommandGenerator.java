@@ -85,6 +85,10 @@ public class CommandGenerator extends StandardMain {
                 sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("random")));
         System.out.println(commandQuery("numNOTestRandClass",
                 sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("random-class")));
+        System.out.println(commandQuery("numNOTestReverse",
+                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("reverse")));
+        System.out.println(commandQuery("numNOTestReverseClass",
+                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("reverse-class")));
 
         System.out.println(commandQuery("numODTestReverse",
                 sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("reverse")));
