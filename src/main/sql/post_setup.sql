@@ -100,8 +100,11 @@ inner join
 ) t on i.round_type = t.round_type and i.subject_name = t.subject_name;
 
 insert into detection_round_failures
-select dr.id, dr.round_type, count(distinct ft.name) as failures
+select dr.id, dr.round_type,
+       sum(case when ftc.flaky_type = 'flaky' then 1 else 0 end),
+       sum(case when ftc.flaky_type = 'random' then 1 else 0 end)
 from detection_round dr
-  inner join flaky_test_list ftl on dr.unfiltered_id = ftl.flaky_test_list_id
-  inner join flaky_test ft on ftl.flaky_test_id = ft.id
-group by dr.id, dr.round_type;
+left join flaky_test_list ftl on dr.unfiltered_id = ftl.flaky_test_list_id
+left join flaky_test ft on ftl.flaky_test_id = ft.id
+left join flaky_test_classification ftc on ft.name = ftc.test_name
+group by dr.id, dr.round_type

@@ -64,8 +64,7 @@ public class CommandGenerator extends StandardMain {
 
         System.out.println(commandQuery("numNOTestAllRandOrig", SQLStatements.TOTAL_NO_ORIG_AND_RANDOM));
 
-        // probability of revealing at least one OD test through 100 reruns (give average and for each test name what the chance was) [\newcommand{\percODTests}{5\%\xspace}]
-        System.out.println(commandQuery("percODTests",
+        System.out.println(commandQuery("percODTests", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY)));
 
         // TODO: Do the same for NO. Do we want to count all runs as reruns, or just original runs?
@@ -107,7 +106,8 @@ public class CommandGenerator extends StandardMain {
     private String commandQuery(final String commandName, final String preStr,
                                 final String postStr, final Procedure procedure) throws SQLException {
         return String.format("\\newcommand{\\%s}{%s%s%s\\xspace}",
-                commandName, preStr, postStr,
-                procedure.tableQuery().table().get(0).get(0));
+                commandName, preStr,
+                procedure.tableQuery().table().get(0).get(0),
+                postStr);
     }
 }

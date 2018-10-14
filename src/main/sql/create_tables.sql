@@ -157,7 +157,8 @@ create table detection_round_failures
 (
   detection_round_id integer not null,
   round_type text not null,
-  failures integer not null
+  flaky_found integer not null,
+  random_found integer not null
 );
 
 create view subject_info as
