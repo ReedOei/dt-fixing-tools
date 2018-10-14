@@ -89,7 +89,7 @@ public class Analysis extends StandardMain {
         createTables();
 
         insertFullSubjectList("popular", Paths.get("scripts").resolve("docker").resolve("data").resolve("popular_150.csv"));
-        insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("new-subj.csv"));
+        insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("previous-work-subj.csv"));
 
         System.out.println();
 
