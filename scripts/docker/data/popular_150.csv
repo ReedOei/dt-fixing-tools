@@ -6,6 +6,7 @@ https://github.com/alibaba/fastjson,57d0434ab01c55e719bb52f3ec96bf12cad0e46c
 https://github.com/alibaba/jstorm,5d6cde22dbca7df3d6e6830bf94f98a6639ab559
 https://github.com/alibaba/otter,dce24714ee61246b60574c81ec7dd8d27e56c52d
 https://github.com/alibaba/Sentinel,9e268680860567adb397484dff576737da837ee1
+https://github.com/alipay/sofa-boot,ce6e59861043506a40c3699a7209248761ec4b7c
 https://github.com/alipay/sofa-jarslink,1b63e23c90e29a045ce7355a1e296073615231f9
 https://github.com/Alluxio/alluxio,1de584b5df9de04f907616fb9f382c1109a80586
 https://github.com/Angel-ML/angel,529fbcb4bf3e4ed06fd1b82861e1bbb8edb659b5
@@ -24,6 +25,7 @@ https://github.com/bauerca/drag-sort-listview,c3cfccee21676149dfdf8e803c0ec2eaeb
 https://github.com/bonnyfone/vectalign,3393c5ee3440a48d5e7cec04bb6e2f0da532ba51
 https://github.com/brianfrankcooper/YCSB,d1a8a6949c0ab7940bce279b7119fd17bc06ffbc
 https://github.com/brianway/java-learning,3fea6298d1e28ab0289284e00cbff021c160f225
+https://github.com/Bukkit/Bukkit,f210234e59275330f83b994e199c76f6abd41ee7
 https://github.com/bytedeco/javacpp,cc6bbc801aa1de1b3010a92e0b9a38de13fd9834
 https://github.com/bytedeco/javacv,0eb0f51b49641bd3c29d6c2bdaa0788b13d17396
 https://github.com/cglib/cglib,400d16c3de3e21f2675ca07fa5b6ce25bbb4d459
@@ -44,6 +46,7 @@ https://github.com/dropwizard/metrics,9680fc801a6302a46cce0d299a960c2796ee21cd
 https://github.com/dyc87112/SpringBoot-Learning,33dc0e35632f446a62e8df1a3c65ba1205f7276d
 https://github.com/eclipse-vertx/vert.x,aaf9383a3cd3e3f7ca935f6a96969332f3939518
 https://github.com/elasticjob/elastic-job-lite,b022898ef1b8c984e17efb2a422ee45f6b13e46e
+https://github.com/FasterXML/jackson-databind,3b5f1e5d375c76957324a80cdc53bdaa6acb96b4
 https://github.com/ffay/lanproxy,945d2f821cfdb048f21a9fac4ba16f7f4baa2d23
 https://github.com/flyway/flyway,a9c37c25aaa0358c9a4d5168e4a42aa6630a75a7
 https://github.com/fyhertz/libstreaming,e71b49c22fc19f41b60b8fef6a3e140a26b9aa82
@@ -56,6 +59,7 @@ https://github.com/google/gson,9d44cbc19a73b45971c4ecb33c8d34d673afa210
 https://github.com/google/guava,8dbe749b9e78a0caa4da949048c82dc50eb8da8d
 https://github.com/google/guice,ba4314795d7a6fa0c8206fc8b73ea3170df33637
 https://github.com/Graylog2/graylog2-server,7ccc1f4ea504742766b7bb01fb07e548d63c67dd
+https://github.com/guoguibing/librec,38c3d3325a9dc5e3e71a3c0d60e4db9d4ea8c814
 https://github.com/hazelcast/hazelcast,788b9e237ceac8ccc1369fbe7bb8ca590c6917ba
 https://github.com/iluwatar/java-design-patterns,7a7e891384740f8bab597b2b6eed4632528956d9
 https://github.com/immutables/immutables,e1481c2c993aca0f0b00b309236157cd7bd61854
@@ -108,6 +112,7 @@ https://github.com/oracle/opengrok,fd2e8feba888a0b3c6938be7544aca3502695940
 https://github.com/orientechnologies/orientdb,9d5950a6a0ae0018af44d707ab1b96927c1d23fe
 https://github.com/pardom-zz/ActiveAndroid,08c6335cd7324c6e72da536b0c6fffa5a798f6a2
 https://github.com/pedrovgs/Algorithms,9ae21a5c070c9a97e05ef56b2d1f6d764b609f9e
+https://github.com/prontera/spring-cloud-rest-tcc,ce2d76857834fc9fc624cbf4caf363110e5eb022
 https://github.com/Prototik/HoloEverywhere,b870abb5ab009a5a6dbab3fb855ec2854e35e125
 https://github.com/quartz-scheduler/quartz,9f9e400733f51f7cb658e3319fc2c140ab8af938
 https://github.com/querydsl/querydsl,2bf234caf78549813a1e0f44d9c30ecc5ef734e3
