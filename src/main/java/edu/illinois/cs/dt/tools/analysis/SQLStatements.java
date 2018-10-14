@@ -40,6 +40,8 @@ public class SQLStatements {
     public static final Path TOTAL_NO_ORIG_AND_RANDOM = Paths.get("src/main/sql/total_no_original_and_random.sql");
     public static final Path COUNT_TESTS_BY_ROUND_TYPE = Paths.get("src/main/sql/count_tests_by_round_type.sql");
     public static final Path PROBABILITY_FIND_FLAKY = Paths.get("src/main/sql/probability_find_flaky.sql");
+    public static final Path PROBABILITY_BEST_RANDOM = Paths.get("src/main/sql/probability_best_random.sql");
+    public static final Path PROBABILITY_BEST_FLAKY = Paths.get("src/main/sql/probability_best_flaky.sql");
 
     static {
         ensureExists(INSERT_RAW_SUBJECT);
@@ -74,6 +76,8 @@ public class SQLStatements {
         ensureExists(PROBABILITY_FAILURE);
         ensureExists(TOTAL_NO_ORIG_AND_RANDOM);
         ensureExists(COUNT_TESTS_BY_ROUND_TYPE);
+        ensureExists(PROBABILITY_BEST_RANDOM);
+        ensureExists(PROBABILITY_BEST_FLAKY);
     }
 
     private static void ensureExists(final Path p) {

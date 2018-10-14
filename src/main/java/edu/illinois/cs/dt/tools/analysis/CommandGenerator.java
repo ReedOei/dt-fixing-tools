@@ -66,6 +66,10 @@ public class CommandGenerator extends StandardMain {
 
         System.out.println(commandQuery("percODTests", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY)));
+        // probability of running the order that revealed the most unique number of OD tests (probably 1/100 in most cases) [\newcommand{\percBestODOrder}{5\%\xspace}]
+        System.out.println(commandQuery("percBestODOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_RANDOM)));
+        System.out.println(commandQuery("percBestNOOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_FLAKY)));
+
 
         // TODO: Do the same for NO. Do we want to count all runs as reruns, or just original runs?
 //        System.out.println(commandQuery("percODTests",
