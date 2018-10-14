@@ -1,2 +1,2 @@
-select sum(test_count)
-from subject_info;
+select count(*)
+from original_order;

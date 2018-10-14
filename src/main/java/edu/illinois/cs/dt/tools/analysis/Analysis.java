@@ -184,14 +184,12 @@ public class Analysis extends StandardMain {
         final String name = path.getFileName().toString();
         final String slug = parent.substring(0, parent.indexOf('_')).replace('.', '/');
 
-        if (sqlite.checkExists("subject", name)) {
-            System.out.println("[INFO] "  + name + " already in the database, skipping.");
-            return;
-        }
-
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
-        insertSubject(name, slug, path);
+        if (!sqlite.checkExists("subject", name)) {
+            insertSubject(name, slug, path);
+            return;
+        }
 
         // If we got a no passing order exception, don't insert any of the other results
         if (!Files.exists(path.resolve("error")) ||
