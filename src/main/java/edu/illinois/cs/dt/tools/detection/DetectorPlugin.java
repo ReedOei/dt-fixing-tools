@@ -168,7 +168,7 @@ public class DetectorPlugin extends TestPlugin {
         for (final String line : Lists.reverse(Files.readAllLines(path))) {
             final String[] split = line.split(" ");
 
-            if (split[0].equals("real")) {
+            if (split.length > 1 && split[0].equals("real")) {
                 return Double.parseDouble(split[1]);
             }
         }
