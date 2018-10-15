@@ -1,10 +1,12 @@
 package edu.illinois.cs.dt.tools.analysis;
 
+import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.latex.LatexTable;
 import com.reedoei.eunomia.util.StandardMain;
 
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TableGenerator extends StandardMain {
@@ -33,7 +35,7 @@ public class TableGenerator extends StandardMain {
         System.out.println(new SQLTable(sqlite.statement(SQLStatements.SUBJECT_INFO_TABLE)) {
             @Override
             public LatexTable formatTable(final List<String> columns, final List<String> rows, final LatexTable table) {
-                return table;
+                return table.setRowNames(ListUtil.ensureSize(new ArrayList<>(), rows, ""));
             }
         }.generateTable());
     }
