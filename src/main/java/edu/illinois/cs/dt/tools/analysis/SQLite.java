@@ -12,7 +12,9 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SQLite {
@@ -47,6 +49,17 @@ public class SQLite {
         });
 
         return new Procedure(connection, ps);
+    }
+
+    public Procedure runStatements(final Path path) throws IOException, SQLException {
+        final Stream<Procedure> statements = statements(path);
+        final List<Procedure> procedures = statements.collect(Collectors.toList());
+
+        for (int i = 0; i < procedures.size() - 1; i++) {
+            procedures.get(i).execute();
+        }
+
+        return procedures.get(procedures.size() - 1);
     }
 
     public Stream<Procedure> statements(final Path path) throws IOException {

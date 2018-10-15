@@ -3,7 +3,9 @@ create table subject_raw
   slug text primary key,
   source text not null,
   url text not null,
-  sha text not null
+  sha text not null,
+  loc integer not null,
+  test_loc integer not null
 );
 
 create table subject

@@ -5,6 +5,7 @@ import com.reedoei.eunomia.util.StandardMain;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.text.NumberFormat;
 
 public class CommandGenerator extends StandardMain {
     private final SQLite sqlite;
@@ -29,6 +30,10 @@ public class CommandGenerator extends StandardMain {
 
     @Override
     protected void run() throws Exception {
+        final NumberFormat percentInstance = NumberFormat.getPercentInstance();
+        percentInstance.setMaximumFractionDigits(1);
+        percentInstance.setMaximumIntegerDigits(1);
+
         System.out.println(commandQuery("numTests", SQLStatements.COUNT_TESTS));
         System.out.println(commandQuery("numModules", SQLStatements.COUNT_MODULES));
         System.out.println(commandQuery("numModulesResults", SQLStatements.COUNT_MODULES_RESULTS));
@@ -47,10 +52,18 @@ public class CommandGenerator extends StandardMain {
         System.out.println(commandQuery("numProjODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
         System.out.println(commandQuery("numModuleODNOTests", SQLStatements.COUNT_PROJECTS_WITH_ODNO));
 
-        System.out.println(commandQuery("numODTests",
-                sqlite.statement(SQLStatements.COUNT_FLAKY).param("random")));
-        System.out.println(commandQuery("numNOTests",
-                sqlite.statement(SQLStatements.COUNT_FLAKY).param("flaky")));
+        final int numOdTests = query(sqlite.statement(SQLStatements.COUNT_FLAKY).param("random"));
+        final int numNoTests = query(sqlite.statement(SQLStatements.COUNT_FLAKY).param("flaky"));
+        System.out.println(command("numODTests", String.valueOf(numOdTests)));
+        System.out.println(command("numNOTests", String.valueOf(numNoTests)));
+
+        System.out.println(command("numFlakyTests", String.valueOf(numOdTests + numNoTests)));
+
+        System.out.println(command("percODTests",
+                percentInstance.format((double)numOdTests / (numOdTests + numNoTests)).replace("%", "\\%")));
+        System.out.println(command("percNOTests",
+                percentInstance.format((double)numNoTests / (numOdTests + numNoTests)).replace("%", "\\%")));
+
         System.out.println(commandQuery("numODNOTests", SQLStatements.COUNT_ODNO_TESTS));
 
         System.out.println(commandQuery("percODTestFailOne", "\\%",
@@ -72,32 +85,41 @@ public class CommandGenerator extends StandardMain {
         System.out.println(commandQuery("percBestODOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_RANDOM)));
         System.out.println(commandQuery("percBestNOOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_FLAKY)));
 
-        // TODO: Do the same for NO. Do we want to count all runs as reruns, or just original runs?
-//        System.out.println(commandQuery("percODTests",
-//                sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY)));
+        final int numNOTestOrig = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("flaky"));
+        final int numNOTestRandClassMethod = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("random"));
+        final int numNOTestRandClass = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("random-class"));
+        final int numNOTestReverse = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("reverse"));
+        final int numNOTestReverseClass = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("reverse-class"));
+        System.out.println(command("numNOTestOrig", String.valueOf(numNOTestOrig)));
+        System.out.println(command("numNOTestRandClassMethod", String.valueOf(numNOTestRandClassMethod)));
+        System.out.println(command("numNOTestRandClass", String.valueOf(numNOTestRandClass)));
+        System.out.println(command("numNOTestReverse", String.valueOf(numNOTestReverse)));
+        System.out.println(command("numNOTestReverseClass", String.valueOf(numNOTestReverseClass)));
 
-        // TODO:  What exaclty does this mean?
-        // System.out.println("Does any random order reveal all the ones in original? \n")
+        final int numODTestReverse = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("reverse"));
+        final int numODTestReverseClass = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("reverse-class"));
+        final int numODTestRandClassMethod = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("random"));
+        final int numODTestRandClass = query(sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("random-class"));
+        System.out.println(command("numODTestReverse", String.valueOf(numODTestReverse)));
+        System.out.println(command("numODTestReverseClass", String.valueOf(numODTestReverseClass)));
+        System.out.println(command("numODTestRandClassMethod", String.valueOf(numODTestRandClassMethod)));
+        System.out.println(command("numODTestRandClass", String.valueOf(numODTestRandClass)));
 
-        System.out.println(commandQuery("numNOTestOrig",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("flaky")));
-        System.out.println(commandQuery("numNOTestRandClassMethod",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("random")));
-        System.out.println(commandQuery("numNOTestRandClass",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("random-class")));
-        System.out.println(commandQuery("numNOTestReverse",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("reverse")));
-        System.out.println(commandQuery("numNOTestReverseClass",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("flaky").param("reverse-class")));
+        System.out.println(command("numFlakyTestRandClassMethod", String.valueOf(numODTestRandClassMethod + numNOTestRandClassMethod)));
+        System.out.println(command("numFlakyTestRandClass", String.valueOf(numODTestRandClass + numNOTestRandClass)));
+        System.out.println(command("numFlakyTestReverse", String.valueOf(numODTestReverse + numNOTestReverse)));
+        System.out.println(command("numFlakyTestReverseClass", String.valueOf(numODTestReverseClass + numNOTestReverseClass)));
 
-        System.out.println(commandQuery("numODTestReverse",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("reverse")));
-        System.out.println(commandQuery("numODTestReverseClass",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("reverse-class")));
-        System.out.println(commandQuery("numODTestRandClassMethod",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("random")));
-        System.out.println(commandQuery("numODTestRandClass",
-                sqlite.statement(SQLStatements.COUNT_TESTS_BY_ROUND_TYPE).param("random").param("random-class")));
+        System.out.println(commandQuery("numProjFlakyTests", SQLStatements.COUNT_PROJECT_FLAKY_TESTS));
+        System.out.println(commandQuery("numModuleFlakyTests", SQLStatements.COUNT_MODULE_FLAKY_TESTS));
+    }
+
+    private int query(final Path path) throws SQLException {
+        return query(sqlite.statement(path));
+    }
+
+    private int query(final Procedure procedure) throws SQLException {
+        return Integer.parseInt(procedure.tableQuery().table().get(0).get(0));
     }
 
     private String commandQuery(final String commandName, final Path path) throws SQLException {
@@ -114,9 +136,10 @@ public class CommandGenerator extends StandardMain {
 
     private String commandQuery(final String commandName, final String preStr,
                                 final String postStr, final Procedure procedure) throws SQLException {
-        return String.format("\\newcommand{\\%s}{%s%s%s\\xspace}",
-                commandName, preStr,
-                procedure.tableQuery().table().get(0).get(0),
-                postStr);
+        return command(commandName, String.format("%s%s%s", preStr, procedure.tableQuery().table().get(0).get(0), postStr));
+    }
+
+    private String command(final String commandName, final String val) {
+        return String.format("\\newcommand{\\%s}{%s\\xspace}", commandName, val);
     }
 }

@@ -1,7 +1,7 @@
-select i.slug, i.sha, i.loc_code, i.loc_test, i.test_count, i.flaky_n, i.rand_n
+select i.slug, i.sha, i.loc, i.test_loc, i.test_count-- , i.rand_n, i.flaky_n
 from
 (
-  select s.slug, substr(sr.sha, 1, 8) as sha, ' ' as loc_code, ' ' as loc_test,
+  select s.slug, substr(sr.sha, 1, 8) as sha, sr.loc, sr.test_loc,
        sum(si.test_count) as test_count,
        sum(ifnull(flaky.number, 0)) as flaky_n,
        sum(ifnull(rand.number, 0)) as rand_n

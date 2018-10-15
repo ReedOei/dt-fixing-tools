@@ -27,6 +27,7 @@ public class SQLStatements {
     public static final Path INSERT_MODULE_TEST_TIME = Paths.get("src/main/sql/module_test_time_insert.sql");
 
     public static final Path COUNT_TESTS = Paths.get("src/main/sql/count_tests.sql");
+    public static final Path COUNT_FLAKY_TESTS = Paths.get("src/main/sql/count_flaky_tests.sql");
     public static final Path COUNT_MODULES_RESULTS = Paths.get("src/main/sql/count_modules_results.sql");
     public static final Path COUNT_PROJECTS_RESULTS = Paths.get("src/main/sql/count_projects_results.sql");
     public static final Path COUNT_MODULES = Paths.get("src/main/sql/count_modules.sql");
@@ -48,6 +49,13 @@ public class SQLStatements {
     public static final Path COUNT_ODNO_TESTS = Paths.get("src/main/sql/count_odno_tests.sql");
 
     public static final Path SUBJECT_INFO_TABLE = Paths.get("src/main/sql/subject_information_table.sql");
+
+    public static final Path UPDATE_SUBJECT_RAW_LOC = Paths.get("src/main/sql/subject_raw_update_loc.sql");
+    public static final Path COUNT_PROJECT_FLAKY_TESTS = Paths.get("src/main/sql/count_project_flaky_test.sql") ;
+    public static final Path COUNT_MODULE_FLAKY_TESTS = Paths.get("src/main/sql/count_module_flaky_test.sql");
+    public static final Path FLAKY_TEST_BY_TECHNIQUE = Paths.get("src/main/sql/flaky-test-by-technique.sql");
+    public static final Path FAILURE_PROB_PER_TEST_PER_RUN = Paths.get("src/main/sql/failure_prob_per_test_per_run.sql");
+    public static final Path FAILURE_PROB_BY_ROUND = Paths.get("src/main/sql/failure_prob_by_round.sql");
 
     static {
         ensureExists(INSERT_RAW_SUBJECT);
@@ -91,6 +99,12 @@ public class SQLStatements {
         ensureExists(COUNT_ODNO_TESTS);
 
         ensureExists(SUBJECT_INFO_TABLE);
+
+        ensureExists(UPDATE_SUBJECT_RAW_LOC);
+        ensureExists(COUNT_PROJECT_FLAKY_TESTS);
+        ensureExists(COUNT_MODULE_FLAKY_TESTS);
+        ensureExists(FAILURE_PROB_PER_TEST_PER_RUN);
+        ensureExists(FAILURE_PROB_BY_ROUND);
     }
 
     private static void ensureExists(final Path p) {

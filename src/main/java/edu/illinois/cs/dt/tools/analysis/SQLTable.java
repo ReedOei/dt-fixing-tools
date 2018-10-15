@@ -17,7 +17,7 @@ public abstract class SQLTable {
         this.procedure = procedure;
     }
 
-    public abstract LatexTable formatTable(final List<String> columns, final List<String> rows, final LatexTable table);
+    public abstract LatexTable formatTable(final List<String> columns, final List<String> rows, final QueryResult queryResult, final LatexTable table);
 
     public LatexTable generateTable() throws SQLException {
         final QueryResult queryResult = procedure.tableQuery();
@@ -31,7 +31,7 @@ public abstract class SQLTable {
             if (queryColumn.isIntegral()) {
                 table.setColumnDisplay(queryColumn.label(), CellType.VALUE_SINGLE_COL);
             } else if (queryColumn.isDecimal()) {
-                table.setColumnDisplay(queryColumn.label(), CellType.VALUE_SINGLE_COL);
+                table.setColumnDisplay(queryColumn.label(), CellType.JUST_PERCENT);
             }
         }
 
@@ -49,7 +49,7 @@ public abstract class SQLTable {
                     final double v = Double.valueOf(val);
                     // One decimal place of precision
                     values.put(colLabel, (int) (v * 1000.0));
-                    totals.put(colLabel, 1000);
+                    totals.put(colLabel, 100 * 1000);
                 } else {
                     // We'll override this one later
                     values.put(colLabel, 0);
@@ -70,6 +70,6 @@ public abstract class SQLTable {
             rowIndex++;
         }
 
-        return formatTable(columnNames, rowNames, table);
+        return formatTable(columnNames, rowNames, queryResult, table);
     }
 }

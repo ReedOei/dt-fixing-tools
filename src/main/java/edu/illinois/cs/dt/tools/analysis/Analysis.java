@@ -66,7 +66,6 @@ public class Analysis extends StandardMain {
 
     public static void main(final String[] args) {
         try {
-            System.out.println(Arrays.asList(args));
             new Analysis(args).run();
 
             System.exit(0);
@@ -88,29 +87,45 @@ public class Analysis extends StandardMain {
 
     @Override
     protected void run() throws Exception {
-        createTables();
+//        createTables();
+//
+//        insertFullSubjectList("popular", Paths.get("scripts").resolve("docker").resolve("data").resolve("popular_150.csv"));
+//        insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("previous-work-subj.csv"));
 
-        insertFullSubjectList("popular", Paths.get("scripts").resolve("docker").resolve("data").resolve("popular_150.csv"));
-        insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("previous-work-subj.csv"));
+        insertSubjectLOC(Paths.get("scripts/docker/data/full_subject_loc.csv"));
 
         System.out.println();
 
-        final List<Path> allResultsFolders = new ArrayList<>();
-        Files.walkFileTree(results, new ResultDirVisitor(allResultsFolders));
-
-        for (int i = 0; i < allResultsFolders.size(); i++) {
-            final Path p = allResultsFolders.get(i);
-            System.out.println("[INFO] Inserting results for module " + (i + 1) + " of " + allResultsFolders.size() + ": " + p);
-            try {
-                insertResults(p);
-            } catch (IOException | SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        runPostSetup();
+//        final List<Path> allResultsFolders = new ArrayList<>();
+//        Files.walkFileTree(results, new ResultDirVisitor(allResultsFolders));
+//
+//        for (int i = 0; i < allResultsFolders.size(); i++) {
+//            final Path p = allResultsFolders.get(i);
+//            System.out.println("[INFO] Inserting results for module " + (i + 1) + " of " + allResultsFolders.size() + ": " + p);
+//            try {
+//                insertResults(p);
+//            } catch (IOException | SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//
+//        runPostSetup();
 
         sqlite.save();
+    }
+
+    private void insertSubjectLOC(final Path path) throws IOException, SQLException {
+        System.out.println("[INFO] Inserting subject's LOC and TEST_LOC");
+
+        final ListEx<ListEx<String>> csv = csv(path);
+
+        for (final ListEx<String> rows : csv) {
+            sqlite.statement(SQLStatements.UPDATE_SUBJECT_RAW_LOC)
+                    .param(rows.get(2)) // loc
+                    .param(rows.get(3)) // test_loc
+                    .param(rows.get(0)) // slug
+                    .executeUpdate();
+        }
     }
 
     private void insertFullSubjectList(final String source, final Path fullList) throws IOException, SQLException {
