@@ -20,9 +20,6 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-/**
- * Created by winglam on 10/8/18.
- */
 public class GetMavenTestOrder extends StandardMain {
     @Override
     protected void run() throws Exception {

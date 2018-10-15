@@ -2,7 +2,6 @@ package edu.illinois.cs.dt.tools.runner.data;
 
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
-import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
@@ -12,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 
 public class TestRun {

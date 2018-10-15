@@ -12,9 +12,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by winglam on 10/11/18.
- */
 public class ModuleTestTimePlugin  extends TestPlugin {
     private String coordinates;
 
