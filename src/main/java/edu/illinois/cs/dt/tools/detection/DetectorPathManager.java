@@ -9,8 +9,10 @@ public class DetectorPathManager extends PathManager {
     public static final Path DETECTION_RESULTS = Paths.get("detection-results");
     public static final Path DT_LIST_PATH  = Paths.get("dt-lists.json");
     public static final Path ORIGINAL_ORDER = Paths.get("original-order");
-    private static final Path ERROR = Paths.get("error");
-    private static final Path ORIGINAL_RESULTS_LOG = Paths.get("original-results-ids");
+    public static final Path ERROR = Paths.get("error");
+    public static final Path ORIGINAL_RESULTS_LOG = Paths.get("original-results-ids");
+    public static final Path MVN_TEST_LOG = Paths.get("mvn-test.log");
+    public static final Path MVN_TEST_TIME_LOG = Paths.get("mvn-test-time.log");
 
     public static Path detectionResults() {
         return path(DETECTION_RESULTS);
@@ -46,5 +48,13 @@ public class DetectorPathManager extends PathManager {
 
     public static Path originalResultsLog() {
         return detectionResults().resolve(ORIGINAL_RESULTS_LOG);
+    }
+
+    public static Path mvnTestLog() {
+        return path(MVN_TEST_LOG);
+    }
+
+    public static Path mvnTestTimeLog() {
+        return path(MVN_TEST_TIME_LOG);
     }
 }

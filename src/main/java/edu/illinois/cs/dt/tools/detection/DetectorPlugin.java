@@ -177,8 +177,7 @@ public class DetectorPlugin extends TestPlugin {
     }
 
     private int moduleRounds() throws IOException {
-        // TODO: Make path not absolute/hard-coded
-        final Path timeCsv = Paths.get("/home/awshi2/mvn-test-time.log");
+        final Path timeCsv = DetectorPathManager.mvnTestTimeLog();
 
         final double totalTime = readRealTime(timeCsv);
         final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0); // 6 hours
@@ -254,8 +253,7 @@ public class DetectorPlugin extends TestPlugin {
                 return new ArrayList<>();
             }
 
-            // TODO: Make this a non-absolute path
-            final Path mvnTestLog = Paths.get("/home/awshi2/mvn-test.log");
+            final Path mvnTestLog = DetectorPathManager.mvnTestLog();
             final List<TestClassData> testClassData = new GetMavenTestOrder(surefireReportsPath, mvnTestLog).testClassDataList();
 
             final List<String> tests = new ArrayList<>();

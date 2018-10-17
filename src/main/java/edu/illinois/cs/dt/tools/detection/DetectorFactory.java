@@ -19,13 +19,13 @@ public class DetectorFactory {
 
     public static Detector makeDetector(final Runner runner, final List<String> tests, final int rounds) {
         if (detectorType().startsWith("random")) {
-            return new RandomDetector(detectorType(), runner, rounds, tests);
+            return new RandomDetector(detectorType(), runner, Math.min(ROUNDS, rounds), tests);
         } else if (detectorType().startsWith("reverse")) {
-            return new ReverseDetector(runner, rounds, detectorType(), tests);
+            return new ReverseDetector(runner, Math.min(ROUNDS, rounds), detectorType(), tests);
         } else if (detectorType().equals("flaky")) {
-            return new FlakyDetector(runner, rounds, tests);
+            return new FlakyDetector(runner, Math.min(ROUNDS, rounds), tests);
         }
 
-        return new RandomDetector("random", runner, rounds, tests);
+        return new RandomDetector("random", runner, Math.min(ROUNDS, rounds), tests);
     }
 }
