@@ -51,10 +51,10 @@ public class DetectorPathManager extends PathManager {
     }
 
     public static Path mvnTestLog() {
-        return path(MVN_TEST_LOG);
+        return parentPath(MVN_TEST_LOG);
     }
 
     public static Path mvnTestTimeLog() {
-        return path(MVN_TEST_TIME_LOG);
+        return parentPath(MVN_TEST_TIME_LOG);
     }
 }
