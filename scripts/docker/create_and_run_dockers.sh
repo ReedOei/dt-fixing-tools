@@ -4,6 +4,7 @@ if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]]; then
     echo "arg1 - Path to CSV file with project,sha"
     echo "arg2 - Number of rounds"
     echo "arg3 - Timeout in seconds"
+    echo "arg4 - The script to run (Optional)"
     exit
 fi
 
@@ -13,6 +14,7 @@ date
 projfile=$1
 rounds=$2
 timeout=$3
+script="$4"
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
@@ -59,6 +61,6 @@ for line in $(cat ${projfile}); do
     if [ $? == 1 ]; then
         echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
     else
-        docker run -t --rm -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout}
+        docker run -t --rm -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout} "${script}"
      fi
 done

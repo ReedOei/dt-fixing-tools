@@ -18,8 +18,10 @@ import scala.util.Try;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class TestDiagnoser {
     private final StaticTracer tracer; // The static fields used by the dependent test.
@@ -48,15 +50,13 @@ public class TestDiagnoser {
             final Map<String, DiffContainer.Diff> pollutions =
                     new Pollution(runner, minimized).findPollutions(tracer.staticFields());
 
-            final Optional<Pair<String, DiffContainer.Diff>> rootCauseField =
-                    PairStream.fromMap(pollutions)
+            System.out.println("-----------------------------------------------------------------");
+            System.out.println("All polluted fields are:");
+            pollutions.forEach((fieldName, v) -> System.out.println(Pollution.formatDiff(fieldName, v)));
+
+            final List<String> causes = PairStream.fromMap(pollutions)
                     .filter((fieldName, diff) -> {
                         try {
-                            // This is necessary, otherwise the instrumented code is not executed.
-                            // Not sure why
-//                            FileUtils.deleteDirectory(StaticFieldPathManager.STATIC_FIELD_INFO_PATH.toFile());
-//                            Files.createDirectories(StaticFieldPathManager.STATIC_FIELD_INFO_PATH);
-
                             return StaticTracer.inMode(TracerMode.REWRITE, () -> {
                                 Configuration.config().properties().setProperty("statictracer.rewrite.test", minimized.dependentTest());
                                 Configuration.config().properties().setProperty("statictracer.rewrite.field", fieldName);
@@ -77,15 +77,12 @@ public class TestDiagnoser {
                         }
 
                         return false;
-                    }).findFirst();
+                    }).peek((causeField, ignored) -> System.out.println("The cause is: " + causeField))
+                    .mapToStream((causeField, ignored) -> causeField)
+                    .collect(Collectors.toList());
 
-            if (rootCauseField.isPresent()) {
-                System.out.println("The cause is: " + rootCauseField.get().getKey());
-            } else {
-                System.out.println("Could not narrow down results to a single field.");
-                System.out.println("All polluted fields are:");
-                pollutions.forEach((fieldName, v) -> System.out.println(Pollution.formatDiff(fieldName, v)));
-            }
+            System.out.println("The causes are: " + causes);
+            System.out.println("-----------------------------------------------------------------");
         } catch (Exception e) {
             e.printStackTrace();
         }

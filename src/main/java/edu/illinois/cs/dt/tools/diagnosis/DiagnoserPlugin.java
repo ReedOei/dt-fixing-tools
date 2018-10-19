@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -84,7 +85,11 @@ public class DiagnoserPlugin extends TestPlugin {
 
     private Stream<MinimizeTestsResult> detect() throws Exception {
         if (!Files.exists(DetectorPathManager.detectionFile())) {
-            new DetectorPlugin(DetectorPathManager.detectionResults(), runner).execute(project);
+            if (Configuration.config().getProperty("diagnosis.run_detection", true)) {
+                new DetectorPlugin(DetectorPathManager.detectionResults(), runner).execute(project);
+            } else {
+                throw new NoSuchFileException("File " + DetectorPathManager.detectionFile() + " does not exist and diagnosis.run_detection is set to false");
+            }
         }
 
         return new MinimizerPlugin(runner).runDependentTestFile(DetectorPathManager.detectionFile());

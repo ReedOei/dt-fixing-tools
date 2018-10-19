@@ -55,7 +55,6 @@ public class Analysis extends StandardMain {
     private int dtListIndex = 0;
     private final int maxTestRuns;
 
-
     private Analysis(final String[] args) throws SQLException {
         super(args);
 
@@ -87,29 +86,29 @@ public class Analysis extends StandardMain {
 
     @Override
     protected void run() throws Exception {
-//        createTables();
-//
-//        insertFullSubjectList("popular", Paths.get("scripts").resolve("docker").resolve("data").resolve("popular_150.csv"));
-//        insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("previous-work-subj.csv"));
+        createTables();
+
+        insertFullSubjectList("popular", Paths.get("scripts").resolve("docker").resolve("data").resolve("popular_150.csv"));
+        insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("previous-work-subj.csv"));
 
         insertSubjectLOC(Paths.get("scripts/docker/data/full_subject_loc.csv"));
 
         System.out.println();
 
-//        final List<Path> allResultsFolders = new ArrayList<>();
-//        Files.walkFileTree(results, new ResultDirVisitor(allResultsFolders));
-//
-//        for (int i = 0; i < allResultsFolders.size(); i++) {
-//            final Path p = allResultsFolders.get(i);
-//            System.out.println("[INFO] Inserting results for module " + (i + 1) + " of " + allResultsFolders.size() + ": " + p);
-//            try {
-//                insertResults(p);
-//            } catch (IOException | SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//
-//        runPostSetup();
+        final List<Path> allResultsFolders = new ArrayList<>();
+        Files.walkFileTree(results, new ResultDirVisitor(allResultsFolders));
+
+        for (int i = 0; i < allResultsFolders.size(); i++) {
+            final Path p = allResultsFolders.get(i);
+            System.out.println("[INFO] Inserting results for module " + (i + 1) + " of " + allResultsFolders.size() + ": " + p);
+            try {
+                insertResults(p);
+            } catch (IOException | SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        runPostSetup();
 
         sqlite.save();
     }

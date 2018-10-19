@@ -1,0 +1,16 @@
+#!/usr/bin/env swipl
+
+:- initialization(main, main).
+
+main([Path, File]) :-
+    file_base_name(Path, BaseName),
+
+    file_directory_name(File, Dir),
+    relative_file_name(Dir, Path, RelPath),
+
+    % Replace / with - in name
+    atomic_list_concat(Parts, '/', RelPath),
+    atomic_list_concat([BaseName|Parts], '-', OutputDirName),
+
+    writeln(OutputDirName).
+
