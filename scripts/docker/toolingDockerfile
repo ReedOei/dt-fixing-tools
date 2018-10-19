@@ -11,4 +11,4 @@ RUN \
   git clone https://github.com/ReedOei/testrunner && \
   cd testrunner/ && /home/awshi2/apache-maven/bin/mvn clean install && cd /home/awshi2 && \
   git clone https://github.com/ReedOei/dt-fixing-tools && \
-  cd dt-fixing-tools/ && git checkout dynamicinstr && /home/awshi2/apache-maven/bin/mvn clean install && cd /home/awshi2
+  cd dt-fixing-tools/ && /home/awshi2/apache-maven/bin/mvn clean install && cd /home/awshi2
