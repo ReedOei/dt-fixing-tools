@@ -177,15 +177,33 @@ public class DetectorPlugin extends TestPlugin {
     }
 
     private int moduleRounds() throws IOException {
-        final Path timeCsv = DetectorPathManager.mvnTestTimeLog();
+        final boolean hasRounds = Configuration.config().properties().getProperty("dt.randomize.rounds") != null;
+        final boolean hasTimeout = Configuration.config().properties().getProperty("detector.timeout") != null;
 
-        final double totalTime = readRealTime(timeCsv);
-        final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0); // 6 hours
+        final int roundNum = Configuration.config().getProperty("dt.randomize.rounds", 20);
 
-        TestPluginPlugin.mojo().getLog().info("TIMEOUT_VALUE: Using a timeout of "
-                + mainTimeout + ", and that the total mvn test time is: " + totalTime);
+        final int timeoutRounds;
+        if (hasTimeout) {
+            final Path timeCsv = DetectorPathManager.mvnTestTimeLog();
 
-        final int rounds = (int) (mainTimeout / totalTime);
+            final double totalTime = readRealTime(timeCsv);
+            final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0); // 6 hours
+
+            TestPluginPlugin.mojo().getLog().info("TIMEOUT_VALUE: Using a timeout of "
+                    + mainTimeout + ", and that the total mvn test time is: " + totalTime);
+
+            timeoutRounds = (int) (mainTimeout / totalTime);
+        } else {
+            timeoutRounds = roundNum;
+        }
+
+        final int rounds;
+        if (!hasRounds) {
+            rounds = timeoutRounds;
+        } else {
+            rounds = Math.min(timeoutRounds, roundNum);
+        }
+
         TestPluginPlugin.mojo().getLog().info("ROUNDS_CALCULATED: Giving " + coordinates + " "
                 + rounds + " rounds to run for " + DetectorFactory.detectorType());
 
