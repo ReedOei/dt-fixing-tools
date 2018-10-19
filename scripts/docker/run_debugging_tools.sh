@@ -47,7 +47,7 @@ timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Ddi
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 /home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
-mv diagonsis.log ${RESULTSDIR}
+mv diagnosis.log ${RESULTSDIR}
 mv /home/awshi2/mvn-test.log ${RESULTSDIR}
 mv /home/awshi2/mvn-test-time.log ${RESULTSDIR}
 
