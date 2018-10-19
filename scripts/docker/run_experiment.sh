@@ -14,9 +14,9 @@ fi
 if [[ "$4" =~ "$/" ]]; then
     script_to_run="$4"
 elif [[ -z "$4" ]]; then
-    script_to_run="/home/awshi2/dt-fixing-tools/script/docker/run_project.sh"
+    script_to_run="/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh"
 else
-    script_to_run="/home/awshi2/dt-fixing-tools/script/docker/$4"
+    script_to_run="/home/awshi2/dt-fixing-tools/scripts/docker/$4"
 fi
 
 slug=$1
