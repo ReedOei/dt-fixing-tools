@@ -6,7 +6,9 @@ Currently a work in progress.
 ## Quickstart
 
 ### Use Pre-Compiled Script
+```bash
 bash ./run.sh PROJECT_REPO_URL PROJECT_MODULE_PATH
+```
 
 ### Self-Compile Scripts
 Clone the testrunner and dt-fixing-tools repository. Run mvn install in both
