@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Argument Parsing
-if [[ "$1" == ""]] || [["$2" == ""]] ; then
+if [[ $1 == "" ]] || [[ $2 == "" ]]; then
     echo "arg1 - github project repository"
     echo "arg2 - github project module path"
     exit
