@@ -25,7 +25,7 @@ public class ModuleTestTimePlugin  extends TestPlugin {
         this.coordinates = mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
 
         final Path surefireReportsPath = Paths.get(mavenProject.getBuild().getDirectory()).resolve("surefire-reports");
-        final Path mvnTestLog = Paths.get("/home/awshi2/mvn-test.log");
+        final Path mvnTestLog = Paths.get(System.getProperty("user.home"), "mvn-test.log");
         try {
             final Path outputFile = Paths.get(getMavenProjectParent(mavenProject).getBasedir().getAbsolutePath(),
                     "module-test-time.csv");
