@@ -31,6 +31,8 @@ Then simply run:
 mvn testrunner:testplugin -e
 ```
 
+To run the debugger on a specific set of dependent tests, you can create a folder named `.dtfixingtools/detection-results` inside the relevant module and place the `dt-lists.json` found by running the detector in that directory.
+
 ## Properties
 
 The following properties can currently be specified via `dtfixingtools.properties`:
