@@ -29,7 +29,7 @@ Then simply run:
 
 ```
 mvn testrunner:testplugin -e
-``
+```
 
 ## Properties
 
