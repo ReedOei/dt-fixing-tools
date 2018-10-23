@@ -2,10 +2,9 @@
 
 :- initialization(main, main).
 
-main([Path, File]) :-
+main([Path, Dir]) :-
     file_base_name(Path, BaseName),
 
-    file_directory_name(File, Dir),
     relative_file_name(Dir, Path, RelPath),
 
     % Replace / with - in name
