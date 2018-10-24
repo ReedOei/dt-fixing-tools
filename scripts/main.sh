@@ -20,8 +20,8 @@ project_module_path=${working_dir}/$2
 # Dt-Fixing-Tools
 cd ${working_dir}
 if [ ! -d "dt-fixing-tools" ]; then
-	echo "Error. Please run the main.sh inside https://github.com/ReedOei/dt-fixing-tools.git"
-	exit
+    echo "Error. Please run the main.sh inside https://github.com/ReedOei/dt-fixing-tools.git"
+    exit
 fi
 cd dt-fixing-tools
 mvn install
