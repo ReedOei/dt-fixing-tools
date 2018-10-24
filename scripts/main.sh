@@ -3,7 +3,8 @@
 # Argument Parsing
 if [[ $1 == "" ]] || [[ $2 == "" ]]; then
     echo "arg1 - github project repository"
-    echo "arg2 - github project module path"
+    echo "arg2 - github project path"
+    echo "arg3 - github project module path (optional)"
     exit
 fi
 
@@ -15,12 +16,13 @@ cd ${working_dir}
 cd ../..
 working_dir=`pwd`
 project_repository=$1
-project_module_path=${working_dir}/$2
+project_path=${working_dir}/$2
+project_module_path=${project_path}/$3
 
 # Dt-Fixing-Tools
 cd ${working_dir}
 if [ ! -d "dt-fixing-tools" ]; then
-    echo "Error. Please run the main.sh inside https://github.com/ReedOei/dt-fixing-tools.git"
+    echo "Error. Please run the main.sh inside https://github.com/ReedOei/dt-fixing-tools"
     exit
 fi
 cd dt-fixing-tools
@@ -39,7 +41,7 @@ cd ${working_dir}
 if [ ! -d "$project_module_path" ]; then
     git clone ${project_repository}.git
 fi
-cd ${project_module_path}
+cd ${project_path}
 { time -p mvn test -fn |& tee mvn-test.log ;} 2> mvn-test-time.log
 
 # Run Necessary Setup Scripts

@@ -7,7 +7,7 @@ Currently a work in progress.
 
 ### Use Pre-Compiled Script
 ```bash
-bash ./PATH/main.sh PROJECT_REPO_URL PROJECT_MODULE_PATH
+bash ./PATH/main.sh PROJECT_REPO_URL PROJECT_PATH PROJECT_MODULE_PATH
 ```
 
 ## Properties
