@@ -13,7 +13,7 @@ To run the debugger, you need to add the following plugin declaration to the Mav
   <artifactId>testrunner-maven-plugin</artifactId>
   <version>0.1-SNAPSHOT</version>
   <configuration>
-    <className>edu.illinois.cs.dt.tools.detection.DetectorPlugin</className>
+    <className>edu.illinois.cs.dt.tools.diagnosis.DiagnoserPlugin</className>
   </configuration>
   <dependencies>
     <dependency>
