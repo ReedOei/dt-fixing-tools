@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Argument Parsing
 if [[ $1 == "" ]] || [[ $2 == "" ]]; then
@@ -10,11 +10,7 @@ fi
 
 # Setup Variables
 crnt=`pwd`
-working_dir=`dirname $0`
-
-cd ${working_dir}
-cd ../..
-working_dir=`pwd`
+working_dir=$(cd $(dirname $0)/../..; pwd)
 project_repository=$1
 project_path=${working_dir}/$2
 project_module_path=${project_path}/$3
@@ -50,7 +46,7 @@ bash ./modify-project.sh ${project_module_path}
 
 # Run Plugin
 cd ${project_module_path}
-mvn testrunner:testplugin
+mvn testrunner:testplugin |& tee ${working_dir}/testrunner-testplugin.log
 
 # Return To Original Directory
 cd ${crnt}
