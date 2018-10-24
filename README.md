@@ -3,6 +3,14 @@
 Tools for automatically debugging dependent tests.
 Currently a work in progress.
 
+## Quickstart
+
+### Use Pre-Compiled Script
+
+```bash
+bash ./PATH/main.sh PROJECT_REPO_URL PROJECT_PATH PROJECT_MODULE_PATH
+```
+
 ## Running the debugger
 
 To run the debugger, you need to add the following plugin declaration to the Maven project containing the dependent tests you wish to debug.
