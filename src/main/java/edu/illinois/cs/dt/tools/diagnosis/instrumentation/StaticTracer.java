@@ -123,7 +123,7 @@ public class StaticTracer {
         final @NonNull String currentTest = Configuration.config().getProperty("testrunner.current_test", "");
 
         // Using "none" as default so the two defaults don't match
-        final @NonNull String testToCheck = Configuration.config().getProperty("statictracer.rewrite.test", "none");
+        final @NonNull String testToCheck = Configuration.config().getProperty("statictracer.rewrite.test_name", "none");
 
         if (!currentTest.equals(testToCheck)) {
             return;
@@ -132,7 +132,7 @@ public class StaticTracer {
         if (fieldName.equals(Configuration.config().getProperty("statictracer.rewrite.field", null))) {
             if (!tracer().rewrittenProperties.contains(fieldName)) {
                 final String rewriteValue = Configuration.config().getProperty("statictracer.rewrite.value", null);
-//                System.out.println("Rewriting " + fieldName + " using value " + StringUtils.abbreviate(rewriteValue, 50));
+                System.out.println("Rewriting " + fieldName + " using value " + StringUtils.abbreviate(rewriteValue, 50));
                 final Object o = TestResult.getXStreamInstance().fromXML(
                         rewriteValue);
 

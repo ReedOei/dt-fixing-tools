@@ -77,7 +77,6 @@ public class DiagnoserPlugin extends TestPlugin {
         try {
             final Path path = DiagnoserPathManager.diagnosisResult(diagnosisResult);
             Files.createDirectories(path.getParent());
-            System.out.println(diagnosisResult);
             Files.write(path, new Gson().toJson(diagnosisResult).getBytes());
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,7 +1,6 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
 import com.reedoei.eunomia.collections.ListEx;
-import com.reedoei.testrunner.data.results.Result;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +22,6 @@ public class RewritingResultContainer {
     }
 
     public ListEx<String> causes() {
-        return rewritingResults.filter(r -> r.result().equals(r.expected())).map(RewritingResult::fieldName);
+        return rewritingResults.filter(r -> !r.result().equals(r.expected())).map(RewritingResult::fieldName);
     }
 }

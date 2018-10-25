@@ -1,16 +1,17 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
+import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutedField;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 
 import java.util.Map;
 
 public class DiagnosisResult {
     private final MinimizeTestsResult minimized;
-    private final Map<String, DiffContainer.Diff> pollutions;
+    private final Map<String, PollutedField> pollutions;
     private final RewritingResultContainer rewritingResults;
 
     public DiagnosisResult(final MinimizeTestsResult minimized,
-                           final Map<String,DiffContainer.Diff> pollutions,
+                           final Map<String, PollutedField> pollutions,
                            final RewritingResultContainer rewritingResults) {
         this.minimized = minimized;
         this.pollutions = pollutions;
@@ -21,7 +22,7 @@ public class DiagnosisResult {
         return minimized;
     }
 
-    public Map<String, DiffContainer.Diff> pollutions() {
+    public Map<String, PollutedField> pollutions() {
         return pollutions;
     }
 

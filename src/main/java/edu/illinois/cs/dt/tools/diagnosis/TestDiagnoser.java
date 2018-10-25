@@ -8,6 +8,7 @@ import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldInfo;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
+import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutedField;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.Pollution;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
@@ -41,7 +42,7 @@ public class TestDiagnoser {
 
     public Optional<DiagnosisResult> run() {
         try {
-            final Map<String, DiffContainer.Diff> pollutions =
+            final Map<String, PollutedField> pollutions =
                     new Pollution(runner, minimized).findPollutions(tracer.staticFields());
 
             System.out.println("All polluted fields are: " + pollutions.keySet());
@@ -62,15 +63,15 @@ public class TestDiagnoser {
         return Optional.empty();
     }
 
-    private Stream<RewritingResult> tryRewrite(final String fieldName, final DiffContainer.Diff diff) {
+    private Stream<RewritingResult> tryRewrite(final String fieldName, final PollutedField field) {
         try {
             return Stream.of(StaticTracer.inMode(TracerMode.REWRITE, () -> {
-                Configuration.config().properties().setProperty("statictracer.rewrite.tryRewrite", minimized.dependentTest());
+                Configuration.config().properties().setProperty("statictracer.rewrite.test_name", minimized.dependentTest());
                 Configuration.config().properties().setProperty("statictracer.rewrite.field", fieldName);
-                Configuration.config().properties().setProperty("statictracer.rewrite.value", String.valueOf(diff.getAfter()));
+                Configuration.config().properties().setProperty("statictracer.rewrite.value", field.withoutDepsVal());
 
                 System.out.println("Resetting " + fieldName + " to " +
-                        StringUtils.abbreviate(String.valueOf(diff.getAfter()), 50));
+                        StringUtils.abbreviate(String.valueOf(field.withoutDepsVal()), 50));
 
                 final Try<TestRunResult> testRunResult = runner.runList(minimized.withDeps());
                 final TestResult testResult = testRunResult.get().results().get(minimized.dependentTest());
@@ -78,7 +79,7 @@ public class TestDiagnoser {
                 System.out.println("REWRITE_RUN (" + RunnerPathManager.runResultPath(testRunResult.get(), "output") + "): " + testResult.result());
                 System.out.println("NO_REWRITE (" + RunnerPathManager.runResultPath(minimized.expectedRun(), "output") + "): " + minimized.expected());
 
-                return new RewritingResult(fieldName, diff, testRunResult.get(), testResult.result(), minimized.expected());
+                return new RewritingResult(fieldName, field, testRunResult.get(), testResult.result(), minimized.expected());
             }));
         } catch (Exception e) {
             e.printStackTrace();

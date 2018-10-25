@@ -2,19 +2,20 @@ package edu.illinois.cs.dt.tools.diagnosis;
 
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
+import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutedField;
 
 public class RewritingResult {
     private final String fieldName;
-    private final DiffContainer.Diff diff;
+    private final PollutedField field;
     private final TestRunResult testRunResult;
     private final Result result;
     private final Result expected;
 
-    public RewritingResult(final String fieldName, final DiffContainer.Diff diff,
+    public RewritingResult(final String fieldName, final PollutedField field,
                            final TestRunResult testRunResult, final Result result,
                            final Result expected) {
         this.fieldName = fieldName;
-        this.diff = diff;
+        this.field = field;
         this.testRunResult = testRunResult;
         this.result = result;
         this.expected = expected;
@@ -24,8 +25,8 @@ public class RewritingResult {
         return fieldName;
     }
 
-    public DiffContainer.Diff diff() {
-        return diff;
+    public PollutedField diff() {
+        return field;
     }
 
     public TestRunResult testRunResult() {
