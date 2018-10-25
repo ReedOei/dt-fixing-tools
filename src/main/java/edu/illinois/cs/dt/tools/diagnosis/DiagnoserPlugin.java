@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
+import com.google.gson.Gson;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
@@ -66,7 +67,21 @@ public class DiagnoserPlugin extends TestPlugin {
     }
 
     private void diagnose() throws Exception {
-        results().forEach(result -> new TestDiagnoser(project, runner, result).run());
+        results()
+                .map(result -> new TestDiagnoser(runner, result).run())
+                .flatMap(o -> o.isPresent() ? Stream.of(o.get()) : Stream.empty())
+                .forEach(this::saveResult);
+    }
+
+    private void saveResult(final DiagnosisResult diagnosisResult) {
+        try {
+            final Path path = DiagnoserPathManager.diagnosisResult(diagnosisResult);
+            Files.createDirectories(path.getParent());
+            System.out.println(diagnosisResult);
+            Files.write(path, new Gson().toJson(diagnosisResult).getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private Stream<MinimizeTestsResult> results() throws Exception {

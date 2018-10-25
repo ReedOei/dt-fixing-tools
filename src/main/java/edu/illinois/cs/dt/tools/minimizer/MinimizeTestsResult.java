@@ -5,6 +5,7 @@ import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.io.IOUtil;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.data.results.Result;
+import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 
 import java.io.IOException;
@@ -17,6 +18,7 @@ public class MinimizeTestsResult {
     private static final int VERIFY_REPEAT_COUNT = 1;
     private static final int MAX_SUBSEQUENCES = 1000;
 
+    private final TestRunResult expectedRun;
     private final Result expected;
     private final String dependentTest;
     private final List<String> deps;
@@ -29,7 +31,8 @@ public class MinimizeTestsResult {
         return new Gson().fromJson(jsonString, MinimizeTestsResult.class);
     }
 
-    public MinimizeTestsResult(final Result expected, final String dependentTest, final List<String> deps) {
+    public MinimizeTestsResult(final TestRunResult expectedRun, final Result expected, final String dependentTest, final List<String> deps) {
+        this.expectedRun = expectedRun;
         this.expected = expected;
         this.dependentTest = dependentTest;
         this.deps = deps;
@@ -134,5 +137,9 @@ public class MinimizeTestsResult {
             order.add(dependentTest());
         }
         return order;
+    }
+
+    public TestRunResult expectedRun() {
+        return expectedRun;
     }
 }

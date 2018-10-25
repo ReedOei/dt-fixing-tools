@@ -6,6 +6,7 @@ import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.eunomia.util.Util;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestResult;
+import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 import scala.util.Try;
@@ -26,6 +27,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
     @Nullable
     private MinimizeTestsResult minimizedResult = null;
+    private TestRunResult expectedRun;
 
     private void debug(final String str) {
         TestPluginPlugin.mojo().getLog().debug(str);
@@ -43,7 +45,8 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
         // Run in given order to determine what the result should be.
         debug("Getting expected result for: " + dependentTest);
-        this.expected = result(testOrder);
+        this.expectedRun = runResult(testOrder);
+        this.expected = expectedRun.results().get(dependentTest).result();
         debug("Expected: " + expected);
 
         this.path = MinimizerPathManager.minimized(dependentTest, expected);
@@ -53,17 +56,18 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
         return expected;
     }
 
-    private Result result(final List<String> order) {
+    private TestRunResult runResult(final List<String> order) {
         final List<String> actualOrder = new ArrayList<>(order);
 
         if (!actualOrder.contains(dependentTest)) {
             actualOrder.add(dependentTest);
         }
 
-        return runner.runList(actualOrder)
-                .flatMap(r -> Try.apply(() -> r.results().get(dependentTest)))
-                .map(TestResult::result)
-                .get();
+        return runner.runList(actualOrder).get();
+    }
+
+    private Result result(final List<String> order) {
+        return runResult(order).results().get(dependentTest).result();
     }
 
     private MinimizeTestsResult run() throws Exception {
@@ -73,7 +77,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
 
-            minimizedResult = new MinimizeTestsResult(expected, dependentTest, run(order));
+            minimizedResult = new MinimizeTestsResult(expectedRun, expected, dependentTest, run(order));
             minimizedResult.verify(runner);
         }
 
