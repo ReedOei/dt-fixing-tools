@@ -22,6 +22,6 @@ public class RewritingResultContainer {
     }
 
     public ListEx<String> causes() {
-        return rewritingResults.filter(r -> !r.result().equals(r.expected())).map(RewritingResult::fieldName);
+        return rewritingResults.filter(r -> !r.result().equals(r.expected())).map(r -> r.target().fieldName());
     }
 }

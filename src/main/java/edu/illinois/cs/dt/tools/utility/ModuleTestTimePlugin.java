@@ -2,7 +2,9 @@ package edu.illinois.cs.dt.tools.utility;
 
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import org.apache.maven.project.MavenProject;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,12 +38,12 @@ public class ModuleTestTimePlugin  extends TestPlugin {
 
             Files.write(outputFile, Collections.singletonList(outputStr), StandardCharsets.UTF_8,
                     Files.exists(outputFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
-        } catch (IOException e) {
+        } catch (SAXException | ParserConfigurationException | IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private double timeFrom(final Path path, final Path mvnTestLog) throws IOException {
+    private double timeFrom(final Path path, final Path mvnTestLog) throws IOException, ParserConfigurationException, SAXException {
         if (Files.exists(path)) {
             return new GetMavenTestOrder(path, mvnTestLog).testClassDataList().stream()
                     .mapToDouble(TestClassData::classTime).sum();

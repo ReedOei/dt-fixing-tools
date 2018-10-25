@@ -36,7 +36,7 @@ public class StaticFieldAccessor implements FieldAccessor {
         return loader;
     }
 
-    public static Optional<StaticFieldAccessor> forField(final String fieldName) {
+    public static Optional<StaticFieldAccessor> forField(final String fieldName, final Object o) {
         try {
             final int i = fieldName.lastIndexOf(".");
             final String className = fieldName.substring(0, i);
@@ -45,7 +45,7 @@ public class StaticFieldAccessor implements FieldAccessor {
 
             // getField can return null if the field does not exist
             return Optional.ofNullable(FieldUtils.getField(fieldClz, fieldName.substring(i + 1), true))
-                    .map(StaticFieldAccessor::new);
+                    .map(f -> new StaticFieldAccessor(f, o));
         } catch (ClassNotFoundException e) {
             System.out.println("Field name: " + fieldName);
             e.printStackTrace();
@@ -55,9 +55,11 @@ public class StaticFieldAccessor implements FieldAccessor {
     }
 
     private final Field field;
+    private final Object o;
 
-    private StaticFieldAccessor(final Field field) {
+    private StaticFieldAccessor(final Field field, final Object o) {
         this.field = field;
+        this.o = o;
     }
 
     @Override
@@ -65,7 +67,7 @@ public class StaticFieldAccessor implements FieldAccessor {
         try {
             FieldUtils.removeFinalModifier(field, true);
             field.setAccessible(true);
-            field.set(null, o);
+            field.set(this.o, o);
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -75,7 +77,7 @@ public class StaticFieldAccessor implements FieldAccessor {
     public Object get() {
         try {
             field.setAccessible(true);
-            return field.get(null);
+            return field.get(this.o);
         } catch (IllegalAccessException e) {
             return null;
         }

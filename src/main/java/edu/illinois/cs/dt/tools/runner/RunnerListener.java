@@ -18,7 +18,6 @@ public class RunnerListener extends RunListener {
         if (!"".equals(trackerPath)) {
             final Path path = Paths.get(trackerPath).resolve(JUnitTestRunner.fullName(description));
             Files.createDirectories(path.getParent());
-            System.out.println(path);
             StaticTracer.output(String.valueOf(path));
         }
     }

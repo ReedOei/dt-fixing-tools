@@ -2,7 +2,6 @@ package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
 import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.util.RuntimeThrower;
-import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -45,7 +44,7 @@ public class StaticFieldInfo extends FileCache<StaticTracer> {
     private void generateStaticFieldInfo() throws Exception {
         StaticFieldPathManager.createEmptyModePath(TracerMode.TRACK);
 
-        TestPluginPlugin.mojo().getLog().info("Tracking static field access for: " + minimized.dependentTest());
+        System.out.println("Tracking static field access for: " + minimized.dependentTest());
 
         StaticTracer.inMode(TracerMode.TRACK, () -> {
             runner.runList(Collections.singletonList(minimized.dependentTest()));

@@ -5,9 +5,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -64,7 +66,7 @@ public class GetMavenTestOrder extends StandardMain {
         }
     }
 
-    private TreeMap<Long, List<TestClassData>> testClassDataMap() throws IOException {
+    private TreeMap<Long, List<TestClassData>> testClassDataMap() throws IOException, ParserConfigurationException, SAXException {
         final List<Path> allResultsFolders = Files.walk(sureFireDirectory)
                 .filter(path -> path.toString().contains("TEST-"))
                 .collect(Collectors.toList());
@@ -85,7 +87,7 @@ public class GetMavenTestOrder extends StandardMain {
         return timeToTestClass;
     }
 
-    public List<TestClassData> testClassDataList() throws IOException {
+    public List<TestClassData> testClassDataList() throws IOException, ParserConfigurationException, SAXException {
         final List<String> classOrder = getClassOrder(mvnTestLog.toFile());
 
         final TreeMap<Long, List<TestClassData>> timeToTestClass = testClassDataMap();
@@ -154,50 +156,46 @@ public class GetMavenTestOrder extends StandardMain {
         return classNames;
     }
 
-    private TestClassData parseXML(File xmlFile) {
+    private TestClassData parseXML(File xmlFile) throws IOException, SAXException, ParserConfigurationException {
         List<String> testNames = new ArrayList<>();
         String className = "";
         double testTime = 0;
 
-        try {
-            DocumentBuilder dBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
+        DocumentBuilder dBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        Document doc = dBuilder.parse(xmlFile);
 
-            Element rootElement = doc.getDocumentElement();
-            rootElement.normalize();
+        Element rootElement = doc.getDocumentElement();
+        rootElement.normalize();
 
-            int errors = Integer.parseInt(rootElement.getAttribute("errors"));
-            int failures = Integer.parseInt(rootElement.getAttribute("failures"));
+        int errors = Integer.parseInt(rootElement.getAttribute("errors"));
+        int failures = Integer.parseInt(rootElement.getAttribute("failures"));
 
-            if (errors != 0 || failures != 0) {
-                // errors/failures found in the test suite from running mvn test.
-                // this test suite should not proceed to use detectors
-                throw new RuntimeException("Failures or errors occurred in mvn test");
-            }
+        if (errors != 0 || failures != 0) {
+            // errors/failures found in the test suite from running mvn test.
+            // this test suite should not proceed to use detectors
+            throw new RuntimeException("Failures or errors occurred in mvn test");
+        }
 
-            className = rootElement.getAttribute("name");
-            testTime = Double.parseDouble(rootElement.getAttribute("time"));
+        className = rootElement.getAttribute("name");
+        testTime = Double.parseDouble(rootElement.getAttribute("time"));
 
-            NodeList nList = doc.getElementsByTagName("testcase");
-            for (int temp = 0; temp < nList.getLength(); temp++) {
-                Node nNode = nList.item(temp);
+        NodeList nList = doc.getElementsByTagName("testcase");
+        for (int temp = 0; temp < nList.getLength(); temp++) {
+            Node nNode = nList.item(temp);
 
-                if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+            if (nNode.getNodeType() == Node.ELEMENT_NODE) {
 
-                    Element eElement = (Element) nNode;
+                Element eElement = (Element) nNode;
 
-                    if (eElement.getElementsByTagName("skipped").getLength() != 0) {
-                        // this test case was marked as skip and therefore should not be ran by us
-                        // TODO
-                        continue;
-                    }
-
-                    String testName = eElement.getAttribute("name");
-                    testNames.add(testName);
+                if (eElement.getElementsByTagName("skipped").getLength() != 0) {
+                    // this test case was marked as skip and therefore should not be ran by us
+                    // TODO
+                    continue;
                 }
+
+                String testName = eElement.getAttribute("name");
+                testNames.add(testName);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
         return new TestClassData(className, testNames, testTime);

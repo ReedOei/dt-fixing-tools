@@ -8,11 +8,13 @@ import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory;
+import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.utility.GetMavenTestOrder;
 import edu.illinois.cs.dt.tools.utility.TestClassData;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
+import scala.collection.JavaConverters;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -265,24 +267,28 @@ public class DetectorPlugin extends TestPlugin {
 
     private List<String> getOriginalOrder(final MavenProject mavenProject) throws IOException {
         if (!Files.exists(DetectorPathManager.originalOrderPath())) {
-            final Path surefireReportsPath = Paths.get(mavenProject.getBuild().getDirectory()).resolve("surefire-reports");
+            try {
+                final Path surefireReportsPath = Paths.get(mavenProject.getBuild().getDirectory()).resolve("surefire-reports");
+                final Path mvnTestLog = DetectorPathManager.mvnTestLog();
 
-            if (!Files.exists(surefireReportsPath)) {
-                return new ArrayList<>();
-            }
+                if (Files.exists(mvnTestLog) && Files.exists(surefireReportsPath)) {
+                    final List<TestClassData> testClassData = new GetMavenTestOrder(surefireReportsPath, mvnTestLog).testClassDataList();
 
-            final Path mvnTestLog = DetectorPathManager.mvnTestLog();
-            final List<TestClassData> testClassData = new GetMavenTestOrder(surefireReportsPath, mvnTestLog).testClassDataList();
+                    final List<String> tests = new ArrayList<>();
 
-            final List<String> tests = new ArrayList<>();
+                    for (final TestClassData classData : testClassData) {
+                        for (final String testName : classData.testNames) {
+                            tests.add(classData.className + "." + testName);
+                        }
+                    }
 
-            for (final TestClassData classData : testClassData) {
-                for (final String testName : classData.testNames) {
-                    tests.add(classData.className + "." + testName);
+                    return tests;
+                } else {
+                    return JavaConverters.bufferAsJavaList(TestLocator.tests(mavenProject).toBuffer());
                 }
-            }
+            } catch (Exception ignored) {}
 
-            return tests;
+            return JavaConverters.bufferAsJavaList(TestLocator.tests(mavenProject).toBuffer());
         } else {
             return Files.readAllLines(DetectorPathManager.originalOrderPath());
         }

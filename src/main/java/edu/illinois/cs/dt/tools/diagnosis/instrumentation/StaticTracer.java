@@ -1,15 +1,13 @@
 package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
 import com.google.gson.Gson;
-import com.reedoei.eunomia.collections.SetUtil;
 import com.reedoei.eunomia.functional.Cons;
 import com.reedoei.eunomia.io.files.FileUtil;
+import com.reedoei.eunomia.util.OptUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.codehaus.plexus.util.StringUtils;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,12 +17,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class StaticTracer {
     private static StaticTracer tracer = new StaticTracer();
@@ -129,18 +125,35 @@ public class StaticTracer {
             return;
         }
 
-        if (fieldName.equals(Configuration.config().getProperty("statictracer.rewrite.field", null))) {
+        if (fieldName.equals(Configuration.config().getProperty("statictracer.rewrite.static_field", ""))) {
             if (!tracer().rewrittenProperties.contains(fieldName)) {
-                final String rewriteValue = Configuration.config().getProperty("statictracer.rewrite.value", null);
-                System.out.println("Rewriting " + fieldName + " using value " + StringUtils.abbreviate(rewriteValue, 50));
-                final Object o = TestResult.getXStreamInstance().fromXML(
-                        rewriteValue);
+                final String rewriteValue = Configuration.config().getProperty("statictracer.rewrite.value", "");
+                final String rewriteField = Configuration.config().getProperty("statictracer.rewrite.field", "");
+//                System.err.println("Rewriting " + rewriteField + " using value " + StringUtils.abbreviate(rewriteValue, 50));
+                final Object o = TestResult.getXStreamInstance().fromXML(rewriteValue);
 
-                FieldAccessorFactory.accessorFor(fieldName).ifPresent(accessor -> {
-                    accessor.set(o);
-                });
+                // Null because that gives us the static field
+                final Optional<? extends FieldAccessor> staticRootAccessor = FieldAccessorFactory.accessorFor(fieldName, null);
 
-                tracer().rewrittenProperties.add(fieldName);
+                // If these are NOT the same, then we're resetting just part of a static root
+                // TODO: Implement this better (currently works, but only for one level deep...)
+//                if (!rewriteField.equals(fieldName)) {
+//                    // To get the field value from what we deserialized
+//                    final Optional<? extends FieldAccessor> accessor = FieldAccessorFactory.accessorFor(rewriteField, o);
+//
+//                    OptUtil.ifAllPresent(
+//                            staticRootAccessor.flatMap(sra -> FieldAccessorFactory.accessorFor(rewriteField, sra.get())),
+//                            accessor,
+//                            (sra, a) -> {
+//                                sra.set(a.get());
+//
+//                                System.err.println(rewriteField + " is now: " + sra.get());
+//                            });
+//                } else {
+                    staticRootAccessor.ifPresent(sra -> sra.set(o));
+//                }
+
+                tracer().rewrittenProperties.add(rewriteField);
             }
         }
     }
