@@ -128,6 +128,10 @@ public class TestDiagnoser {
     }
 
     private String fieldNameFromXPath(final String xPath) {
+        if (xPath == null) {
+            return "ERROR: xPath was null";
+        }
+
         final String[] components = xPath.split("/");
 
         final List<String> fqNameComponents = new ArrayList<>();
