@@ -75,26 +75,28 @@ public class TestDiagnoser {
     }
 
     private Stream<RewriteTarget> rewriteTargets(final String fieldName, final PollutedField field) {
-        final Diff diff = DiffBuilder.compare(Input.fromString(field.withoutDepsVal()))
-                .withTest(Input.fromString(field.withDepsVal()))
-                .build();
+//        final Diff diff = DiffBuilder.compare(Input.fromString(field.withoutDepsVal()))
+//                .withTest(Input.fromString(field.withDepsVal()))
+//                .build();
 
+        System.out.println("Finding rewrite targets for: " + fieldName);
         final ListEx<RewriteTarget> targets = new ListEx<>();
         targets.add(new RewriteTarget(fieldName, fieldName, field));
 
-        for (final Difference difference : diff.getDifferences()) {
-            final String innerFieldName = fieldNameFromXPath(difference.getComparison().getControlDetails().getXPath());
-            final String withoutDepsVal = String.valueOf(difference.getComparison().getControlDetails().getValue());
-            final String withDepsVal = String.valueOf(difference.getComparison().getTestDetails().getValue());
-
-            System.out.println("Found difference. XPath: " + difference.getComparison().getControlDetails().getXPath());
-            System.out.println("    Field name: " + innerFieldName);
-            System.out.println("    withoutDepsValue: " + withoutDepsVal);
-            System.out.println("    withDepsvalue: " + withDepsVal);
-
-            // TODO: Implmenet this better (specifically rewrite inside StaticTracer)
-//            targets.add(new RewriteTarget(fieldName, innerFieldName, field));
-        }
+        // TODO: Implement this (reset specific parts of static fields). For now it prints far too much useless information
+//        for (final Difference difference : diff.getDifferences()) {
+//            final String innerFieldName = fieldNameFromXPath(difference.getComparison().getControlDetails().getXPath());
+//            final String withoutDepsVal = String.valueOf(difference.getComparison().getControlDetails().getValue());
+//            final String withDepsVal = String.valueOf(difference.getComparison().getTestDetails().getValue());
+//
+////            System.out.println("Found difference. XPath: " + difference.getComparison().getControlDetails().getXPath());
+////            System.out.println("    Field name: " + innerFieldName);
+////            System.out.println("    withoutDepsValue: " + withoutDepsVal);
+////            System.out.println("    withDepsvalue: " + withDepsVal);
+//
+//            // TODO: Implement this better (specifically rewrite inside StaticTracer)
+////            targets.add(new RewriteTarget(fieldName, innerFieldName, field));
+//        }
 
         return targets.stream();
     }

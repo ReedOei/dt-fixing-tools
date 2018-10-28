@@ -20,5 +20,12 @@ public class JavaAgent {
     public static void agentmain(String args, Instrumentation inst) throws Exception {
         Transformer transformer = new Transformer();
         inst.addTransformer(transformer, true);
+
+        for (final Class<?> loadedClass : inst.getAllLoadedClasses()) {
+            if (inst.isModifiableClass(loadedClass)) {
+//                System.out.println(loadedClass.getCanonicalName());
+                inst.retransformClasses(loadedClass);
+            }
+        }
     }
 }

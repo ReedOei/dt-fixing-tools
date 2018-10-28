@@ -123,14 +123,14 @@ public class InstrumentingSmartRunner extends SmartRunner {
         // NOTE: If you're trying to do something inside the executor and it's not printing, the calls to inheritIO
         // are probably the cause. You probably want to use true instead.
         if (!StaticTracer.mode().equals(TracerMode.NONE) && javaAgent != null) {
-            if (prefixes == null) {
-                prefixes = getPrefixes();
-            }
+//            if (prefixes == null) {
+//                prefixes = getPrefixes();
+//            }
 
             return super.execution(testOrder,
                     builder
                             .addProperty("statictracer.tracer_path", String.valueOf(StaticFieldPathManager.modePath(StaticTracer.mode())))
-                            .addProperty("dtfixingtools.transformer.class_prefix", prefixes)
+//                            .addProperty("dtfixingtools.transformer.class_prefix", prefixes)
                             .javaAgent(Paths.get(javaAgent)));
         } else {
             return super.execution(testOrder, builder

@@ -24,4 +24,8 @@ public class StaticFieldPathManager extends PathManager {
         FileUtils.deleteDirectory(modePath(mode).toFile());
         return Files.createDirectories(modePath(mode));
     }
+
+    public static Path createModePath(final TracerMode mode) throws IOException {
+        return Files.createDirectories(modePath(mode));
+    }
 }

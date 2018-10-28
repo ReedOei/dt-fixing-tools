@@ -42,7 +42,7 @@ public class StaticFieldInfo extends FileCache<StaticTracer> {
     }
 
     private void generateStaticFieldInfo() throws Exception {
-        StaticFieldPathManager.createEmptyModePath(TracerMode.TRACK);
+        StaticFieldPathManager.createModePath(TracerMode.TRACK);
 
         System.out.println("Tracking static field access for: " + minimized.dependentTest());
 

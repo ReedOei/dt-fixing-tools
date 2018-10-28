@@ -60,7 +60,7 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
         try {
             Files.createDirectories(PollutionPathManager.pollutionData());
 
-            StaticFieldPathManager.createEmptyModePath(TracerMode.FIRST_ACCESS);
+            StaticFieldPathManager.createModePath(TracerMode.FIRST_ACCESS);
 
             final Path withDeps = PollutionPathManager.pollutionData(minimized, "with-deps");
             final Path withoutDeps = PollutionPathManager.pollutionData(minimized, "without-deps");
