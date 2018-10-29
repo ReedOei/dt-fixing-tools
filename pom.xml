@@ -52,7 +52,7 @@
         <dependency>
             <groupId>com.reedoei</groupId>
             <artifactId>eunomia</artifactId>
-            <version>1.4.1-SNAPSHOT</version>
+            <version>1.4.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
