@@ -15,17 +15,37 @@ import java.util.stream.Stream;
 public class RunnerPathManager extends PathManager {
     public static final Path TEST_RUNS = Paths.get("test-runs");
 
-    public static Path runResultPath(final String testRunResultId, final String modifier) {
-        return path(TEST_RUNS.resolve(modifier).resolve(testRunResultId));
+    public static Path testRuns() {
+        return path(TEST_RUNS);
     }
 
-    public static Path runResultPath(final TestRunResult testRunResult, final String modifier) {
-        return runResultPath(testRunResult.id(), modifier);
+    public static Path outputPath() {
+        return testRuns().resolve("output");
+    }
+
+    public static Path outputPath(final String id) {
+        return outputPath().resolve(id);
+    }
+
+    public static Path outputPath(final TestRunResult run) {
+        return outputPath(run.id());
+    }
+
+    public static Path resultsPath() {
+        return testRuns().resolve("results");
+    }
+
+    public static Path resultsPath(final String id) {
+        return resultsPath().resolve(id);
+    }
+
+    public static Path resultsPath(final TestRunResult run) {
+        return resultsPath(run.id());
     }
 
     public static void outputResult(final Path tempOutput, final TestRunResult testRunResult) throws Exception {
-        final Path outputPath = runResultPath(testRunResult, "output");
-        final Path resultPath = runResultPath(testRunResult, "results");
+        final Path outputPath = outputPath(testRunResult);
+        final Path resultPath = resultsPath(testRunResult);
 
         Files.createDirectories(outputPath.getParent());
         Files.move(tempOutput, outputPath);
@@ -35,12 +55,12 @@ public class RunnerPathManager extends PathManager {
     }
 
     public static void clearTestRuns() throws IOException {
-        FileUtils.deleteDirectory(path(Paths.get("test-runs")).toFile());
+        FileUtils.deleteDirectory(testRuns().toFile());
     }
 
     public static Stream<TestRunResult> resultFor(final String trKey) {
         try {
-            return Stream.of(new Gson().fromJson(FileUtil.readFile(runResultPath(trKey, "results")), TestRunResult.class));
+            return Stream.of(new Gson().fromJson(FileUtil.readFile(resultsPath(trKey)), TestRunResult.class));
         } catch (IOException ignored) {}
 
         return Stream.empty();

@@ -9,6 +9,8 @@ import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerFinder;
+import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import scala.util.Try;
 
 import javax.annotation.Nullable;
@@ -21,7 +23,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     private final List<String> testOrder;
     private final String dependentTest;
     private final Result expected;
-    private final Runner runner;
+    private final InstrumentingSmartRunner runner;
 
     private final Path path;
 
@@ -37,7 +39,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
         TestPluginPlugin.mojo().getLog().info(str);
     }
 
-    public TestMinimizer(final List<String> testOrder, final Runner runner, final String dependentTest) {
+    public TestMinimizer(final List<String> testOrder, final InstrumentingSmartRunner runner, final String dependentTest) {
         this.testOrder = testOrder;
         this.dependentTest = dependentTest;
 
@@ -77,7 +79,9 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
 
-            minimizedResult = new MinimizeTestsResult(expectedRun, expected, dependentTest, run(order));
+            final List<String> deps = run(order);
+            minimizedResult = new MinimizeTestsResult(expectedRun, expected, dependentTest, deps,
+                    new CleanerFinder(runner, dependentTest, deps, expected, expectedRun.testOrder()).find());
             minimizedResult.verify(runner);
         }
 

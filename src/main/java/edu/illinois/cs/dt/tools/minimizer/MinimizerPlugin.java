@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 public class MinimizerPlugin extends TestPlugin {
     private TestMinimizerBuilder builder;
-    private Runner runner;
+    private InstrumentingSmartRunner runner;
 
     /**
      * This will clear all the cached test runs!
@@ -28,7 +28,7 @@ public class MinimizerPlugin extends TestPlugin {
     public MinimizerPlugin() {
     }
 
-    public MinimizerPlugin(final Runner runner) {
+    public MinimizerPlugin(final InstrumentingSmartRunner runner) {
         super();
         this.runner = runner;
         this.builder = new TestMinimizerBuilder(runner);

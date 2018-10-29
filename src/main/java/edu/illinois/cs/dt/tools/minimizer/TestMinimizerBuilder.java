@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,9 +11,9 @@ import java.util.List;
 public class TestMinimizerBuilder {
     private final List<String> testOrder;
     private final String dependentTest;
-    private Runner runner;
+    private InstrumentingSmartRunner runner;
 
-    public TestMinimizerBuilder(final Runner runner) {
+    public TestMinimizerBuilder(final InstrumentingSmartRunner runner) {
         this.runner = runner;
 
         testOrder = new ArrayList<>();
@@ -20,7 +21,7 @@ public class TestMinimizerBuilder {
     }
 
     public TestMinimizerBuilder(final List<String> testOrder, final String dependentTest,
-                                final Runner runner) {
+                                final InstrumentingSmartRunner runner) {
         this.testOrder = testOrder;
         this.dependentTest = dependentTest;
         this.runner = runner;
@@ -34,7 +35,7 @@ public class TestMinimizerBuilder {
         return new TestMinimizerBuilder(testOrder, dependentTest, runner);
     }
 
-    public TestMinimizerBuilder runner(final Runner runner) {
+    public TestMinimizerBuilder runner(final InstrumentingSmartRunner runner) {
         return new TestMinimizerBuilder(testOrder, dependentTest, runner);
     }
 

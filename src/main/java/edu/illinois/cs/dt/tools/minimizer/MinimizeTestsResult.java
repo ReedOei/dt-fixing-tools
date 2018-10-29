@@ -7,6 +7,7 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,6 +23,7 @@ public class MinimizeTestsResult {
     private final Result expected;
     private final String dependentTest;
     private final List<String> deps;
+    private final CleanerData cleanerData;
 
     public static MinimizeTestsResult fromPath(final Path path) throws IOException {
         return fromString(FileUtil.readFile(path));
@@ -31,11 +33,14 @@ public class MinimizeTestsResult {
         return new Gson().fromJson(jsonString, MinimizeTestsResult.class);
     }
 
-    public MinimizeTestsResult(final TestRunResult expectedRun, final Result expected, final String dependentTest, final List<String> deps) {
+    public MinimizeTestsResult(final TestRunResult expectedRun, final Result expected,
+                               final String dependentTest, final List<String> deps,
+                               final CleanerData cleanerData) {
         this.expectedRun = expectedRun;
         this.expected = expected;
         this.dependentTest = dependentTest;
         this.deps = deps;
+        this.cleanerData = cleanerData;
     }
 
     private boolean isExpected(final Runner runner, final List<String> deps) {

@@ -117,8 +117,8 @@ public class TestDiagnoser {
                 final Try<TestRunResult> testRunResult = runner.runList(minimized.withDeps());
                 final TestResult testResult = testRunResult.get().results().get(minimized.dependentTest());
 
-                System.out.println("REWRITE_RUN (" + RunnerPathManager.runResultPath(testRunResult.get(), "output") + "): " + testResult.result());
-                System.out.println("NO_REWRITE (" + RunnerPathManager.runResultPath(minimized.expectedRun(), "output") + "): " + minimized.expected());
+                System.out.println("REWRITE_RUN (" + RunnerPathManager.outputPath(testRunResult.get()) + "): " + testResult.result());
+                System.out.println("NO_REWRITE (" + RunnerPathManager.outputPath(minimized.expectedRun()) + "): " + minimized.expected());
 
                 return new RewritingResult(target, testRunResult.get(), testResult.result(), minimized.expected());
             }));
