@@ -51,18 +51,26 @@ public class DiagnoserPlugin extends TestPlugin {
         this.javaAgent = Paths.get(Configuration.config().getProperty("dtfixingtools.javaagent", ""));
         final Option<Runner> runnerOption = RunnerFactory.from(project);
 
-        if (runnerOption.isDefined()) {
-            this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
+        try {
+            if (runnerOption.isDefined()) {
+                this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
 
-            Configuration.config().properties().setProperty("testrunner.testlistener_class", RunnerListener.class.getCanonicalName());
+                if (!Files.exists(DetectorPathManager.originalOrderPath())) {
+                    Files.write(DetectorPathManager.originalOrderPath(), DetectorPlugin.getOriginalOrder(project));
+                }
 
-            try {
-                diagnose();
-            } catch (Exception e) {
-                e.printStackTrace();
+                Configuration.config().properties().setProperty("testrunner.testlistener_class", RunnerListener.class.getCanonicalName());
+
+                try {
+                    diagnose();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                TestPluginPlugin.mojo().getLog().info("Module is not using a supported test framework (probably not JUnit)");
             }
-        } else {
-            TestPluginPlugin.mojo().getLog().info("Module is not using a supported test framework (probably not JUnit)");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

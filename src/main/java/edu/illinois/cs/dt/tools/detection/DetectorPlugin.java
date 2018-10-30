@@ -265,7 +265,7 @@ public class DetectorPlugin extends TestPlugin {
         }
     }
 
-    private List<String> getOriginalOrder(final MavenProject mavenProject) throws IOException {
+    public static List<String> getOriginalOrder(final MavenProject mavenProject) throws IOException {
         if (!Files.exists(DetectorPathManager.originalOrderPath())) {
             try {
                 final Path surefireReportsPath = Paths.get(mavenProject.getBuild().getDirectory()).resolve("surefire-reports");
