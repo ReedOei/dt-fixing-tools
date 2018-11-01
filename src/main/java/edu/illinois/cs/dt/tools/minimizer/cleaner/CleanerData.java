@@ -9,15 +9,17 @@ public class CleanerData {
     private final String dependentTest;
     private final List<String> deps;
     private final Result expected;
+    private final Result isolationResult;
     private final List<String> testOrder;
     private final ListEx<CleanerGroup> cleaners;
 
     public CleanerData(final String dependentTest, final List<String> deps,
-                       final Result expected, final List<String> testOrder,
+                       final Result expected, final Result isolationResult, final List<String> testOrder,
                        final ListEx<CleanerGroup> cleaners) {
         this.dependentTest = dependentTest;
         this.deps = deps;
         this.expected = expected;
+        this.isolationResult = isolationResult;
         this.testOrder = testOrder;
         this.cleaners = cleaners;
     }
@@ -32,6 +34,10 @@ public class CleanerData {
 
     public Result expected() {
         return expected;
+    }
+
+    public Result isolationResult() {
+        return isolationResult;
     }
 
     public List<String> testOrder() {

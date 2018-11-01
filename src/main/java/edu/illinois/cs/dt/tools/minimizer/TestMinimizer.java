@@ -5,13 +5,10 @@ import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.eunomia.util.Util;
 import com.reedoei.testrunner.data.results.Result;
-import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
-import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerFinder;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
-import scala.util.Try;
 
 import javax.annotation.Nullable;
 import java.nio.file.Path;
@@ -23,6 +20,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     private final List<String> testOrder;
     private final String dependentTest;
     private final Result expected;
+    private final Result isolationResult;
     private final InstrumentingSmartRunner runner;
 
     private final Path path;
@@ -49,6 +47,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
         debug("Getting expected result for: " + dependentTest);
         this.expectedRun = runResult(testOrder);
         this.expected = expectedRun.results().get(dependentTest).result();
+        this.isolationResult = result(Collections.singletonList(dependentTest));
         debug("Expected: " + expected);
 
         this.path = MinimizerPathManager.minimized(dependentTest, expected);
@@ -81,7 +80,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
             final List<String> deps = run(order);
             minimizedResult = new MinimizeTestsResult(expectedRun, expected, dependentTest, deps,
-                    new CleanerFinder(runner, dependentTest, deps, expected, expectedRun.testOrder()).find());
+                    new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find());
             minimizedResult.verify(runner);
         }
 
@@ -100,8 +99,6 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
         if (tryIsolated(deps, order)) {
             return deps;
         }
-
-        final int origSize = order.size();
 
         while (order.size() > 1) {
             debug("Trying both halves, " + order.size() + " dts remaining.");
@@ -138,10 +135,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     }
 
     private boolean tryIsolated(final List<String> deps, final List<String> order) {
-        debug("Trying dependent test '" + dependentTest + "' in isolation.");
-        final Result isolated = result(Collections.singletonList(dependentTest));
-
-        if (isolated == expected) {
+        if (isolationResult.equals(expected)) {
             deps.clear();
             debug("Test has expected result in isolation.");
             return true;

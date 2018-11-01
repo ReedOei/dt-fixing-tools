@@ -9,7 +9,6 @@ import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.utility.TestRunParser;
-import org.junit.Test;
 import scala.util.Try;
 
 import java.io.IOException;
@@ -24,23 +23,25 @@ public class CleanerFinder {
     private final String dependentTest;
     private final List<String> deps;
     private final Result expected;
+    private final Result isolationResult;
     private final List<String> testOrder;
 
     public CleanerFinder(final InstrumentingSmartRunner runner,
                          final String dependentTest, final List<String> deps,
-                         final Result expected, final List<String> testOrder) {
+                         final Result expected, final Result isolationResult, final List<String> testOrder) {
         this.runner = runner;
         this.dependentTest = dependentTest;
         this.deps = deps;
         this.expected = expected;
+        this.isolationResult = isolationResult;
         this.testOrder = testOrder;
     }
 
     /**
      * Finds minimal cleaner groups.
      *
-     * A group of tests "c" forms a cleaner group for a dependent test "t" with dependencies "ds" if:
-     * the sequence [ds, c, t] does NOT have the same result as [ds, t].
+     * A group of tests "c" forms a cleaner group for a dependent test "t" with a non-empty list of dependencies "ds" if:
+     * the sequence [ds, c, t] has the same result as [t] (i.e., the isolation result)
      *
      * A minimal cleaner group is a cleaner group such that, if any test is removed, it is no longer a cleaner group.
      *
@@ -53,22 +54,34 @@ public class CleanerFinder {
     public CleanerData find() throws IOException {
         TestPluginPlugin.info("Looking for cleaners for: " + dependentTest);
 
-        final ListEx<String> originalOrder = new ListEx<>(Files.readAllLines(DetectorPathManager.originalOrderPath()));
+        // If it's empty, we can't have any cleaners (they'd be polluters, not cleaners
+        if (deps.isEmpty()) {
+            TestPluginPlugin.info("No dependencies for " + dependentTest + " in this order, so no cleaners.");
+            return new CleanerData(dependentTest, deps, expected, isolationResult, testOrder, new ListEx<>());
+        } else {
+            final ListEx<String> originalOrder = new ListEx<>(Files.readAllLines(DetectorPathManager.originalOrderPath()));
 
-        final ListEx<ListEx<String>> candidates = new ListEx<>(cleanerCandidates(originalOrder)).distinct();
+            final ListEx<ListEx<String>> candidates = new ListEx<>(cleanerCandidates(originalOrder)).distinct();
 
-        TestPluginPlugin.info("Found " + candidates.size() + " cleaner group candidates.");
+            TestPluginPlugin.info("Found " + candidates.size() + " cleaner group candidates.");
 
-        final ListEx<ListEx<String>> cleanerGroups = candidates.filter(this::isCleanerGroup);
+            final ListEx<ListEx<String>> cleanerGroups = candidates.filter(this::isCleanerGroup);
 
-        TestPluginPlugin.info("Found " + cleanerGroups.size() + " cleaner groups.");
+            TestPluginPlugin.info("Found " + cleanerGroups.size() + " cleaner groups.");
 
-        final CleanerData cleanerData = new CleanerData(dependentTest, deps, expected, testOrder,
-                cleanerGroups.mapWithIndex(this::minimalCleanerGroup).distinct());
+            final CleanerData cleanerData = new CleanerData(dependentTest, deps, expected, isolationResult, testOrder,
+                    cleanerGroups.mapWithIndex(this::minimalCleanerGroup).distinct());
 
-        TestPluginPlugin.info("Found " + cleanerData.cleaners().size() + " cleaners: " + cleanerData.cleaners());
+            TestPluginPlugin.info(dependentTest + " has " + cleanerData.cleaners().size() + " cleaners: " + cleanerData.cleaners());
 
-        return cleanerData;
+            if (!cleanerData.cleaners().isEmpty()) {
+                for (final CleanerGroup cleanerGroup : cleanerData.cleaners()) {
+                    TestPluginPlugin.info(dependentTest + " cleaner group size: " + cleanerGroup.cleanerTests().size());
+                }
+            }
+
+            return cleanerData;
+        }
     }
 
     /**
@@ -83,7 +96,7 @@ public class CleanerFinder {
         final Try<TestRunResult> testRunResultTry = runner.runList(tests);
 
         return testRunResultTry.isSuccess() &&
-               !testRunResultTry.get().results().get(dependentTest).result().equals(expected);
+               testRunResultTry.get().results().get(dependentTest).result().equals(isolationResult);
     }
 
     /**
