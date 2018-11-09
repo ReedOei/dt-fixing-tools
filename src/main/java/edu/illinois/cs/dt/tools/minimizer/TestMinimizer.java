@@ -79,9 +79,12 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
 
             final List<String> deps = run(order);
+            minimizedResult.verify(runner);
+
+            info("Ran minimizer, dependencies: " + deps);
+
             minimizedResult = new MinimizeTestsResult(expectedRun, expected, dependentTest, deps,
                     new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find());
-            minimizedResult.verify(runner);
         }
 
         return minimizedResult;
