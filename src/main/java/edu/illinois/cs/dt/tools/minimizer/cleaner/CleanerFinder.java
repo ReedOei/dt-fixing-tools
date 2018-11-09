@@ -66,7 +66,7 @@ public class CleanerFinder {
 
             TestPluginPlugin.info("Found " + candidates.size() + " cleaner group candidates.");
 
-            final ListEx<ListEx<String>> cleanerGroups = candidates.filter(this::isCleanerGroup);
+            final ListEx<ListEx<String>> cleanerGroups = filterCleanerGroups(candidates);
 
             TestPluginPlugin.info("Found " + cleanerGroups.size() + " cleaner groups.");
 
@@ -83,6 +83,23 @@ public class CleanerFinder {
 
             return cleanerData;
         }
+    }
+
+    private ListEx<ListEx<String>> filterCleanerGroups(final ListEx<ListEx<String>> candidates) {
+        final ListEx<ListEx<String>> result = new ListEx<>();
+
+        for (int i = 0; i < candidates.size(); i++) {
+            final ListEx<String> candidate = candidates.get(i);
+            System.out.printf("\rTrying group %d of %d", i, candidates.size());
+
+            if (isCleanerGroup(candidate)) {
+                result.add(candidate);
+            }
+        }
+
+        System.out.print("\r");
+
+        return result;
     }
 
     /**
