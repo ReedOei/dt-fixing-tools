@@ -106,7 +106,6 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
     private boolean shouldConsume(final String fieldName) {
         return !fieldName.startsWith("com.thoughtworks.xstream") &&
                !fieldName.startsWith("java.") &&
-               !fieldName.startsWith("javax.") &&
                !fieldName.startsWith("jdk.") &&
                !fieldName.startsWith("sun.");
     }

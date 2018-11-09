@@ -73,7 +73,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
     private MinimizeTestsResult run() throws Exception {
         if (minimizedResult == null) {
-            info("Running minimizer for: " + dependentTest);
+            info("Running minimizer for: " + dependentTest + " (expected result in this order: " + expected + ")");
 
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);

@@ -1,10 +1,7 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
-import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +36,7 @@ public class TestMinimizerBuilder {
         return new TestMinimizerBuilder(testOrder, dependentTest, runner);
     }
 
-    public TestMinimizer build() throws Exception {
+    public TestMinimizer build() {
         return new TestMinimizer(testOrder, runner, dependentTest);
     }
 }

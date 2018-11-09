@@ -54,3 +54,4 @@ mv /home/awshi2/mvn-test-time.log ${RESULTSDIR}
 echo "*******************REED************************"
 echo "Finished run_debugging_tools.sh"
 date
+

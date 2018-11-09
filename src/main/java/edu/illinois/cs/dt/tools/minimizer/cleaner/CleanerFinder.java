@@ -9,6 +9,7 @@ import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.utility.TestRunParser;
+import org.codehaus.plexus.util.StringUtils;
 import scala.util.Try;
 
 import java.io.IOException;
@@ -104,7 +105,8 @@ public class CleanerFinder {
      * @return A minimal cleaner group
      */
     private CleanerGroup minimalCleanerGroup(final int i, final ListEx<String> cleanerGroup) {
-        TestPluginPlugin.info("Minimizing cleaner group " + i + ": " + cleanerGroup);
+        TestPluginPlugin.info("Minimizing cleaner group " + i + ": " +
+                StringUtils.abbreviate(String.valueOf(cleanerGroup), 500));
         return new CleanerGroup(dependentTest, reduce(cleanerGroup));
     }
 
@@ -167,8 +169,10 @@ public class CleanerFinder {
             return Stream.empty();
         }
 
-        return Stream.concat(highLikelihoodCleanerGroups(),
-                Stream.of(possibleCleaners(originalOrder)));
+        return Stream.concat(
+                Stream.concat(highLikelihoodCleanerGroups(), Stream.of(possibleCleaners(originalOrder))),
+                // Consider each possible cleaner individually as well, in case there are other polluters
+                Stream.of(possibleCleaners(originalOrder)).flatMap(l -> l.map(ListEx::fromArray).stream()));
     }
 
     /**

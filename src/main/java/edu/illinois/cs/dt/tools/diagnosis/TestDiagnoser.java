@@ -79,6 +79,7 @@ public class TestDiagnoser {
 //                .withTest(Input.fromString(field.withDepsVal()))
 //                .build();
 
+        System.out.println();
         System.out.println("Finding rewrite targets for: " + fieldName);
         final ListEx<RewriteTarget> targets = new ListEx<>();
         targets.add(new RewriteTarget(fieldName, fieldName, field));
@@ -103,14 +104,13 @@ public class TestDiagnoser {
 
     private Stream<RewritingResult> tryRewrite(final RewriteTarget target) {
         try {
-            System.out.println();
-
             return Stream.of(StaticTracer.inMode(TracerMode.REWRITE, () -> {
                 Configuration.config().properties().setProperty("statictracer.rewrite.test_name", minimized.dependentTest());
                 Configuration.config().properties().setProperty("statictracer.rewrite.static_field", target.staticFieldName());
                 Configuration.config().properties().setProperty("statictracer.rewrite.field", target.fieldName());
                 Configuration.config().properties().setProperty("statictracer.rewrite.value", target.field().withoutDepsVal());
 
+                System.out.println();
                 System.out.println("Resetting " + target.fieldName() + " to " +
                         StringUtils.abbreviate(String.valueOf(target.field().withoutDepsVal()), 50));
 

@@ -10,6 +10,7 @@ import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory;
 import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
+import edu.illinois.cs.dt.tools.utility.ErrorLogger;
 import edu.illinois.cs.dt.tools.utility.GetMavenTestOrder;
 import edu.illinois.cs.dt.tools.utility.TestClassData;
 import org.apache.maven.project.MavenProject;
@@ -17,15 +18,12 @@ import scala.Option;
 import scala.collection.JavaConverters;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -45,40 +43,6 @@ public class DetectorPlugin extends TestPlugin {
     public DetectorPlugin(final Path outputPath, final InstrumentingSmartRunner runner) {
         this.outputPath = outputPath;
         this.runner = runner;
-    }
-
-    private void writeError(final Throwable t) {
-        try {
-            System.out.println("---------------------------------------------------");
-            System.out.println("ERROR (WRITE_ERROR_STDOUT_THROWABLE_REEDOEI2): " + coordinates);
-            t.printStackTrace();
-
-            t.printStackTrace(new PrintStream(new FileOutputStream(String.valueOf(DetectorPathManager.errorPath()))));
-            Files.write(DetectorPathManager.errorPath(), ("\n" + coordinates).getBytes(), StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            System.out.println("ERROR (FAIL_OUTPUT_ERR_THROWABLE_REEDOEI2): Failed to output error!");
-            e.printStackTrace();
-            System.out.println("---------------------------------------------------");
-            t.printStackTrace();
-        }
-    }
-
-    private void writeError(final String msg) {
-        try {
-            System.out.println("---------------------------------------------------");
-            System.out.println("ERROR (WRITE_ERROR_STDOUT_STRING_REEDOEI2): " + coordinates);
-            System.out.println("Message was:");
-            System.out.println(msg);
-
-            Files.write(DetectorPathManager.errorPath(), (msg + "\n").getBytes());
-            Files.write(DetectorPathManager.errorPath(), ("\n" + coordinates).getBytes(), StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            System.out.println("ERROR (FAIL_OUTPUT_ERR_STRING_REEDOEI2): Failed to output error!");
-            e.printStackTrace();
-            System.out.println("---------------------------------------------------");
-            System.out.println("Message was:");
-            System.out.println(msg);
-        }
     }
 
     // TODO: copy to eunomia
@@ -214,20 +178,17 @@ public class DetectorPlugin extends TestPlugin {
 
     @Override
     public void execute(final MavenProject mavenProject) {
-        this.coordinates = mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
+        final ErrorLogger logger = new ErrorLogger(mavenProject);
+        this.coordinates = logger.coordinates();
 
-        try {
-            Files.deleteIfExists(DetectorPathManager.errorPath());
-            Files.createDirectories(DetectorPathManager.cachePath());
-            Files.createDirectories(DetectorPathManager.detectionResults());
-
-            detectorExecute(mavenProject, moduleRounds());
-        } catch (Throwable t) {
-            writeError(t);
-        }
+        logger.runAndLogError(() -> detectorExecute(logger, mavenProject, moduleRounds()));
     }
 
-    private void detectorExecute(final MavenProject mavenProject, final int rounds) {
+    private Void detectorExecute(final ErrorLogger logger, final MavenProject mavenProject, final int rounds) throws IOException {
+        Files.deleteIfExists(DetectorPathManager.errorPath());
+        Files.createDirectories(DetectorPathManager.cachePath());
+        Files.createDirectories(DetectorPathManager.detectionResults());
+
         final Option<Runner> runnerOption = RunnerFactory.from(mavenProject);
 
         // We need to do two checks to make sure that we can run this project
@@ -238,31 +199,29 @@ public class DetectorPlugin extends TestPlugin {
                 this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
             }
 
-            try {
-                final List<String> tests = getOriginalOrder(mavenProject);
+            final List<String> tests = getOriginalOrder(mavenProject);
 
-                // If there are no tests, we can't run a flaky test detector
-                if (!tests.isEmpty()) {
-                    Files.createDirectories(outputPath);
-                    Files.write(DetectorPathManager.originalOrderPath(), String.join(System.lineSeparator(), tests).getBytes());
+            // If there are no tests, we can't run a flaky test detector
+            if (!tests.isEmpty()) {
+                Files.createDirectories(outputPath);
+                Files.write(DetectorPathManager.originalOrderPath(), String.join(System.lineSeparator(), tests).getBytes());
 
-                    final Detector detector = DetectorFactory.makeDetector(runner, tests, rounds);
-                    TestPluginPlugin.mojo().getLog().info("Created dependent test detector (" + detector.getClass() + ").");
+                final Detector detector = DetectorFactory.makeDetector(runner, tests, rounds);
+                TestPluginPlugin.info("Created dependent test detector (" + detector.getClass() + ").");
 
-                    detector.writeTo(outputPath);
-                } else {
-                    final String errorMsg = "Module has no tests, not running detector.";
-                    TestPluginPlugin.mojo().getLog().info(errorMsg);
-                    writeError(errorMsg);
-                }
-            } catch (IOException e) {
-                writeError(e);
+                detector.writeTo(outputPath);
+            } else {
+                final String errorMsg = "Module has no tests, not running detector.";
+                TestPluginPlugin.info(errorMsg);
+                logger.writeError(errorMsg);
             }
         } else {
             final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
-            TestPluginPlugin.mojo().getLog().info(errorMsg);
-            writeError(errorMsg);
+            TestPluginPlugin.info(errorMsg);
+            logger.writeError(errorMsg);
         }
+
+        return null;
     }
 
     public static List<String> getOriginalOrder(final MavenProject mavenProject) throws IOException {

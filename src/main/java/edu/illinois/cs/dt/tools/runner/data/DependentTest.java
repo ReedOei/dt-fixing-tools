@@ -7,7 +7,6 @@ import edu.illinois.cs.dt.tools.minimizer.TestMinimizer;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizerBuilder;
 
 import java.nio.file.Path;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class DependentTest {
@@ -44,34 +43,15 @@ public class DependentTest {
     public Stream<TestMinimizer> minimizers(final TestMinimizerBuilder builder, final Runner runner) {
         final TestMinimizerBuilder minimizerBuilder = builder.dependentTest(name);
 
-        final Supplier<Stream<TestMinimizer>> intendedMinimizer = () -> minimizer(minimizerBuilder, intended, runner);
-        final Supplier<Stream<TestMinimizer>> revealedMinimizer = () -> minimizer(minimizerBuilder, revealed, runner);
-
-        if (intended.result().equals(revealed.result())) {
-            if (intended.order().size() < revealed.order().size()) {
-                return intendedMinimizer.get();
-            } else {
-                return revealedMinimizer.get();
+        if (VERIFY_DTS) {
+            if (!intended.verify(name, runner, null) || !revealed.verify(name, runner, null)) {
+                return Stream.empty();
             }
-        } else {
-            return Stream.concat(intendedMinimizer.get(), revealedMinimizer.get());
         }
-    }
 
-    private Stream<TestMinimizer> minimizer(final TestMinimizerBuilder builder, final TestRun run, final Runner runner) {
-        try {
-            final TestMinimizer minimizer = builder.testOrder(run.order()).build();
-
-            if (VERIFY_DTS) {
-                if (!run.verify(name, runner, null)) {
-                    return Stream.empty();
-                }
-            }
-
-            return Stream.of(minimizer);
-        } catch (Exception e) {
-            return Stream.empty();
-        }
+        return Stream.of(
+                minimizerBuilder.testOrder(intended.order()).build(),
+                minimizerBuilder.testOrder(revealed.order()).build());
     }
 
     public boolean verify(final Runner runner, final Path path) {
