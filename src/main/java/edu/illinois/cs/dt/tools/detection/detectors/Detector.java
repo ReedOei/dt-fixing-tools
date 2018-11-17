@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.detection;
+package edu.illinois.cs.dt.tools.detection.detectors;
 
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 

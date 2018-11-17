@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 
+import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.utility.PathManager;
 import org.apache.commons.io.FileUtils;
 
@@ -16,8 +17,8 @@ public class StaticFieldPathManager extends PathManager {
         return path(Paths.get(STATIC_FIELD_INFO_PATH.toString() + "-" + mode));
     }
 
-    public static Path infoFor(final TracerMode mode, final String testName) {
-        return modePath(mode).resolve(testName);
+    public static Path infoFor(final TracerMode mode, final MinimizeTestsResult minimized) {
+        return modePath(mode).resolve(minimized.dependentTest() + "-" + minimized.hash());
     }
 
     public static Path createEmptyModePath(final TracerMode mode) throws IOException {

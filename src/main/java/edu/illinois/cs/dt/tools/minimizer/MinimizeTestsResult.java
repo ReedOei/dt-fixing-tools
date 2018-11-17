@@ -8,6 +8,8 @@ import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
+import edu.illinois.cs.dt.tools.utility.MD5;
+import edu.illinois.cs.dt.tools.utility.OperationTime;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,10 +21,12 @@ public class MinimizeTestsResult {
     private static final int VERIFY_REPEAT_COUNT = 1;
     private static final int MAX_SUBSEQUENCES = 1000;
 
+    private final OperationTime time;
     private final TestRunResult expectedRun;
     private final Result expected;
     private final String dependentTest;
     private final List<String> deps;
+    private final String hash;
     private final CleanerData cleanerData;
 
     public static MinimizeTestsResult fromPath(final Path path) throws IOException {
@@ -33,14 +37,24 @@ public class MinimizeTestsResult {
         return new Gson().fromJson(jsonString, MinimizeTestsResult.class);
     }
 
-    public MinimizeTestsResult(final TestRunResult expectedRun, final Result expected,
+    public MinimizeTestsResult(final OperationTime time, final TestRunResult expectedRun, final Result expected,
                                final String dependentTest, final List<String> deps,
                                final CleanerData cleanerData) {
+        this.time = time;
         this.expectedRun = expectedRun;
         this.expected = expected;
         this.dependentTest = dependentTest;
         this.deps = deps;
         this.cleanerData = cleanerData;
+        hash = MD5.hashOrder(expectedRun.testOrder());
+    }
+
+    public OperationTime time() {
+        return time;
+    }
+
+    public String hash() {
+        return hash;
     }
 
     private boolean isExpected(final Runner runner, final List<String> deps) {
@@ -114,7 +128,7 @@ public class MinimizeTestsResult {
     }
 
     public void save() {
-        final Path outputPath = MinimizerPathManager.minimized(dependentTest(), expected());
+        final Path outputPath = MinimizerPathManager.minimized(dependentTest(), hash, expected());
 
         try {
             Files.createDirectories(outputPath.getParent());

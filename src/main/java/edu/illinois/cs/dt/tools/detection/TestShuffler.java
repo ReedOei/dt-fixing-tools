@@ -9,6 +9,7 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
+import edu.illinois.cs.dt.tools.utility.MD5;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -58,22 +59,6 @@ public class TestShuffler {
 
             return Configuration.config().getProperty("detector.random.historical_type", "random");
         }
-    }
-
-    // From: https://stackoverflow.com/a/6565597/1498618
-    private String md5(final String md5) {
-        try {
-            final byte[] array = MessageDigest.getInstance("md5").digest(md5.getBytes());
-
-            final StringBuilder sb = new StringBuilder();
-
-            for (final byte anArray : array) {
-                sb.append(Integer.toHexString((anArray & 0xFF) | 0x100), 1, 3);
-            }
-
-            return sb.toString();
-        } catch (NoSuchAlgorithmException ignored) {}
-        return "";
     }
 
     public List<String> shuffledOrder(final int i) {
@@ -138,7 +123,7 @@ public class TestShuffler {
             }
         }
 
-        alreadySeenOrders.add(md5(String.join("", fullTestOrder)));
+        alreadySeenOrders.add(MD5.md5(String.join("", fullTestOrder)));
 
         return fullTestOrder;
     }

@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.runner;
 
+import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.framework.TestFramework;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
@@ -133,9 +134,10 @@ public class InstrumentingSmartRunner extends SmartRunner {
 //                            .addProperty("dtfixingtools.transformer.class_prefix", prefixes)
                             .javaAgent(Paths.get(javaAgent)));
         } else {
-            return super.execution(testOrder, builder
+            return super.execution(testOrder,
+                    builder);
 //                    .inheritIO(false));
-            );
+//            );
         }
     }
 

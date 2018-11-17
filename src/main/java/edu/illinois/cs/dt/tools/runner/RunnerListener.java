@@ -1,5 +1,6 @@
 package edu.illinois.cs.dt.tools.runner;
 
+import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.execution.JUnitTestRunner;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import org.junit.runner.Description;
@@ -15,8 +16,10 @@ public class RunnerListener extends RunListener {
     public void testFinished(final Description description) throws Exception {
         final String trackerPath = System.getProperty("statictracer.tracer_path", "");
 
+        final String hash = Configuration.config().getProperty("statictracer.hash", "NOHASHFOUND");
+
         if (!"".equals(trackerPath)) {
-            final Path path = Paths.get(trackerPath).resolve(JUnitTestRunner.fullName(description));
+            final Path path = Paths.get(trackerPath).resolve(JUnitTestRunner.fullName(description) + "-" + hash);
             Files.createDirectories(path.getParent());
             StaticTracer.output(String.valueOf(path));
         }

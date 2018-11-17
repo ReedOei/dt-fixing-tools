@@ -10,7 +10,11 @@ public class DiagnoserPathManager extends PathManager {
     public static Path DIAGNOSIS = Paths.get("diagnosis");
 
     public static Path diagnosisResult(final DiagnosisResult diagnosisResult) {
-        return path(DIAGNOSIS).resolve(diagnosisResult.minimized().dependentTest() + "-" + diagnosisResult.minimized().expected() + ".json");
+        return path(DIAGNOSIS).resolve(
+                String.format("%s-%s-%s.json",
+                        diagnosisResult.minimized().dependentTest(),
+                        diagnosisResult.minimized().hash(),
+                        diagnosisResult.minimized().expected()));
     }
 
     public static Path subjectProperties() {

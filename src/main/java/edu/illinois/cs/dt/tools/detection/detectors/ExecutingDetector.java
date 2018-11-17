@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.detection;
+package edu.illinois.cs.dt.tools.detection.detectors;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Streams;
@@ -9,6 +9,8 @@ import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.detection.DetectionRound;
+import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.filters.Filter;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
@@ -78,7 +80,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
 
         return new DetectionRound(Collections.singletonList(revealed.id()),
                 result,
-                filter(result.stream(), absoluteRound.get()).collect(Collectors.toList()),
+                filter(result, absoluteRound.get()).collect(Collectors.toList()),
                 stopwatch.elapsed(TimeUnit.NANOSECONDS) / 1E9);
     }
 
@@ -93,12 +95,16 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         return Streams.stream(new RunnerIterator());
     }
 
-    private Stream<DependentTest> filter(Stream<DependentTest> dts, final int absoluteRound) {
-        for (final Filter filter : filters) {
-            dts = dts.filter(t -> filter.keep(t, absoluteRound));
+    private Stream<DependentTest> filter(List<DependentTest> dts, final int absoluteRound) {
+        if (!dts.isEmpty()) {
+            System.out.println();
+
+            for (final Filter filter : filters) {
+                dts = dts.stream().filter(t -> filter.keep(t, absoluteRound)).collect(Collectors.toList());
+            }
         }
 
-        return dts;
+        return dts.stream();
     }
 
     @Override

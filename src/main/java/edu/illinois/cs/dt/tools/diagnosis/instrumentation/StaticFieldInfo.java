@@ -20,7 +20,7 @@ public class StaticFieldInfo extends FileCache<StaticTracer> {
 
     @Override
     public @NonNull Path path() {
-        return StaticFieldPathManager.infoFor(TracerMode.TRACK, minimized.dependentTest());
+        return StaticFieldPathManager.infoFor(TracerMode.TRACK, minimized);
     }
 
     @Override
@@ -50,6 +50,6 @@ public class StaticFieldInfo extends FileCache<StaticTracer> {
             runner.runList(Collections.singletonList(minimized.dependentTest()));
 
             return null;
-        });
+        }, minimized.hash());
     }
 }

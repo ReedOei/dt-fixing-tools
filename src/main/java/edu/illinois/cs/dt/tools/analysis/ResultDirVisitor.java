@@ -10,7 +10,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
-class ResultDirVisitor extends SimpleFileVisitor<Path> {
+public class ResultDirVisitor extends SimpleFileVisitor<Path> {
     private final List<Path> allResultsFolders;
 
     public ResultDirVisitor(final List<Path> allResultsFolders) {

@@ -9,6 +9,8 @@ import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory;
 import com.reedoei.testrunner.testobjects.TestLocator;
+import edu.illinois.cs.dt.tools.detection.detectors.Detector;
+import edu.illinois.cs.dt.tools.detection.detectors.DetectorFactory;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.utility.ErrorLogger;
 import edu.illinois.cs.dt.tools.utility.GetMavenTestOrder;

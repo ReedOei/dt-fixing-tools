@@ -14,10 +14,6 @@ import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import org.apache.commons.lang3.StringUtils;
-import org.xmlunit.builder.DiffBuilder;
-import org.xmlunit.builder.Input;
-import org.xmlunit.diff.Diff;
-import org.xmlunit.diff.Difference;
 import scala.util.Try;
 
 import java.util.ArrayList;
@@ -121,7 +117,7 @@ public class TestDiagnoser {
                 System.out.println("NO_REWRITE (" + RunnerPathManager.outputPath(minimized.expectedRun()) + "): " + minimized.expected());
 
                 return new RewritingResult(target, testRunResult.get(), testResult.result(), minimized.expected());
-            }));
+            }, minimized.hash()));
         } catch (Exception e) {
             e.printStackTrace();
         }

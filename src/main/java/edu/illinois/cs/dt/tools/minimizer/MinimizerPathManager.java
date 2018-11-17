@@ -17,8 +17,8 @@ public class MinimizerPathManager extends PathManager {
         return path(MINIMIZED.resolve(relative));
     }
 
-    public static Path minimized(final String dependentTest, final Result expected) {
-        return minimized(Paths.get(dependentTest + "-" + expected + "-dependencies.json"));
+    public static Path minimized(final String dependentTest, final String hash, final Result expected) {
+        return minimized(Paths.get(String.format("%s-%s-%s-dependencies.json", dependentTest, hash, expected)));
     }
 
     public static Path minimizeResultsPath(final MinimizeTestsResult minimized) {
@@ -32,9 +32,9 @@ public class MinimizerPathManager extends PathManager {
      */
     public static Path minimizeResultsPath(final MinimizeTestsResult minimized, final String modifier) {
         if (modifier == null || modifier.isEmpty()) {
-            return Paths.get(String.format("%s-%s", minimized.dependentTest(), minimized.expected()));
+            return Paths.get(String.format("%s-%s-%s", minimized.dependentTest(), minimized.hash(), minimized.expected()));
         } else {
-            return Paths.get(String.format("%s-%s-%s", minimized.dependentTest(), minimized.expected(), modifier));
+            return Paths.get(String.format("%s-%s-%s-%s", minimized.dependentTest(), minimized.hash(), minimized.expected(), modifier));
         }
     }
 }

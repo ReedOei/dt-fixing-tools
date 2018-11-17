@@ -5,6 +5,7 @@ import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizer;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizerBuilder;
+import edu.illinois.cs.dt.tools.utility.MD5;
 
 import java.nio.file.Path;
 import java.util.stream.Stream;

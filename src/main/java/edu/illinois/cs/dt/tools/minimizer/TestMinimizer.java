@@ -1,7 +1,9 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
+import com.google.gson.Gson;
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.data.caching.FileCache;
+import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.eunomia.util.Util;
 import com.reedoei.testrunner.data.results.Result;
@@ -9,8 +11,11 @@ import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerFinder;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
+import edu.illinois.cs.dt.tools.utility.MD5;
+import edu.illinois.cs.dt.tools.utility.OperationTime;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import javax.annotation.Nullable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,8 +30,6 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
     private final Path path;
 
-    @Nullable
-    private MinimizeTestsResult minimizedResult = null;
     private TestRunResult expectedRun;
 
     private void debug(final String str) {
@@ -38,7 +41,8 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     }
 
     public TestMinimizer(final List<String> testOrder, final InstrumentingSmartRunner runner, final String dependentTest) {
-        this.testOrder = testOrder;
+        // Only take the tests that come before the dependent test
+        this.testOrder = testOrder.contains(dependentTest) ? ListUtil.before(testOrder, dependentTest) : testOrder;
         this.dependentTest = dependentTest;
 
         this.runner = runner;
@@ -50,7 +54,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
         this.isolationResult = result(Collections.singletonList(dependentTest));
         debug("Expected: " + expected);
 
-        this.path = MinimizerPathManager.minimized(dependentTest, expected);
+        this.path = MinimizerPathManager.minimized(dependentTest, MD5.hashOrder(expectedRun.testOrder()), expected);
     }
 
     public Result expected() {
@@ -71,8 +75,8 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
         return runResult(order).results().get(dependentTest).result();
     }
 
-    private MinimizeTestsResult run() throws Exception {
-        if (minimizedResult == null) {
+    public MinimizeTestsResult run() throws Exception {
+        return OperationTime.runOperation(() -> {
             info("Running minimizer for: " + dependentTest + " (expected result in this order: " + expected + ")");
 
             final List<String> order =
@@ -81,13 +85,17 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             final List<String> deps = run(order);
 
             info("Ran minimizer, dependencies: " + deps);
-            minimizedResult = new MinimizeTestsResult(expectedRun, expected, dependentTest, deps,
-                    new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find());
+
+            return deps;
+        }, (deps, time) -> {
+            final MinimizeTestsResult minimizedResult =
+                    new MinimizeTestsResult(time, expectedRun, expected, dependentTest, deps,
+                            new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find());
 
             minimizedResult.verify(runner);
-        }
 
-        return minimizedResult;
+            return minimizedResult;
+        });
     }
 
     private List<String> run(List<String> order) throws Exception {
@@ -188,23 +196,26 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     }
 
     @Override
-    public Path path() {
+    public @NonNull Path path() {
         return path;
     }
 
     @Override
     protected MinimizeTestsResult load() {
-        minimizedResult = new RuntimeThrower<>(() -> MinimizeTestsResult.fromPath(path())).run();
-        return minimizedResult;
+        return new RuntimeThrower<>(() -> new Gson().fromJson(FileUtil.readFile(path()), MinimizeTestsResult.class)).run();
     }
 
     @Override
     protected void save() {
-        if (minimizedResult != null) {
-            minimizedResult.save();
-        }
+        new RuntimeThrower<>(() -> {
+            Files.createDirectories(path().getParent());
+            Files.write(path(), new Gson().toJson(get()).getBytes());
+
+            return null;
+        }).run();
     }
 
+    @NonNull
     @Override
     protected MinimizeTestsResult generate() {
         return new RuntimeThrower<>(this::run).run();

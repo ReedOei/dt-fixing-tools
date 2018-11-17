@@ -3,7 +3,6 @@ package edu.illinois.cs.dt.tools.diagnosis.instrumentation;
 import com.google.gson.Gson;
 import com.reedoei.eunomia.functional.Cons;
 import com.reedoei.eunomia.io.files.FileUtil;
-import com.reedoei.eunomia.util.OptUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -33,10 +32,11 @@ public class StaticTracer {
         tracerModes.put(TracerMode.TRACK, StaticTracer::track);
     }
 
-    public static <T> T inMode(final TracerMode mode, final Callable<T> c) throws Exception {
+    public static <T> T inMode(final TracerMode mode, final Callable<T> c, final String hash) throws Exception {
         final TracerMode currentMode = mode();
 
         Configuration.config().properties().setProperty("statictracer.mode", String.valueOf(mode));
+        Configuration.config().properties().setProperty("statictracer.hash", hash);
 
         final T t = c.call();
 
@@ -178,10 +178,12 @@ public class StaticTracer {
     public static void output(final String path) {
         try {
             Files.write(Paths.get(path), new Gson().toJson(tracer()).getBytes());
+        } catch (IOException ignored) {
+        } finally {
             tracer().staticFields().clear();
             tracer().firstAccessVals().clear();
             tracer().rewrittenProperties().clear();
-        } catch (IOException ignored) {}
+        }
     }
 
     public static String concat(final String a, final String b) {

@@ -1,7 +1,9 @@
-package edu.illinois.cs.dt.tools.detection;
+package edu.illinois.cs.dt.tools.detection.detectors;
 
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.detection.DetectionRound;
+import edu.illinois.cs.dt.tools.detection.DetectorUtil;
 import edu.illinois.cs.dt.tools.detection.filters.UniqueFilter;
 
 import java.util.List;

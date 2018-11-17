@@ -10,7 +10,6 @@ public class RewritingResult {
     private final Result expected;
 
     public RewritingResult(final RewriteTarget target, final TestRunResult testRunResult, final Result result, final Result expected) {
-
         this.target = target;
         this.testRunResult = testRunResult;
         this.result = result;

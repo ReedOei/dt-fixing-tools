@@ -76,13 +76,13 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
                 Configuration.config().properties().setProperty("statictracer.first_access.test", minimized.dependentTest());
 
                 runner.runList(minimized.withDeps());
-                Files.move(StaticFieldPathManager.infoFor(TracerMode.FIRST_ACCESS, minimized.dependentTest()), withDeps);
+                Files.move(StaticFieldPathManager.infoFor(TracerMode.FIRST_ACCESS, minimized), withDeps);
 
                 runner.runList(Collections.singletonList(minimized.dependentTest()));
-                Files.move(StaticFieldPathManager.infoFor(TracerMode.FIRST_ACCESS, minimized.dependentTest()), withoutDeps);
+                Files.move(StaticFieldPathManager.infoFor(TracerMode.FIRST_ACCESS, minimized), withoutDeps);
 
                 return null;
-            });
+            }, minimized.hash());
 
             final Map<String, String> withDepVals = StaticTracer.from(withDeps).firstAccessVals();
             final Map<String, String> withoutDepVals = StaticTracer.from(withoutDeps).firstAccessVals();

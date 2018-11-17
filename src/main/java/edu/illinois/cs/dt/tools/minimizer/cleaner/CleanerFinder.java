@@ -53,6 +53,7 @@ public class CleanerFinder {
      * @throws IOException If the original order file does not exist
      */
     public CleanerData find() throws IOException {
+        final long startTime = System.currentTimeMillis();
         TestPluginPlugin.info("Looking for cleaners for: " + dependentTest);
 
         // If it's empty, we can't have any cleaners (they'd be polluters, not cleaners
