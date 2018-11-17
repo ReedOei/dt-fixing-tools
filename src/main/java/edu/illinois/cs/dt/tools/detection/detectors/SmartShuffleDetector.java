@@ -4,6 +4,8 @@ import com.reedoei.eunomia.collections.RandomList;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorUtil;
+import edu.illinois.cs.dt.tools.detection.filters.ConfirmationFilter;
+import edu.illinois.cs.dt.tools.detection.filters.UniqueFilter;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 
 import java.util.Arrays;
@@ -36,12 +38,18 @@ public class SmartShuffleDetector extends ExecutingDetector {
         toComeLast.addAll(tests);
 
         originalResults = DetectorUtil.originalResults(originalOrder, runner);
+
+        addFilter(new ConfirmationFilter(type, tests, runner));
+        addFilter(new UniqueFilter());
     }
 
     @Override
     public DetectionRound results() throws Exception {
         final String first = sample(toComeFirst);
         final String last = sample(toComeLast, first);
+
+        toComeFirst.remove(first);
+        toComeLast.remove(last);
 
         final RandomList<String> order = new RandomList<>(tests);
         order.remove(first);
