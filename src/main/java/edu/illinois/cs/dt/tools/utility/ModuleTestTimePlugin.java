@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.utility;
 
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
+import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import org.apache.maven.project.MavenProject;
 import org.xml.sax.SAXException;
 
@@ -27,7 +28,7 @@ public class ModuleTestTimePlugin  extends TestPlugin {
         this.coordinates = mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
 
         final Path surefireReportsPath = Paths.get(mavenProject.getBuild().getDirectory()).resolve("surefire-reports");
-        final Path mvnTestLog = Paths.get(System.getProperty("user.home"), "mvn-test.log");
+        final Path mvnTestLog = DetectorPathManager.mvnTestLog();
         try {
             final Path outputFile = Paths.get(getMavenProjectParent(mavenProject).getBasedir().getAbsolutePath(),
                     "module-test-time.csv");

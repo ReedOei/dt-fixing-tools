@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.analysis;
+package edu.illinois.cs.dt.tools.detection.analysis;
 
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
@@ -13,6 +13,10 @@ import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
+import edu.illinois.cs.dt.tools.utility.analysis.Procedure;
+import edu.illinois.cs.dt.tools.utility.analysis.ResultDirVisitor;
+import edu.illinois.cs.dt.tools.utility.analysis.SQLStatements;
+import edu.illinois.cs.dt.tools.utility.analysis.SQLite;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.FileInputStream;
@@ -26,7 +30,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;

@@ -26,5 +26,5 @@ fi
 # Go to where the pom is
 cd "$scripts_folder/.."
 
-mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.BuildDTLists" \
+mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.analysis.BuildDTLists" \
     -Dexec.args="--full-dt-list '$full_dt_list' --dataset '$dataset' --output '$output'"

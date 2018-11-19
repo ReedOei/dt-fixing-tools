@@ -12,5 +12,5 @@ fi
 # Go to where the pom is
 cd "$scripts_folder/.."
 
-mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.CommandGenerator" -Dexec.args="--db '$database'"
+mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.analysis.CommandGenerator" -Dexec.args="--db '$database'"
 

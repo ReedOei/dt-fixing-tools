@@ -1,9 +1,13 @@
-package edu.illinois.cs.dt.tools.analysis;
+package edu.illinois.cs.dt.tools.detection.analysis;
 
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.latex.CellType;
 import com.reedoei.eunomia.latex.LatexTable;
 import com.reedoei.eunomia.util.StandardMain;
+import edu.illinois.cs.dt.tools.utility.analysis.QueryResult;
+import edu.illinois.cs.dt.tools.utility.analysis.SQLStatements;
+import edu.illinois.cs.dt.tools.utility.analysis.SQLTable;
+import edu.illinois.cs.dt.tools.utility.analysis.SQLite;
 
 import java.nio.file.Paths;
 import java.sql.SQLException;

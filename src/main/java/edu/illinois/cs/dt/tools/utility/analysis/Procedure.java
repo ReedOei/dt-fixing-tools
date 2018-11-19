@@ -1,13 +1,9 @@
-package edu.illinois.cs.dt.tools.analysis;
+package edu.illinois.cs.dt.tools.utility.analysis;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
 
 public class Procedure {
     private final Connection connection;
