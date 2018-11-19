@@ -48,10 +48,7 @@ public class SmartShuffler {
     @SafeVarargs
     private final void addTestMethods(final List<String> order, final Optional<String>... excluding) {
         // Add all classes other than the last one
-        for (final Map.Entry<String, RandomList<String>> entry : classToMethods.entrySet()) {
-            final String className = entry.getKey();
-            final RandomList<String> methods = entry.getValue();
-
+        for (final RandomList<String> methods : classToMethods.values()) {
             final boolean foundExcludedTest =
                     Arrays.stream(excluding).anyMatch(t -> t.isPresent() && methods.contains(t.get()));
 
@@ -85,9 +82,6 @@ public class SmartShuffler {
             order.remove(last.get());
             order.add(last.get());
         }
-
-        System.out.println();
-        System.out.println("Generated order: " + order);
 
         return order;
     }
