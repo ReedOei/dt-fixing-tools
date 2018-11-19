@@ -65,7 +65,9 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
                                   final List<String> revealedOrder, final TestRunResult revealed) {
         final List<DependentTest> result = new ArrayList<>();
 
-        intended.results().forEach((testName, intendedResult) -> {
+        for (final Map.Entry<String, TestResult> entry : intended.results().entrySet()) {
+            final String testName = entry.getKey();
+            final TestResult intendedResult = entry.getValue();
             final Map<String, TestResult> revealedResults = revealed.results();
 
             if (revealedResults.containsKey(testName)) {
@@ -74,9 +76,11 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
                     result.add(new DependentTest(testName,
                             new TestRun(before(intendedOrder, testName), intendedResult.result(), intended.id()),
                             new TestRun(before(revealedOrder, testName), revealedResult, revealed.id())));
+                    // Only keep the first failure, if any
+                    break;
                 }
             }
-        });
+        }
 
         return new DetectionRound(Collections.singletonList(revealed.id()),
                 result,
@@ -97,8 +101,6 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
 
     private Stream<DependentTest> filter(List<DependentTest> dts, final int absoluteRound) {
         if (!dts.isEmpty()) {
-            System.out.println();
-
             for (final Filter filter : filters) {
                 dts = dts.stream().filter(t -> filter.keep(t, absoluteRound)).collect(Collectors.toList());
             }

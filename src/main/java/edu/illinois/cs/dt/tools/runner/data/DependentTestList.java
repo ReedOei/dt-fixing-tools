@@ -17,6 +17,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DependentTestList {
+    public static DependentTestList empty() {
+        return new DependentTestList(new ArrayList<>());
+    }
+
     public static DependentTestList fromFile(final Path path) throws IOException {
         TestPluginPlugin.mojo().getLog().info("Reading dependent test list from " + path);
         return new Gson().fromJson(FileUtil.readFile(path), DependentTestList.class);

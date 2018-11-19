@@ -57,4 +57,10 @@ public class DependentClassifier implements Classifier {
                 .filter(t -> !nonorderTests.contains(t))
                 .collect(Collectors.toSet());
     }
+
+    @Override
+    public void close() throws Exception {
+        knownResults.clear();
+        dependentRuns.clear();
+    }
 }

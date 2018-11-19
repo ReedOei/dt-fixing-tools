@@ -99,30 +99,34 @@ public class DependentTestExtractor extends StandardMain {
     }
 
     private DependentTestList dependentTests(final List<TestRunResult> results) {
-        final NonorderClassifier nonorderClassifier = new NonorderClassifier();
-        final DependentClassifier dependentClassifier = new DependentClassifier(true);
-        final DependentClassifier dependentClassifierWithFailures = new DependentClassifier(false);
+        try (final NonorderClassifier nonorderClassifier = new NonorderClassifier();
+             final DependentClassifier dependentClassifier = new DependentClassifier(true);
+            final DependentClassifier dependentClassifierWithFailures = new DependentClassifier(false)) {
+            for (int i = 0; i < results.size(); i++) {
+                final TestRunResult testRunResult = results.get(i);
+                System.out.printf("\rUpdating classifiers with test run %s of %s (no: %d, od: %d, odf: %d): %s",
+                        i + 1,
+                        results.size(),
+                        nonorderClassifier.nonorderTests().size(),
+                        dependentClassifier.dependentTests(nonorderClassifier.nonorderTests()).size(),
+                        dependentClassifierWithFailures.dependentTests(nonorderClassifier.nonorderTests()).size(),
+                        testRunResult.id());
+                nonorderClassifier.update(testRunResult);
+                dependentClassifier.update(testRunResult);
+                dependentClassifierWithFailures.update(testRunResult);
+            }
 
-        for (int i = 0; i < results.size(); i++) {
-            final TestRunResult testRunResult = results.get(i);
-            System.out.printf("\rUpdating classifiers with test run %s of %s (no: %d, od: %d, odf: %d): %s",
-                    i + 1,
-                    results.size(),
-                    nonorderClassifier.nonorderTests().size(),
-                    dependentClassifier.dependentTests(nonorderClassifier.nonorderTests()).size(),
-                    dependentClassifierWithFailures.dependentTests(nonorderClassifier.nonorderTests()).size(),
-                    testRunResult.id());
-            nonorderClassifier.update(testRunResult);
-            dependentClassifier.update(testRunResult);
-            dependentClassifierWithFailures.update(testRunResult);
+            if (!results.isEmpty()) {
+                System.out.println();
+            }
+            System.out.println("Finished updating classifiers.");
+
+            return new DependentTestList(makeDependentTestList(nonorderClassifier, dependentClassifier));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        if (!results.isEmpty()) {
-            System.out.println();
-        }
-        System.out.println("Finished updating classifiers.");
-
-        return new DependentTestList(makeDependentTestList(nonorderClassifier, dependentClassifier));
+        return DependentTestList.empty();
     }
 
     private List<DependentTest> makeDependentTestList(final NonorderClassifier nonorderClassifier,

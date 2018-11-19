@@ -42,4 +42,10 @@ public class NonorderClassifier implements Classifier {
     public Set<String> nonorderTests() {
         return flaky;
     }
+
+    @Override
+    public void close() throws Exception {
+        flaky.clear();;
+        knownRuns.clear();
+    }
 }
