@@ -11,11 +11,14 @@ if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]]; then
     exit
 fi
 
+# If it's an absolute path, just use it
 if [[ "$4" =~ "$/" ]]; then
     script_to_run="$4"
 elif [[ -z "$4" ]]; then
+    # The default is run_project.sh
     script_to_run="/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh"
 else
+    # otherwise, assume it's relative to the docker directory
     script_to_run="/home/awshi2/dt-fixing-tools/scripts/docker/$4"
 fi
 
