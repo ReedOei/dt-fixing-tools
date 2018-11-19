@@ -15,5 +15,5 @@ if [[ -z "$PROCESS_NUM" ]]; then
     PROCESS_NUM="4"
 fi
 
-find "$1" -maxdepth 1 -type f -name "*.csv" | xargs -P"$PROCESS_NUM" -I{} bash create_and_run_dockers.sh {} "$2" "$3" "$4"
+find "$1" -maxdepth 1 -type f -name "*.csv" | xargs -P"$PROCESS_NUM" -I{} bash run-project-pool.sh {} "$2" "$3" "$4"
 

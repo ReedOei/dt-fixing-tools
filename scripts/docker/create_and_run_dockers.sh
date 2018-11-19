@@ -64,3 +64,4 @@ for line in $(cat ${projfile}); do
         docker run -t --rm -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash -x /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout} "${script}"
      fi
 done
+
