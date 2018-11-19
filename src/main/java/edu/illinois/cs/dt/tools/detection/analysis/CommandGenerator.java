@@ -1,6 +1,9 @@
-package edu.illinois.cs.dt.tools.analysis;
+package edu.illinois.cs.dt.tools.detection.analysis;
 
 import com.reedoei.eunomia.util.StandardMain;
+import edu.illinois.cs.dt.tools.utility.analysis.Procedure;
+import edu.illinois.cs.dt.tools.utility.analysis.SQLStatements;
+import edu.illinois.cs.dt.tools.utility.analysis.SQLite;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

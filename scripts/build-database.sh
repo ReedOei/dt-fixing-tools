@@ -23,5 +23,5 @@ fi
 # Go to where the pom is
 cd "$scripts_folder/.."
 
-mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.Analysis" -Dexec.args="--results '$results_folder' --db '$database' --max-test-runs $max_test_runs"
+mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.analysis.Analysis" -Dexec.args="--results '$results_folder' --db '$database' --max-test-runs $max_test_runs"
 

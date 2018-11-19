@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.analysis;
+package edu.illinois.cs.dt.tools.detection.analysis;
 
 import com.google.gson.Gson;
 import com.reedoei.eunomia.collections.ListEx;
@@ -8,6 +8,7 @@ import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
+import edu.illinois.cs.dt.tools.utility.analysis.ResultDirVisitor;
 
 import java.io.IOException;
 import java.nio.file.Files;

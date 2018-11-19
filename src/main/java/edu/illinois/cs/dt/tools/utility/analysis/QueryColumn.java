@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.analysis;
+package edu.illinois.cs.dt.tools.utility.analysis;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
