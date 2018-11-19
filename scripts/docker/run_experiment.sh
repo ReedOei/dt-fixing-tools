@@ -37,7 +37,13 @@ echo "Running update.sh"
 date
 su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/update.sh"
 
-# Start the run_project.sh script using the awshi2 user
+# Copy the test time log, if it is in the old location. Probably can remove this line if all containers are new.
+
+if [[ -e "/home/awshi2/mvn-test-time.log" ]] && [[ ! -e "/home/awshi2/$slug/mvn-test-time.log" ]]; then
+    cp "/home/awshi2/mvn-test-time.log" "/home/awshi2/$slug"
+fi
+
+# Start the script using the awshi2 user
 su - awshi2 -c "$script_to_run ${slug} ${rounds} ${timeout}"
 
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)

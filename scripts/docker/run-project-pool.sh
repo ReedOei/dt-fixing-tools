@@ -13,4 +13,5 @@ fname="logs/$(basename $1 .csv)-log.txt"
 
 echo "Logging to $fname"
 bash create_and_run_dockers.sh $@ &> $fname
+echo "Finished running $fname"
 
