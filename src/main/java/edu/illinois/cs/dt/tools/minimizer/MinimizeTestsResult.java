@@ -87,7 +87,7 @@ public class MinimizeTestsResult {
                     continue;
                 }
 
-                verifyDependencies(runner, verifyCount, i, depLists, check, totalChecks);
+                verifyDependencies(runner, verifyCount, i, deps, depLists, check, totalChecks);
             }
 
             System.out.println();
@@ -99,27 +99,25 @@ public class MinimizeTestsResult {
     private void verifyDependencies(final Runner runner,
                                     final int verifyCount,
                                     final int i,
+                                    final List<String> deps,
                                     final List<List<String>> depLists,
                                     int check,
                                     final int totalChecks) throws Exception {
         IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
-        for (PolluterData polluter : polluters) {
-            List<String> deps = polluter.deps();
-            // Check that it's wrong without dependencies.
-            if (isExpected(runner, new ArrayList<>())) {
-                throw new MinimizeTestListException("Got expected result even without any dependencies!");
+        // Check that it's wrong without dependencies.
+        if (isExpected(runner, new ArrayList<>())) {
+            throw new MinimizeTestListException("Got expected result even without any dependencies!");
+        }
+
+        // Check that for any subsequence that isn't the whole list, it's wrong.
+        for (final List<String> depList : depLists) {
+            if (depList.equals(deps)) {
+                continue;
             }
 
-            // Check that for any subsequence that isn't the whole list, it's wrong.
-            for (final List<String> depList : depLists) {
-                if (depList.equals(deps)) {
-                    continue;
-                }
-
-                IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
-                if (isExpected(runner, depList)) {
-                    throw new MinimizeTestListException("Got expected result without some dependencies! " + depList);
-                }
+            IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
+            if (isExpected(runner, depList)) {
+                throw new MinimizeTestListException("Got expected result without some dependencies! " + depList);
             }
         }
     }
