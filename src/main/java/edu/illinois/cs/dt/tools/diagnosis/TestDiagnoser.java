@@ -36,7 +36,12 @@ public class TestDiagnoser {
         System.out.println();
         System.out.println("-----------------------------------------------------------------");
         System.out.println("Running diagnoser for " + minimized.dependentTest() + " (expected result in this order: " + minimized.expected() + ")");
-        System.out.println(minimized.deps().size() + " known dependencies: " + minimized.deps());
+        if (minimized.polluters().size() > 0) { // Did it find any polluters? Print for first one
+            System.out.println(minimized.polluters().get(0).deps().size() + " known dependencies: " + minimized.polluters().get(0).deps());
+        }
+        else {
+            System.out.println("Found not polluters");
+        }
 
         this.tracer = new StaticFieldInfo(runner, minimized).get();
     }

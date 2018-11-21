@@ -7,7 +7,6 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
-import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
 import edu.illinois.cs.dt.tools.utility.MD5;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 
@@ -25,9 +24,8 @@ public class MinimizeTestsResult {
     private final TestRunResult expectedRun;
     private final Result expected;
     private final String dependentTest;
-    private final List<String> deps;
+    private final List<PolluterData> polluters;
     private final String hash;
-    private final CleanerData cleanerData;
 
     public static MinimizeTestsResult fromPath(final Path path) throws IOException {
         return fromString(FileUtil.readFile(path));
@@ -38,14 +36,12 @@ public class MinimizeTestsResult {
     }
 
     public MinimizeTestsResult(final OperationTime time, final TestRunResult expectedRun, final Result expected,
-                               final String dependentTest, final List<String> deps,
-                               final CleanerData cleanerData) {
+                               final String dependentTest, final List<PolluterData> polluters) {
         this.time = time;
         this.expectedRun = expectedRun;
         this.expected = expected;
         this.dependentTest = dependentTest;
-        this.deps = deps;
-        this.cleanerData = cleanerData;
+        this.polluters = polluters;
         hash = MD5.hashOrder(expectedRun.testOrder());
     }
 
@@ -73,26 +69,29 @@ public class MinimizeTestsResult {
     }
 
     public boolean verify(final Runner runner, final int verifyCount) throws Exception {
-        for (int i = 0; i < verifyCount; i++) {
-            final List<List<String>> depLists = ListUtil.sample(ListUtil.subsequences(deps), MAX_SUBSEQUENCES);
-            int check = 1;
-            int totalChecks = 2 + depLists.size() - 1;
+        for (PolluterData polluter : polluters) {
+            for (int i = 0; i < verifyCount; i++) {
+                List<String> deps = polluter.deps();
+                final List<List<String>> depLists = ListUtil.sample(ListUtil.subsequences(deps), MAX_SUBSEQUENCES);
+                int check = 1;
+                int totalChecks = 2 + depLists.size() - 1;
 
-            IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
-            // Check that it's correct with the dependencies
-            if (!isExpected(runner, deps)) {
-                throw new MinimizeTestListException("Got unexpected result when running with all dependencies!");
+                IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
+                // Check that it's correct with the dependencies
+                if (!isExpected(runner, deps)) {
+                    throw new MinimizeTestListException("Got unexpected result when running with all dependencies!");
+                }
+
+                // Only run the first check if there are no dependencies.
+                if (deps.isEmpty()) {
+                    continue;
+                }
+
+                verifyDependencies(runner, verifyCount, i, depLists, check, totalChecks);
             }
 
-            // Only run the first check if there are no dependencies.
-            if (deps.isEmpty()) {
-                continue;
-            }
-
-            verifyDependencies(runner, verifyCount, i, depLists, check, totalChecks);
+            System.out.println();
         }
-
-        System.out.println();
 
         return true;
     }
@@ -104,20 +103,23 @@ public class MinimizeTestsResult {
                                     int check,
                                     final int totalChecks) throws Exception {
         IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
-        // Check that it's wrong without dependencies.
-        if (isExpected(runner, new ArrayList<>())) {
-            throw new MinimizeTestListException("Got expected result even without any dependencies!");
-        }
-
-        // Check that for any subsequence that isn't the whole list, it's wrong.
-        for (final List<String> depList : depLists) {
-            if (depList.equals(deps)) {
-                continue;
+        for (PolluterData polluter : polluters) {
+            List<String> deps = polluter.deps();
+            // Check that it's wrong without dependencies.
+            if (isExpected(runner, new ArrayList<>())) {
+                throw new MinimizeTestListException("Got expected result even without any dependencies!");
             }
 
-            IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
-            if (isExpected(runner, depList)) {
-                throw new MinimizeTestListException("Got expected result without some dependencies! " + depList);
+            // Check that for any subsequence that isn't the whole list, it's wrong.
+            for (final List<String> depList : depLists) {
+                if (depList.equals(deps)) {
+                    continue;
+                }
+
+                IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.",  i + 1, verifyCount, check++, totalChecks));
+                if (isExpected(runner, depList)) {
+                    throw new MinimizeTestListException("Got expected result without some dependencies! " + depList);
+                }
             }
         }
     }
@@ -138,8 +140,8 @@ public class MinimizeTestsResult {
         }
     }
 
-    public List<String> deps() {
-        return deps;
+    public List<PolluterData> polluters() {
+        return polluters;
     }
 
     public String dependentTest() {
@@ -151,7 +153,7 @@ public class MinimizeTestsResult {
     }
 
     public List<String> withDeps() {
-        final List<String> order = new ArrayList<>(deps());
+        final List<String> order = new ArrayList<>(polluters.get(0).deps());    // TODO: What should this return?
         if (!order.contains(dependentTest())) {
             order.add(dependentTest());
         }
