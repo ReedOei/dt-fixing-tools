@@ -62,10 +62,7 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
 
             StaticFieldPathManager.createModePath(TracerMode.FIRST_ACCESS);
 
-            if (minimized.polluters().isEmpty()) {
-                return new HashMap<>();
-            }
-            if (minimized.polluters().get(0).deps().isEmpty()) {
+            if (minimized.getFirstDeps().isEmpty()) {
                 return new HashMap<>();
             }
 

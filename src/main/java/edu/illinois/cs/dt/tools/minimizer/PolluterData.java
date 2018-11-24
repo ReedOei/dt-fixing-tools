@@ -17,4 +17,8 @@ public class PolluterData {
     public List<String> deps() {
         return deps;
     }
+
+    public CleanerData cleanerData() {
+        return cleanerData;
+    }
 }

@@ -142,6 +142,13 @@ public class MinimizeTestsResult {
         return polluters;
     }
 
+    public List<String> getFirstDeps() {
+        if (polluters.isEmpty()) {
+            return new ArrayList<String>();
+        }
+        return polluters.get(0).deps();
+    }
+
     public String dependentTest() {
         return dependentTest;
     }
@@ -151,7 +158,7 @@ public class MinimizeTestsResult {
     }
 
     public List<String> withDeps() {
-        final List<String> order = new ArrayList<>(polluters.get(0).deps());    // TODO: What should this return?
+        final List<String> order = new ArrayList<>(getFirstDeps()); // TODO: What should this return?
         if (!order.contains(dependentTest())) {
             order.add(dependentTest());
         }
