@@ -12,4 +12,5 @@ fi
 # Go to where the pom is
 cd "$scripts_folder/.."
 
-mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.analysis.TableGenerator" -Dexec.args="--db '$database'"
+mvn install -DskipTests exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.analysis.TableGenerator" -Dexec.args="--db '$database'"
+

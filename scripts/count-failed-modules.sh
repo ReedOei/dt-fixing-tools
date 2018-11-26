@@ -13,7 +13,7 @@ echo "\\newcommand{\\numModulesNoJUnit}{$no_junit_num\\xspace}"
 no_passing_order_num=$(find "$results_path" -name "error" | xargs grep -il "NoPassingOrderException" | sort -u | wc -l)
 echo "\\newcommand{\\numModulesNoPassingOrder}{$no_passing_order_num\\xspace}"
 
-incompatible_num=$(find ../../azure-dataset-10-13/ -name "error" | xargs grep -EiL "has no tests|No passing|probably not JUnit" | wc -l)
+incompatible_num=$(find "$results_path" -name "error" | xargs grep -EiL "has no tests|No passing|probably not JUnit" | wc -l)
 echo "\\newcommand{\\numModulesIncompatible}{$incompatible_num\\xspace}"
 
 no_compilation_num=$(find "$results_path" -name "original.log" | xargs grep -Eil "org.apache.maven.lifecycle.LifecycleExecutionException: Failed to execute goal|Compilation failure" | sort -u | wc -l)

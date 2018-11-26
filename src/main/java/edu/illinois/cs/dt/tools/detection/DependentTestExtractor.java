@@ -67,7 +67,9 @@ public class DependentTestExtractor extends StandardMain {
 
         return dependentTestList.dts().stream()
                 .anyMatch(dt -> !pred.test(dt.intended(), dependentTest.intended()) ||
-                                !pred.test(dt.revealed(), dependentTest.revealed()));
+                                !pred.test(dt.revealed(), dependentTest.revealed())) ||
+               dependentTestList.dts().stream()
+                .noneMatch(dt -> dt.name().equals(dependentTest.name()));
     }
 
     private void save(final Path resultsFolder, final DependentTestList extracted) throws IOException {

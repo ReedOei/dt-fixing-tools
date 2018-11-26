@@ -22,6 +22,6 @@ fi
 # Go to where the pom is
 cd "$scripts_folder/.."
 
-mvn install exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.DependentTestExtractor" \
+mvn install -DskipTests exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.DependentTestExtractor" \
     -Dexec.args="--results '$detection_results' --output '$output_folder'"
 
