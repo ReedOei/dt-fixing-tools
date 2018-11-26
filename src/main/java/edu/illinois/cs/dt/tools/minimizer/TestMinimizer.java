@@ -84,8 +84,14 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
             // Keep going as long as there are tests besides dependent test to run
             List<PolluterData> polluters = new ArrayList<>();
-            while (order.size() > 1) {
-                final List<String> deps = run(order);
+            while (!order.isEmpty()) {
+                // First need to check if remaining tests in order still lead to expected value
+                if (result(order) != expected) {
+                    info("Remaining tests no longer match expected: " + order);
+                    break;
+                }
+
+                final List<String> deps = run(new ArrayList<>(order));
                 if (deps.isEmpty()) {
                     info("Did not find any deps");
                     break;
