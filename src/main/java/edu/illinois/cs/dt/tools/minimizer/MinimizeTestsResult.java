@@ -70,27 +70,32 @@ public class MinimizeTestsResult {
 
     public boolean verify(final Runner runner, final int verifyCount) throws Exception {
         for (PolluterData polluter : polluters) {
-            for (int i = 0; i < verifyCount; i++) {
-                List<String> deps = polluter.deps();
-                final List<List<String>> depLists = ListUtil.sample(ListUtil.subsequences(deps), MAX_SUBSEQUENCES);
-                int check = 1;
-                int totalChecks = 2 + depLists.size() - 1;
+            try {
+                for (int i = 0; i < verifyCount; i++) {
+                    List<String> deps = polluter.deps();
+                    final List<List<String>> depLists = ListUtil.sample(ListUtil.subsequences(deps), MAX_SUBSEQUENCES);
+                    int check = 1;
+                    int totalChecks = 2 + depLists.size() - 1;
 
-                IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
-                // Check that it's correct with the dependencies
-                if (!isExpected(runner, deps)) {
-                    throw new MinimizeTestListException("Got unexpected result when running with all dependencies!");
+                    IOUtil.printClearLine(String.format("Verifying %d of %d. Running check %d of %d.", i + 1, verifyCount, check++, totalChecks));
+                    // Check that it's correct with the dependencies
+                    if (!isExpected(runner, deps)) {
+                        throw new MinimizeTestListException("Got unexpected result when running with all dependencies!");
+                    }
+
+                    // Only run the first check if there are no dependencies.
+                    if (deps.isEmpty()) {
+                        continue;
+                    }
+
+                    verifyDependencies(runner, verifyCount, i, deps, depLists, check, totalChecks);
                 }
 
-                // Only run the first check if there are no dependencies.
-                if (deps.isEmpty()) {
-                    continue;
-                }
-
-                verifyDependencies(runner, verifyCount, i, deps, depLists, check, totalChecks);
+                System.out.println();
+            } catch (MinimizeTestListException ex) {
+                System.out.println("Got exception when trying to verify dependencies: " + polluter.deps());
+                ex.printStackTrace();
             }
-
-            System.out.println();
         }
 
         return true;
