@@ -69,6 +69,7 @@ public class MinimizeTestsResult {
     }
 
     public boolean verify(final Runner runner, final int verifyCount) throws Exception {
+        List<PolluterData> pollutersToRemove = new ArrayList<>();
         for (PolluterData polluter : polluters) {
             try {
                 for (int i = 0; i < verifyCount; i++) {
@@ -95,8 +96,10 @@ public class MinimizeTestsResult {
             } catch (MinimizeTestListException ex) {
                 System.out.println("Got exception when trying to verify dependencies: " + polluter.deps());
                 ex.printStackTrace();
+                pollutersToRemove.add(polluter);
             }
         }
+        polluters.removeAll(pollutersToRemove);
 
         return true;
     }
