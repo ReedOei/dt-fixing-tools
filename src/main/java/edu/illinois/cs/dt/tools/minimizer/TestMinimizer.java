@@ -82,15 +82,33 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
 
-            final List<String> deps = run(order);
+            // Keep going as long as there are tests besides dependent test to run
+            List<PolluterData> polluters = new ArrayList<>();
+            while (!order.isEmpty()) {
+                // First need to check if remaining tests in order still lead to expected value
+                if (result(order) != expected) {
+                    info("Remaining tests no longer match expected: " + order);
+                    break;
+                }
 
-            info("Ran minimizer, dependencies: " + deps);
+                final List<String> deps = run(new ArrayList<>(order));
+                if (deps.isEmpty()) {
+                    info("Did not find any deps");
+                    break;
+                }
 
-            return deps;
-        }, (deps, time) -> {
+                info("Ran minimizer, dependencies: " + deps);
+
+                polluters.add(new PolluterData(deps,
+                    new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find()));
+
+                order.removeAll(deps);  // Look for other deps besides the ones already found
+            }
+
+            return polluters;
+        }, (polluters, time) -> {
             final MinimizeTestsResult minimizedResult =
-                    new MinimizeTestsResult(time, expectedRun, expected, dependentTest, deps,
-                            new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find());
+                    new MinimizeTestsResult(time, expectedRun, expected, dependentTest, polluters);
 
             minimizedResult.verify(runner);
 
