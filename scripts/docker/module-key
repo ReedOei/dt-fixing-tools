@@ -2,14 +2,16 @@
 
 :- initialization(main, main).
 
-main([Path, Dir]) :-
-    file_base_name(Path, BaseName),
+main([ProjectRoot, ModuleDir]) :-
+    module_key(ProjectRoot, ModuleDir, OutputDirName),
+    writeln(OutputDirName).
 
-    relative_file_name(Dir, Path, RelPath),
+module_key(ProjectRoot, ModuleDir, ModuleKey) :-
+    file_base_name(ProjectRoot, BaseName),
+    relative_file_name(ModuleDir, ProjectRoot, RelPath),
 
     % Replace / with - in name
     atomic_list_concat(Parts, '/', RelPath),
-    atomic_list_concat([BaseName|Parts], '-', OutputDirName),
-
-    writeln(OutputDirName).
+    include(\=(''), Parts, NonEmptyParts),
+    atomic_list_concat([BaseName|NonEmptyParts], '-', ModuleKey).
 

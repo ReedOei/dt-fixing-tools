@@ -12,6 +12,15 @@ main(Argv) :-
 
 not_target(P) :- not(atom_concat(_, 'target', P)).
 
+module_key(ProjectRoot, ModuleDir, ModuleKey) :-
+    file_base_name(ProjectRoot, BaseName),
+    relative_file_name(ModuleDir, ProjectRoot, RelPath),
+
+    % Replace / with - in name
+    atomic_list_concat(Parts, '/', RelPath),
+    include(\=(''), Parts, NonEmptyParts),
+    atomic_list_concat([BaseName|NonEmptyParts], '-', ModuleKey).
+
 gather_results(Path, Destination) :-
     file_base_name(Path, BaseName),
     forall(
@@ -20,13 +29,9 @@ gather_results(Path, Destination) :-
             endswith(File, '.dtfixingtools')
         ),
         (
-            file_directory_name(File, Dir),
-            relative_file_name(Dir, Path, RelPath),
+            module_key(File, Dir, ModuleKey),
 
-            % Replace / with - in name
-            atomic_list_concat(Parts, '/', RelPath),
-            atomic_list_concat([BaseName|Parts], '-', OutputDirName),
-            directory_file_path(Destination, OutputDirName, CopyDest),
+            directory_file_path(Destination, ModuleKey, CopyDest),
 
             copy_directory(File, CopyDest)
         )).

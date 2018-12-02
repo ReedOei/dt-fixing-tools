@@ -57,11 +57,11 @@ for line in $(cat ${projfile}); do
     fi
 
     # Run the Docker image if it exists
-    docker inspect ${image} > /dev/null 2>&1
-    if [ $? == 1 ]; then
-        echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
-    else
-        docker run -t --rm -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash -x /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout} "${script}"
-     fi
+    # docker inspect ${image} > /dev/null 2>&1
+    # if [ $? == 1 ]; then
+    #     echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
+    # else
+    #     docker run -t --rm -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash -x /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout} "${script}"
+    #  fi
 done
 

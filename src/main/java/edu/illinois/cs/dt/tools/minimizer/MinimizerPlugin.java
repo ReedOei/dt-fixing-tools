@@ -35,7 +35,7 @@ public class MinimizerPlugin extends TestPlugin {
     }
 
     private Stream<TestMinimizer> fromDtList(final Path path) {
-        TestPluginPlugin.mojo().getLog().info("Creating minimizers for file: " + path);
+        TestPluginPlugin.info("Creating minimizers for file: " + path);
 
         try {
             return DependentTestList.fromFile(path).dts().stream()

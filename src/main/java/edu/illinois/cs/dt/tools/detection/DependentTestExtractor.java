@@ -15,12 +15,16 @@ import edu.illinois.cs.dt.tools.runner.data.TestRun;
 import edu.illinois.cs.dt.tools.utility.MD5;
 import edu.illinois.cs.dt.tools.utility.TestRunParser;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -56,9 +60,33 @@ public class DependentTestExtractor extends StandardMain {
 
         for (final Path resultsFolder : allResultsFolders) {
             System.out.println("[INFO] Extracting results from " + resultsFolder);
-            save(resultsFolder, extract(resultsFolder));
+            final Optional<String> subjectNameOpt = readProjectName(resultsFolder);
+
+            if (subjectNameOpt.isPresent()) {
+                save(subjectNameOpt.get(), extract(resultsFolder));
+            } else {
+                System.out.println("[WARNING] No subject.properties in " + resultsFolder);
+            }
+
             System.out.println();
         }
+    }
+
+    private Optional<String> readProjectName(final Path resultsFolder) {
+        final Path propertiesPath = resultsFolder.resolve("subject.properties");
+
+        if (Files.exists(propertiesPath)) {
+            final Properties properties = new Properties();
+            try (final FileInputStream fis = new FileInputStream(propertiesPath.toFile())) {
+                properties.load(fis);
+            } catch (IOException e) {
+                return Optional.empty();
+            }
+
+            return Optional.of(properties.getProperty("subject.name"));
+        }
+
+        return Optional.empty();
     }
 
     private boolean isNew(final DependentTestList dependentTestList, final DependentTest dependentTest) {
@@ -72,10 +100,8 @@ public class DependentTestExtractor extends StandardMain {
                 .noneMatch(dt -> dt.name().equals(dependentTest.name()));
     }
 
-    private void save(final Path resultsFolder, final DependentTestList extracted) throws IOException {
-        final String moduleName = resultsFolder.getParent().getFileName().toString();
-        final String outputFileName = String.format("%s-%s", moduleName, DetectorPathManager.DT_LIST_PATH.getFileName().toString());
-        final Path outputFile = outputPath.resolve(outputFileName);
+    private void save(final String subjectName, final DependentTestList extracted) throws IOException {
+        final Path outputFile = outputPath.resolve(subjectName + "-dt-lists.json");
 
         if (Files.exists(outputFile)) {
             try {
