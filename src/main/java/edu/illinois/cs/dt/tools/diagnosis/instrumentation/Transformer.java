@@ -30,6 +30,7 @@ public class Transformer implements ClassFileTransformer, Opcodes {
             !className.startsWith("com/sun/") &&
             !className.startsWith("com/thoughtworks/xstream/") &&
             !className.startsWith("javax/xml/") &&
+            !className.startsWith("javax/management/") &&
             !className.startsWith("edu/illinois/cs/dt/tools/") &&
             !className.startsWith("com/reedoei/") &&
             !className.startsWith("org/objectweb/asm/") &&

@@ -5,6 +5,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -65,10 +66,16 @@ public class StaticFieldAccessor implements FieldAccessor {
     @Override
     public void set(final Object o) {
         try {
-            FieldUtils.removeFinalModifier(field, true);
+            // Remove the final modifier (mostly copied from FieldUtils.removeFinalModifier),
+            // but not using the method because it causes some issues with instrumentation
+            if (Modifier.isFinal(field.getModifiers())) {
+                final Field modifiersField = Field.class.getDeclaredField("modifiers");
+                modifiersField.setAccessible(true);
+                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            }
             field.setAccessible(true);
             field.set(this.o, o);
-        } catch (IllegalAccessException e) {
+        } catch (IllegalAccessException | NoSuchFieldException e) {
             e.printStackTrace();
         }
     }
