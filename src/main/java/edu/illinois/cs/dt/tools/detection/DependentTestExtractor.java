@@ -14,6 +14,7 @@ import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import edu.illinois.cs.dt.tools.runner.data.TestRun;
 import edu.illinois.cs.dt.tools.utility.MD5;
 import edu.illinois.cs.dt.tools.utility.TestRunParser;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -66,6 +67,7 @@ public class DependentTestExtractor extends StandardMain {
                 save(subjectNameOpt.get(), extract(resultsFolder));
             } else {
                 System.out.println("[WARNING] No subject.properties in " + resultsFolder);
+                save(StringUtils.strip(resultsFolder.getFileName().toString().replace("/", "-"), "-"), extract(resultsFolder));
             }
 
             System.out.println();
