@@ -32,6 +32,7 @@ gather_results(Path, Destination) :-
             module_key(Path, ModuleDir, ModuleKey),
 
             directory_file_path(Destination, ModuleKey, CopyDest),
+            writeln(CopyDest),
 
             copy_directory(File, CopyDest), !
         )).
