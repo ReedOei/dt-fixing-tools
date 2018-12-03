@@ -22,18 +22,18 @@ module_key(ProjectRoot, ModuleDir, ModuleKey) :-
     atomic_list_concat([BaseName|NonEmptyParts], '-', ModuleKey).
 
 gather_results(Path, Destination) :-
-    file_base_name(Path, BaseName),
     forall(
         (
             walk(Path, not_target, File),
             endswith(File, '.dtfixingtools')
         ),
         (
-            module_key(File, Dir, ModuleKey),
+            file_directory_name(File, ModuleDir),
+            module_key(Path, ModuleDir, ModuleKey),
 
             directory_file_path(Destination, ModuleKey, CopyDest),
             writeln(CopyDest),
 
-            copy_directory(File, CopyDest)
+            copy_directory(File, CopyDest), !
         )).
 
