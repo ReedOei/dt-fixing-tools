@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.detection.analysis;
+package edu.illinois.cs.dt.tools.analysis;
 
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
@@ -13,10 +13,6 @@ import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
-import edu.illinois.cs.dt.tools.utility.analysis.Procedure;
-import edu.illinois.cs.dt.tools.utility.analysis.ResultDirVisitor;
-import edu.illinois.cs.dt.tools.utility.analysis.SQLStatements;
-import edu.illinois.cs.dt.tools.utility.analysis.SQLite;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.FileInputStream;
@@ -78,7 +74,6 @@ public class Analysis extends StandardMain {
         System.exit(1);
     }
 
-    // TODO: copy to eunomia
     public static ListEx<ListEx<String>> csv(final Path path) throws IOException {
         try (final FileInputStream fis = new FileInputStream(path.toAbsolutePath().toString());
              final InputStreamReader isr = new InputStreamReader(fis);

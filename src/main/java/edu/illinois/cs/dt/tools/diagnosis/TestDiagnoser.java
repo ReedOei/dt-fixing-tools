@@ -15,10 +15,8 @@ import edu.illinois.cs.dt.tools.minimizer.PolluterData;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.utility.PathManager;
-import org.apache.commons.lang3.StringUtils;
 import scala.util.Try;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

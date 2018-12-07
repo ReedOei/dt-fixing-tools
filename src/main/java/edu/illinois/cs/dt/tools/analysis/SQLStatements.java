@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.utility.analysis;
+package edu.illinois.cs.dt.tools.analysis;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

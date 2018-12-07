@@ -3,8 +3,6 @@ package edu.illinois.cs.dt.tools.runner.data;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.Util;
 import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.converters.reflection.Sun14ReflectionProvider;
-import com.thoughtworks.xstream.io.xml.DomDriver;
 import com.thoughtworks.xstream.security.AnyTypePermission;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 import org.dom4j.Document;

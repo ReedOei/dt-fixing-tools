@@ -24,5 +24,5 @@ fi
 cd "$scripts_folder/.."
 
 # TODO: MAKE THIS HANDLE INSERTING THE SUBJECT RAW
-mvn install -DskipTests exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.analysis.Analysis" -Dexec.args="--results '$results_folder' --db '$database' --max-test-runs $max_test_runs"
+mvn install -DskipTests exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.Analysis" -Dexec.args="--results '$results_folder' --db '$database' --max-test-runs $max_test_runs"
 
