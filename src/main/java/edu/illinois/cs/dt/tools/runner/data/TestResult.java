@@ -2,8 +2,8 @@ package edu.illinois.cs.dt.tools.runner.data;
 
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.Util;
-import com.reedoei.testrunner.data.results.TestRunResult;
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.reflection.Sun14ReflectionProvider;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 import com.thoughtworks.xstream.security.AnyTypePermission;
 import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
@@ -57,7 +57,7 @@ public class TestResult {
     }
 
     public static XStream getXStreamInstance() {
-        XStream xstream = new XStream(new DomDriver());
+        XStream xstream = new XStream(); // new DomDriver());
         XStream.setupDefaultSecurity(xstream);
         xstream.addPermission(AnyTypePermission.ANY);
         xstream.setMode(XStream.XPATH_ABSOLUTE_REFERENCES);

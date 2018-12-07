@@ -24,6 +24,8 @@ public class PollutedField {
     }
 
     public boolean different() {
-        return withoutDepsVal() != null && withDepsVal() != null && !withoutDepsVal().equals(withDepsVal());
+        return (withoutDepsVal() == null && withDepsVal() != null) ||
+               (withoutDepsVal() != null && withDepsVal() == null) ||
+               !withoutDepsVal().equals(withDepsVal());
     }
 }

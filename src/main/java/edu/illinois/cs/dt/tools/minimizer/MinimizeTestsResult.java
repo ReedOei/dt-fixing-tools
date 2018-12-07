@@ -166,7 +166,7 @@ public class MinimizeTestsResult {
     }
 
     public List<String> withDeps() {
-        final List<String> order = new ArrayList<>(getFirstDeps()); // TODO: What should this return?
+        final List<String> order = new ArrayList<>(getFirstDeps());
         if (!order.contains(dependentTest())) {
             order.add(dependentTest());
         }

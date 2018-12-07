@@ -24,6 +24,15 @@ public class PollutionContainer {
             }
         });
 
+        withDepsVals.forEach((k, withDepsVal) -> {
+            if (!pollutedFields.containsKey(k)) {
+                final String withoutDepsVal = withoutDepsVals.get(k);
+                if (withoutDepsVal == null || !withoutDepsVal.equals(withDepsVal)) {
+                    pollutedFields.put(k, new PollutedField(testName, withoutDepsVal, withDepsVal));
+                }
+            }
+        });
+
         return pollutedFields;
     }
 }

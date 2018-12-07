@@ -5,6 +5,7 @@ import com.reedoei.eunomia.functional.Cons;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
+import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
@@ -129,7 +130,8 @@ public class StaticTracer {
             if (!tracer().rewrittenProperties.contains(fieldName)) {
                 final String rewriteValue = Configuration.config().getProperty("statictracer.rewrite.value", "");
                 final String rewriteField = Configuration.config().getProperty("statictracer.rewrite.field", "");
-//                System.err.println("Rewriting " + rewriteField + " using value " + StringUtils.abbreviate(rewriteValue, 50));
+
+                System.err.println("Rewriting " + rewriteField + " using value " + StringUtils.abbreviate(rewriteValue, 50));
                 final Object o = TestResult.getXStreamInstance().fromXML(rewriteValue);
 
                 // Null because that gives us the static field
@@ -150,7 +152,11 @@ public class StaticTracer {
 //                                System.err.println(rewriteField + " is now: " + sra.get());
 //                            });
 //                } else {
-                    staticRootAccessor.ifPresent(sra -> sra.set(o));
+                    staticRootAccessor.ifPresent(sra -> {
+                        sra.set(o);
+
+                        System.out.println("The reset field " + rewriteField + " is now: " + sra.get());
+                    });
 //                }
 
                 tracer().rewrittenProperties.add(rewriteField);

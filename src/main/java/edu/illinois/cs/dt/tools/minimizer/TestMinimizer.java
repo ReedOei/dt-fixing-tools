@@ -9,6 +9,7 @@ import com.reedoei.eunomia.util.Util;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
+import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerFinder;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.utility.MD5;
@@ -99,8 +100,10 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
                 info("Ran minimizer, dependencies: " + deps);
 
-                polluters.add(new PolluterData(deps,
-                    new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find()));
+                final CleanerData cleanerData =
+                        new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find();
+
+                polluters.add(new PolluterData(deps, cleanerData));
 
                 order.removeAll(deps);  // Look for other deps besides the ones already found
             }
