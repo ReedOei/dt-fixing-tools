@@ -10,7 +10,6 @@ import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
-import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import org.apache.commons.io.FilenameUtils;
@@ -53,12 +52,16 @@ public class Analysis extends StandardMain {
     private final SQLite sqlite;
     private int dtListIndex = 0;
     private final int maxTestRuns;
+    private final Path subjectList;
+    private final Path subjectListLOC;
 
     private Analysis(final String[] args) throws SQLException {
         super(args);
 
         this.results = Paths.get(getArgRequired("results")).toAbsolutePath();
         this.sqlite = new SQLite(Paths.get(getArgRequired("db")).toAbsolutePath());
+        this.subjectList = Paths.get(getArgRequired("subjectList")).toAbsolutePath();
+        this.subjectListLOC = Paths.get(getArgRequired("subjectListLoc")).toAbsolutePath();
         this.maxTestRuns = getArg("max-test-runs").map(Integer::parseInt).orElse(0);
     }
 
@@ -86,10 +89,8 @@ public class Analysis extends StandardMain {
     protected void run() throws Exception {
         createTables();
 
-        insertFullSubjectList("popular", Paths.get("scripts").resolve("docker").resolve("data").resolve("popular_150.csv"));
-        insertFullSubjectList("deflaker-palomba", Paths.get("scripts").resolve("docker").resolve("data").resolve("previous-work-subj.csv"));
-
-        insertSubjectLOC(Paths.get("scripts/docker/data/full_subject_loc.csv"));
+        insertFullSubjectList(subjectList);
+        insertSubjectLOC(subjectListLOC);
 
         System.out.println();
 
@@ -120,17 +121,17 @@ public class Analysis extends StandardMain {
             sqlite.statement(SQLStatements.UPDATE_SUBJECT_RAW_LOC)
                     .param(rows.get(2)) // loc
                     .param(rows.get(3)) // test_loc
-                    .param(rows.get(0)) // slug
+                    .param(rows.get(0).toLowerCase()) // slug
                     .executeUpdate();
         }
     }
 
-    private void insertFullSubjectList(final String source, final Path fullList) throws IOException, SQLException {
+    private void insertFullSubjectList(final Path fullList) throws IOException, SQLException {
         if (!Files.exists(fullList)) {
             throw new FileNotFoundException(fullList.toAbsolutePath().toString());
         }
 
-        System.out.println("[INFO] Inserting " + source + " subject list from: " + fullList);
+        System.out.println("[INFO] Inserting subject list from: " + fullList);
 
         try (final FileInputStream fis = new FileInputStream(fullList.toAbsolutePath().toString());
              final InputStreamReader isr = new InputStreamReader(fis);
@@ -139,22 +140,21 @@ public class Analysis extends StandardMain {
             String[] strings;
             while ((strings = reader.readNext()) != null) {
                 if (strings.length == 2) {
-                    insertSubjectRaw(source, strings[0], strings[1]);
+                    insertSubjectRaw(strings[0], strings[1]);
                 }
             }
         }
     }
 
-    private void insertSubjectRaw(final String source, final String url, final String sha) throws MalformedURLException, SQLException {
+    private void insertSubjectRaw(final String url, final String sha) throws MalformedURLException, SQLException {
         // Get the slug. The path starts with a slash, so get rid of it via substring
         final String slug = new URL(url).getPath().substring(1);
 
         System.out.println("[INFO] Inserting " + url + " with slug " + slug + " and SHA " + sha);
         sqlite.statement(SQLStatements.INSERT_RAW_SUBJECT)
-                .param(slug)
-                .param(source)
-                .param(url)
-                .param(sha)
+                .param(slug.toLowerCase())
+                .param(url.toLowerCase())
+                .param(sha.toLowerCase())
                 .executeUpdate();
     }
 
@@ -210,7 +210,7 @@ public class Analysis extends StandardMain {
         // If we got a no passing order exception, don't insert any of the other results
         if (!Files.exists(path.resolve("error")) ||
             !FileUtil.readFile(path.resolve("error")).contains(NoPassingOrderException.class.getSimpleName())) {
-            insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
+//            insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
 
             insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS));
             insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS));
