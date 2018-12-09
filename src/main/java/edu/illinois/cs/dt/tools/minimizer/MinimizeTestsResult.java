@@ -7,6 +7,7 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.analysis.SQLite;
 import edu.illinois.cs.dt.tools.utility.MD5;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 

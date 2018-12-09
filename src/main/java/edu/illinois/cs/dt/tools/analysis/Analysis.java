@@ -10,6 +10,12 @@ import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
+import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
+import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
+import edu.illinois.cs.dt.tools.minimizer.PolluterData;
+import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
+import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerGroup;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import org.apache.commons.io.FilenameUtils;
@@ -30,6 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+// TODO: would probably be better to have these insert methods in their respective classes with some
+//       interface or something...
 public class Analysis extends StandardMain {
     public static int roundNumber(final String filename) {
         // Files are named roundN.json, so strip extension and "round" and we'll have the number
@@ -226,12 +234,89 @@ public class Analysis extends StandardMain {
             insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
             insertVerificationResults(name, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
             insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+
+            insertMinimizedResults(path.resolve(MinimizerPathManager.MINIMIZED));
+            insertStaticFieldInfo(TracerMode.TRACK);
         }
 
 //        sqlite.save();
 
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
         System.out.println();
+    }
+
+    private void insertStaticFieldInfo(final TracerMode track) {
+    }
+
+    private void insertMinimizedResults(final Path minimized) throws IOException {
+        if (!Files.isDirectory(minimized)) {
+            System.out.println("[WARNING] SKIPPING: No minimized folder " + minimized);
+            return;
+        }
+
+        FileUtil.listFiles(minimized).stream()
+                .flatMap(FileUtil::safeReadFile)
+                .map(s -> new Gson().fromJson(s, MinimizeTestsResult.class))
+                .forEach(minimizeTestsResult -> {
+                    try {
+                        insertMinimizeTestResult(minimizeTestsResult);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
+    private int insertMinimizeTestResult(final MinimizeTestsResult minimizeTestsResult) throws SQLException {
+        // TODO: add stats about things like cleaner group size, same package, same class, etc.
+        int id = sqlite.statement(SQLStatements.INSERT_MINIMIZE_TEST_RESULT)
+                .param(minimizeTestsResult.dependentTest())
+                .param(minimizeTestsResult.expectedRun().id())
+                .param(minimizeTestsResult.expected().toString())
+                .param(minimizeTestsResult.hash())
+                .param(minimizeTestsResult.time().startTime())
+                .param(minimizeTestsResult.time().endTime())
+                .param(minimizeTestsResult.time().elapsedSeconds())
+                .insertSingleRow();
+
+        for (final PolluterData polluter : minimizeTestsResult.polluters()) {
+            insertPolluterData(id, polluter);
+        }
+
+        return id;
+    }
+
+    private int insertPolluterData(final int minimizeTestResultId, final PolluterData polluter) throws SQLException {
+        // TODO: add stats about things like cleaner group size, same package, same class, etc.
+        int id = sqlite.statement(SQLStatements.INSERT_POLLUTER_DATA)
+                    .param(minimizeTestResultId)
+                    .param(polluter.deps().toString())
+                    .insertSingleRow();
+        insertCleanerData(id, polluter.cleanerData());
+        return id;
+    }
+
+    private int insertCleanerData(final int polluterDataId,
+                                  final CleanerData cleanerData) throws SQLException {
+        // TODO: add stats about things like cleaner group size, same package, same class, etc.
+        int id = sqlite.statement(SQLStatements.INSERT_CLEANER_DATA)
+                    .param(polluterDataId)
+                    .param(cleanerData.isolationResult().toString())
+                    .param(cleanerData.expected().toString())
+                    .insertSingleRow();
+
+        for (final CleanerGroup cleanerGroup : cleanerData.cleaners()) {
+            insertCleanerGroup(id, cleanerGroup);
+        }
+
+        return id;
+    }
+
+    private int insertCleanerGroup(final int cleanerDataId, final CleanerGroup cleanerGroup) throws SQLException {
+        // TODO: add stats about things like cleaner group size, same package, same class, etc.
+        return sqlite.statement(SQLStatements.INSERT_CLEANER_GROUP)
+                .param(cleanerDataId)
+                .param(cleanerGroup.cleanerTests().toString())
+                .insertSingleRow();
     }
 
     private void insertModuleTestTime(final String slug, final Path moduleTestTimePath) throws SQLException, IOException {

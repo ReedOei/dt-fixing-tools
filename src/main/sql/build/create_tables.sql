@@ -1,7 +1,6 @@
 create table subject_raw
 (
   slug text primary key,
-  source text not null,
   url text not null,
   sha text not null,
   loc integer not null,
@@ -161,6 +160,40 @@ create table detection_round_failures
   round_type text not null,
   flaky_found integer not null,
   random_found integer not null
+);
+
+create table minimize_test_result
+(
+  id integer primary key,
+  test_name text not null,
+  expected_run_str_id text not null,
+  expected_result text not null,
+  order_hash text not null,
+  start_time integer not null,
+  end_time integer not null,
+  elapsed_time real not null
+);
+
+create table polluter_data
+(
+  id integer primary key,
+  minimize_test_result_id integer not null,
+  dependencies text not null
+);
+
+create table cleaner_data
+(
+  id integer primary key,
+  polluter_data_id integer not null,
+  isolation_result text not null,
+  expected_result text not null
+);
+
+create table cleaner_group
+(
+  id integer primary key,
+  cleaner_data_id integer not null,
+  cleaner_tests text not null
 );
 
 create view subject_info as
