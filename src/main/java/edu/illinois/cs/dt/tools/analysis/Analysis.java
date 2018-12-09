@@ -10,6 +10,9 @@ import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticAccessInfo;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldPathManager;
+import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
@@ -32,6 +35,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -236,7 +240,7 @@ public class Analysis extends StandardMain {
             insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
 
             insertMinimizedResults(path.resolve(MinimizerPathManager.MINIMIZED));
-            insertStaticFieldInfo(TracerMode.TRACK);
+            insertStaticFieldInfo(path, TracerMode.TRACK);
         }
 
 //        sqlite.save();
@@ -245,7 +249,42 @@ public class Analysis extends StandardMain {
         System.out.println();
     }
 
-    private void insertStaticFieldInfo(final TracerMode track) {
+    private void insertStaticFieldInfo(final Path path, final TracerMode mode) throws IOException, SQLException {
+        final Path staticFieldInfoPath =
+                path.resolve(StaticFieldPathManager.STATIC_FIELD_INFO_PATH.getFileName().toString() + "-" + mode.toString());
+
+        if (!Files.isDirectory(staticFieldInfoPath)) {
+            System.out.println("[WARNING] SKIPPING: No static field info path: " + staticFieldInfoPath);
+            return;
+        }
+
+        for (Path p : FileUtil.listFiles(staticFieldInfoPath)) {
+            final String[] filenameParts = p.getFileName().toString().split("-");
+            final StaticTracer staticTracer = new Gson().fromJson(FileUtil.readFile(p), StaticTracer.class);
+
+            if (mode == TracerMode.TRACK) {
+                insertStaticTracerTrack(filenameParts[0], filenameParts[1], mode, staticTracer);
+            }
+        }
+    }
+
+    private void insertStaticTracerTrack(final String testName, final String hash,
+                                         final TracerMode mode, final StaticTracer staticTracer) throws SQLException {
+        int id = sqlite.statement(SQLStatements.INSERT_STATIC_FIELD_INFO)
+                .param(testName)
+                .param(hash)
+                .param(mode.toString())
+                .insertSingleRow();
+
+        for (final Map.Entry<String, StaticAccessInfo> entry : staticTracer.staticFields().entrySet()) {
+            final String fieldName = entry.getKey();
+            final StaticAccessInfo fieldValue = entry.getValue();
+
+            sqlite.statement(SQLStatements.INSERT_STATIC_FIELD_INFO_FIELD)
+                    .param(id)
+                    .param(fieldName)
+                    .insertSingleRow();
+        }
     }
 
     private void insertMinimizedResults(final Path minimized) throws IOException {

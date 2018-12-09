@@ -32,6 +32,9 @@ public class SQLStatements {
     public static final Path INSERT_MINIMIZE_TEST_RESULT = Paths.get("src/main/sql/build/minimize_test_result_insert.sql");
     public static final Path INSERT_POLLUTER_DATA = Paths.get("src/main/sql/build/polluter_data_insert.sql");
 
+    public static final Path INSERT_STATIC_FIELD_INFO = Paths.get("src/main/sql/build/static_field_info_insert.sql");
+    public static final Path INSERT_STATIC_FIELD_INFO_FIELD = Paths.get("src/main/sql/build/static_field_info_field_insert.sql");
+
     public static final Path COUNT_TESTS = Paths.get("src/main/sql/figures/count_tests.sql");
     public static final Path COUNT_FLAKY_TESTS = Paths.get("src/main/sql/figures/count_flaky_tests.sql");
     public static final Path COUNT_MODULES_RESULTS = Paths.get("src/main/sql/figures/count_modules_results.sql");
@@ -88,6 +91,9 @@ public class SQLStatements {
         ensureExists(INSERT_CLEANER_GROUP);
         ensureExists(INSERT_MINIMIZE_TEST_RESULT);
         ensureExists(INSERT_POLLUTER_DATA);
+
+        ensureExists(INSERT_STATIC_FIELD_INFO);
+        ensureExists(INSERT_STATIC_FIELD_INFO_FIELD);
 
         ensureExists(COUNT_TESTS);
         ensureExists(COUNT_MODULES_RESULTS);

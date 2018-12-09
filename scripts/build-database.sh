@@ -34,30 +34,30 @@ subject_list_loc="$(pwd)/subject_loc.csv"
 > $subject_list_loc # Clear the file
 
 # download and count the lines
-# for line in $(cat "$subject_list"); do
-#     slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
-#     sha=$(echo $line | cut -f2 -d",")
+for line in $(cat "$subject_list"); do
+    slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
+    sha=$(echo $line | cut -f2 -d",")
 
-#     mkdir -p "temp-subject"
-#     download_path="temp-subject/$slug"
-#     echo "Counting lines for $slug"
-#     git clone "https://github.com/$slug" "temp-subject/$slug" &> /dev/null
+    mkdir -p "temp-subject"
+    download_path="temp-subject/$slug"
+    echo "Counting lines for $slug"
+    git clone "https://github.com/$slug" "temp-subject/$slug" &> /dev/null
 
-#     (
-#         cd "$download_path"
-#         git checkout "$sha"
-#     ) &> /dev/null
+    (
+        cd "$download_path"
+        git checkout "$sha"
+    ) &> /dev/null
 
-#     c=$(cloc "$download_path" --include-lang=Java --csv --quiet | tail -1)
-#     tc=$(cloc "$download_path" --match-f=".*Test.*" --include-lang=Java --csv --quiet | tail -1)
+    c=$(cloc "$download_path" --include-lang=Java --csv --quiet | tail -1)
+    tc=$(cloc "$download_path" --match-f=".*Test.*" --include-lang=Java --csv --quiet | tail -1)
 
-#     loc=$(echo $c | cut -f5 -d",")
-#     test_loc=$(echo $tc | cut -f5 -d",")
+    loc=$(echo $c | cut -f5 -d",")
+    test_loc=$(echo $tc | cut -f5 -d",")
 
-#     echo "$slug,$sha,$loc,$test_loc" |& tee -a "$subject_list_loc"
+    echo "$slug,$sha,$loc,$test_loc" |& tee -a "$subject_list_loc"
 
-#     # rm -rf "$download_path"
-# done
+    # rm -rf "$download_path"
+done
 
 # rm -rf temp-subject
 

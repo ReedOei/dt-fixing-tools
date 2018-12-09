@@ -196,6 +196,21 @@ create table cleaner_group
   cleaner_tests text not null
 );
 
+create table static_field_info
+(
+  id integer primary key,
+  test_name text not null,
+  order_hash text not null,
+  mode text not null
+);
+
+create table static_field_info_field
+(
+  id integer primary key,
+  static_field_info_id integer not null,
+  field_name text not null
+);
+
 create view subject_info as
 select s.name as name,
        max(trr.test_count) as test_count
