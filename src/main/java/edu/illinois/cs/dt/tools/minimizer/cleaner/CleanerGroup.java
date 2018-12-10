@@ -77,15 +77,15 @@ public class CleanerGroup {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dependentTest, cleanerTests, originalSize);
+        return Objects.hash(dependentTest, cleanerTests);
     }
 
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof CleanerGroup) {
+            // Don't include original size, we only care about the minimal group for these purposes
             return dependentTest().equals(((CleanerGroup) obj).dependentTest()) &&
-                   cleanerTests().equals(((CleanerGroup) obj).cleanerTests()) &&
-                   originalSize() == ((CleanerGroup) obj).originalSize();
+                   cleanerTests().equals(((CleanerGroup) obj).cleanerTests());
         }
 
         return false;

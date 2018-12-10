@@ -1,6 +1,5 @@
 package edu.illinois.cs.dt.tools.runner;
 
-import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.framework.TestFramework;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
@@ -18,98 +17,32 @@ import scala.collection.immutable.Stream;
 import scala.util.Failure;
 import scala.util.Try;
 
-import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.OptionalInt;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 public class InstrumentingSmartRunner extends SmartRunner {
-    private String prefixes;
     private final String javaAgent;
     private Path outputPath;
 
     public static InstrumentingSmartRunner fromRunner(final Runner runner) {
         if (runner instanceof SmartRunner) {
-            return new InstrumentingSmartRunner(runner.project(), runner.framework(), ((SmartRunner) runner).info());
+            return new InstrumentingSmartRunner(runner.framework(), ((SmartRunner) runner).info(),
+                                                runner.classpath(), runner.environment(), runner.outputPath());
         } else {
-            return new InstrumentingSmartRunner(runner.project(), runner.framework(), new TestInfoStore());
+            return new InstrumentingSmartRunner(runner.framework(), new TestInfoStore(),
+                                                runner.classpath(), runner.environment(), runner.outputPath());
         }
     }
 
-    private InstrumentingSmartRunner(final MavenProject mavenProject, final TestFramework testFramework, final TestInfoStore infoStore) {
-        super(mavenProject, testFramework, infoStore);
+    private InstrumentingSmartRunner(final TestFramework testFramework, final TestInfoStore infoStore,
+                                     final String cp, final Map<String, String> env, final Path outputPath) {
+        super(testFramework, infoStore, cp, env, outputPath);
 
         final URL url = JavaAgent.class.getProtectionDomain().getCodeSource().getLocation();
         this.javaAgent = url.getFile();
 
-        this.prefixes = null;
-    }
-
-    private String getPrefixes() {
-        final List<String> allPrefixes = new ArrayList<>();
-
-        final Path outputDirectory = Paths.get(project().getBuild().getOutputDirectory());
-        final Path testOutputDirectory = Paths.get(project().getBuild().getTestOutputDirectory());
-
-        if (Files.isDirectory(outputDirectory)) {
-            allPrefixes.add(getPrefixes(outputDirectory));
-        }
-
-        if (Files.isDirectory(testOutputDirectory)) {
-            allPrefixes.add(getPrefixes(testOutputDirectory));
-        }
-
-        return String.join(",", allPrefixes);
-    }
-
-    private String getPrefixes(final Path dir) {
-        final Path longest = dir.relativize(getLongest(dir).toAbsolutePath());
-
-        if (longest.getNameCount() < 3) {
-            try {
-                final List<Path> paths =
-                        Files.walk(dir.resolve(longest), 3)
-                        .filter(Files::isDirectory)
-                        .map(dir::relativize)
-                        .collect(Collectors.toList());
-
-                final OptionalInt pathCount = paths.stream().mapToInt(Path::getNameCount).max();
-
-                if (pathCount.isPresent()) {
-                    return paths.stream()
-                            .filter(p -> p.getNameCount() == pathCount.getAsInt())
-                            .map(String::valueOf)
-                            .collect(Collectors.joining(","));
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return longest.toString();
-    }
-
-    private Path getLongest(final Path path) {
-        try {
-            final List<Path> list =
-                    Files.list(path)
-                            .filter(Files::isDirectory)
-                            .filter(p -> p.getFileName().toString().toLowerCase().equals(p.getFileName().toString()))
-                            .collect(Collectors.toList());
-
-            if (list.size() == 1) {
-                return getLongest(list.get(0));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return path;
     }
 
     @Override
@@ -121,23 +54,14 @@ public class InstrumentingSmartRunner extends SmartRunner {
             builder = executionInfoBuilder;
         }
 
-        // NOTE: If you're trying to do something inside the executor and it's not printing, the calls to inheritIO
-        // are probably the cause. You probably want to use true instead.
         if (!StaticTracer.mode().equals(TracerMode.NONE) && javaAgent != null) {
-//            if (prefixes == null) {
-//                prefixes = getPrefixes();
-//            }
-
             return super.execution(testOrder,
                     builder
                             .addProperty("statictracer.tracer_path", String.valueOf(StaticFieldPathManager.modePath(StaticTracer.mode())))
-//                            .addProperty("dtfixingtools.transformer.class_prefix", prefixes)
                             .javaAgent(Paths.get(javaAgent)));
         } else {
             return super.execution(testOrder,
                     builder);
-//                    .inheritIO(false));
-//            );
         }
     }
 

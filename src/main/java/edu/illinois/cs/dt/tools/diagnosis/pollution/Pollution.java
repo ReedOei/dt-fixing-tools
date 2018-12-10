@@ -109,7 +109,8 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
         return !fieldName.startsWith("com.thoughtworks.xstream") &&
                !fieldName.startsWith("java.") &&
                !fieldName.startsWith("jdk.") &&
-               !fieldName.startsWith("sun.");
+               !fieldName.startsWith("sun.") &&
+               !fieldName.startsWith("com.google.gson");
     }
 
     public Map<String, PollutedField> findPollutions() {

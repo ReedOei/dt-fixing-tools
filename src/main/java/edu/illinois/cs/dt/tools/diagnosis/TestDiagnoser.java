@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class TestDiagnoser {
-    private final StaticTracer tracer; // The static fields used by the dependent tryRewrite.
     private final MinimizeTestsResult minimized;
 
     private final InstrumentingSmartRunner runner;
@@ -41,7 +40,7 @@ public class TestDiagnoser {
             System.out.println("Found no polluters.");
         }
 
-        this.tracer = new StaticFieldInfo(runner, minimized).get();
+        new StaticFieldInfo(runner, minimized).get();
     }
 
     public Optional<DiagnosisResult> run() {

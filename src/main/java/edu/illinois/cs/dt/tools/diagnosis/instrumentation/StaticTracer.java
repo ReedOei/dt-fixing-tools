@@ -53,6 +53,7 @@ public class StaticTracer {
     private final Map<String, StaticAccessInfo> staticFields = new ConcurrentHashMap<>();
     private final Map<String, String> firstAccessVals = new ConcurrentHashMap<>();
     private final Set<String> rewrittenProperties = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> tracked = Collections.synchronizedSet(new HashSet<>());
 
     public static StaticTracer tracer() {
         return tracer;
@@ -86,6 +87,8 @@ public class StaticTracer {
         tracerModes
             .getOrDefault(mode(), Cons.ignore())
             .accept(fieldName);
+
+        tracer().tracked.add(fieldName);
     }
 
     private static void track(final String fieldName) {
@@ -171,10 +174,10 @@ public class StaticTracer {
         final @NonNull String testToCheck = Configuration.config().getProperty("statictracer.first_access.test", "none");
 
         if (currentTest.equals(testToCheck)) {
-            if (!tracer().firstAccessVals().containsKey(fieldName)) {
+            if (!tracer().tracked.contains(fieldName)) {
                 FieldAccessorFactory.accessorFor(fieldName).ifPresent(accessor -> {
                     final String serialized = sanitizeXmlChars(TestResult.getXStreamInstance().toXML(accessor.get()));
-                    tracer().firstAccessVals().putIfAbsent(fieldName, serialized);
+                    tracer().firstAccessVals().put(fieldName, serialized);
                 });
             }
         }
