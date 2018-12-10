@@ -8,6 +8,7 @@ import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
+import edu.illinois.cs.dt.tools.utility.OperationTime;
 import edu.illinois.cs.dt.tools.utility.TestRunParser;
 import org.codehaus.plexus.util.StringUtils;
 import scala.util.Try;
@@ -52,28 +53,31 @@ public class CleanerFinder {
      * @return Cleaner data, containing the confirmed cleaner groups.
      * @throws IOException If the original order file does not exist
      */
-    public CleanerData find() throws IOException {
+    public CleanerData find() throws Exception {
         final long startTime = System.currentTimeMillis();
         TestPluginPlugin.info("Looking for cleaners for: " + dependentTest);
 
         // If it's empty, we can't have any cleaners (they'd be polluters, not cleaners
         if (deps.isEmpty()) {
             TestPluginPlugin.info("No dependencies for " + dependentTest + " in this order, so no cleaners.");
-            return new CleanerData(dependentTest, deps, expected, isolationResult, testOrder, new ListEx<>());
+            return new CleanerData(dependentTest, OperationTime.instantaneous(),
+                    expected, isolationResult, new ListEx<>());
         } else {
             final ListEx<String> originalOrder = new ListEx<>(Files.readAllLines(DetectorPathManager.originalOrderPath()));
             return summarizeCleanerGroups(makeCleanerData(findCleanerGroups(originalOrder)));
         }
     }
 
-    private CleanerData makeCleanerData(final ListEx<ListEx<String>> cleanerGroups) {
-        final CleanerData cleanerData = new CleanerData(dependentTest, deps, expected, isolationResult, testOrder,
-                cleanerGroups
-                        .mapWithIndex(this::minimalCleanerGroup)
-                        .distinct()
-                        .filter(cleanerGroup -> cleanerGroup.confirm(runner, new ListEx<>(deps), expected, isolationResult)));
-        TestPluginPlugin.info(dependentTest + " has " + cleanerData.cleaners().size() + " cleaners: " + cleanerData.cleaners());
-        return cleanerData;
+    private CleanerData makeCleanerData(final ListEx<ListEx<String>> cleanerGroups) throws Exception {
+        return OperationTime.runOperation(() -> cleanerGroups
+                .mapWithIndex(this::minimalCleanerGroup)
+                .distinct()
+                .filter(cleanerGroup -> cleanerGroup.confirm(runner, new ListEx<>(deps), expected, isolationResult)),
+            (minimizedCleanerGroups, time) -> {
+                final CleanerData cleanerData = new CleanerData(dependentTest, time, expected, isolationResult, minimizedCleanerGroups);
+                TestPluginPlugin.info(dependentTest + " has " + cleanerData.cleaners().size() + " cleaners: " + cleanerData.cleaners());
+                return cleanerData;
+            });
     }
 
     private ListEx<ListEx<String>> findCleanerGroups(final ListEx<String> originalOrder) {
@@ -139,7 +143,7 @@ public class CleanerFinder {
     private CleanerGroup minimalCleanerGroup(final int i, final ListEx<String> cleanerGroup) {
         TestPluginPlugin.info("Minimizing cleaner group " + i + ": " +
                 StringUtils.abbreviate(String.valueOf(cleanerGroup), 500));
-        return new CleanerGroup(dependentTest, reduce(cleanerGroup));
+        return new CleanerGroup(dependentTest, cleanerGroup.size(), reduce(cleanerGroup));
     }
 
     private ListEx<String> reduce(final ListEx<String> cleanerGroup) {

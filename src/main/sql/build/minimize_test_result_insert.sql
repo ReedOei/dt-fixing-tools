@@ -4,11 +4,9 @@ insert into minimize_test_result
   expected_run_str_id,
   expected_result,
   order_hash,
-  start_time,
-  end_time,
-  elapsed_time
+  operation_time_id
 )
 values
 (
-  ?, ?, ?, ?, ?, ?, ?
+  ?, ?, ?, ?, ?
 )

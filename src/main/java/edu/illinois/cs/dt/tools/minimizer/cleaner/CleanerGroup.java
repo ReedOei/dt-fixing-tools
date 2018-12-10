@@ -11,11 +11,17 @@ public class CleanerGroup {
     private static final int VERIFY_COUNT = Configuration.config().getProperty("dt.diagnosis.cleaners.verify_count", 1);
 
     private final String dependentTest;
+    private final int originalSize;
     private final ListEx<String> cleanerTests;
 
-    public CleanerGroup(final String dependentTest, final ListEx<String> cleanerTests) {
+    public CleanerGroup(final String dependentTest, final int originalSize, final ListEx<String> cleanerTests) {
         this.dependentTest = dependentTest;
+        this.originalSize = originalSize;
         this.cleanerTests = cleanerTests;
+    }
+
+    public int originalSize() {
+        return originalSize;
     }
 
     public boolean confirm(final InstrumentingSmartRunner runner,
@@ -71,14 +77,15 @@ public class CleanerGroup {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dependentTest, cleanerTests);
+        return Objects.hash(dependentTest, cleanerTests, originalSize);
     }
 
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof CleanerGroup) {
             return dependentTest().equals(((CleanerGroup) obj).dependentTest()) &&
-                   cleanerTests().equals(((CleanerGroup) obj).cleanerTests());
+                   cleanerTests().equals(((CleanerGroup) obj).cleanerTests()) &&
+                   originalSize() == ((CleanerGroup) obj).originalSize();
         }
 
         return false;

@@ -21,6 +21,7 @@ import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerGroup;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
+import edu.illinois.cs.dt.tools.utility.OperationTime;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.FileInputStream;
@@ -312,9 +313,7 @@ public class Analysis extends StandardMain {
                 .param(minimizeTestsResult.expectedRun().id())
                 .param(minimizeTestsResult.expected().toString())
                 .param(minimizeTestsResult.hash())
-                .param(minimizeTestsResult.time().startTime())
-                .param(minimizeTestsResult.time().endTime())
-                .param(minimizeTestsResult.time().elapsedSeconds())
+                .param(insertOperationTime(minimizeTestsResult.time()))
                 .insertSingleRow();
 
         for (final PolluterData polluter : minimizeTestsResult.polluters()) {
@@ -336,11 +335,12 @@ public class Analysis extends StandardMain {
 
     private int insertCleanerData(final int polluterDataId,
                                   final CleanerData cleanerData) throws SQLException {
-        // TODO: add stats about things like cleaner group size, same package, same class, etc.
+        // TODO: add stats about things like same package, same class, etc.
         int id = sqlite.statement(SQLStatements.INSERT_CLEANER_DATA)
                     .param(polluterDataId)
                     .param(cleanerData.isolationResult().toString())
                     .param(cleanerData.expected().toString())
+                    .param(insertOperationTime(cleanerData.time()))
                     .insertSingleRow();
 
         for (final CleanerGroup cleanerGroup : cleanerData.cleaners()) {
@@ -351,10 +351,20 @@ public class Analysis extends StandardMain {
     }
 
     private int insertCleanerGroup(final int cleanerDataId, final CleanerGroup cleanerGroup) throws SQLException {
-        // TODO: add stats about things like cleaner group size, same package, same class, etc.
+        // TODO: add stats about things like same package, same class, etc.
         return sqlite.statement(SQLStatements.INSERT_CLEANER_GROUP)
                 .param(cleanerDataId)
+                .param(cleanerGroup.originalSize())
+                .param(cleanerGroup.cleanerTests().size())
                 .param(cleanerGroup.cleanerTests().toString())
+                .insertSingleRow();
+    }
+
+    private int insertOperationTime(final OperationTime time) throws SQLException {
+        return sqlite.statement(SQLStatements.INSERT_OPERATION_TIME)
+                .param(time.startTime())
+                .param(time.endTime())
+                .param(time.elapsedSeconds())
                 .insertSingleRow();
     }
 

@@ -169,6 +169,12 @@ create table minimize_test_result
   expected_run_str_id text not null,
   expected_result text not null,
   order_hash text not null,
+  operation_time_id integer not null
+);
+
+create table operation_time
+(
+  id integer primary key,
   start_time integer not null,
   end_time integer not null,
   elapsed_time real not null
@@ -186,12 +192,15 @@ create table cleaner_data
   id integer primary key,
   polluter_data_id integer not null,
   isolation_result text not null,
-  expected_result text not null
+  expected_result text not null,
+  operation_time_id integer not null
 );
 
 create table cleaner_group
 (
   id integer primary key,
+  original_size integer not null,
+  minimal_size integer not null
   cleaner_data_id integer not null,
   cleaner_tests text not null
 );
