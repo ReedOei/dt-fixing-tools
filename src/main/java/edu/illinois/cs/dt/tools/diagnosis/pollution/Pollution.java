@@ -3,11 +3,11 @@ package edu.illinois.cs.dt.tools.diagnosis.pollution;
 import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.runner.Runner;
-import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticAccessInfo;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldPathManager;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
+import edu.illinois.cs.dt.tools.minimizer.PolluterData;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -24,12 +24,14 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
 
     private final Runner runner;
     private final MinimizeTestsResult minimized;
+    private final PolluterData polluterData;
 
-    public Pollution(final Runner runner, final MinimizeTestsResult minimized) {
+    public Pollution(final Runner runner, final MinimizeTestsResult minimized, final PolluterData polluterData) {
         this.runner = runner;
         this.minimized = minimized;
 
         this.path = PollutionPathManager.pollutionData(minimized);
+        this.polluterData = polluterData;
     }
 
     @Override
@@ -59,10 +61,9 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
     protected @NonNull Map<String, PollutedField> generate() {
         try {
             Files.createDirectories(PollutionPathManager.pollutionData());
-
             StaticFieldPathManager.createModePath(TracerMode.FIRST_ACCESS);
 
-            if (minimized.getFirstDeps().isEmpty()) {
+            if (polluterData.deps().isEmpty()) {
                 return new HashMap<>();
             }
 
@@ -72,10 +73,11 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
             // Run with dependencies and monitor first access, then run without and monitor first access
             // If they values of some fields are different, then that's likely the source of the
             // difference in behavior
+            System.out.println("Tracking first accesses for: " + minimized.dependentTest());
             StaticTracer.inMode(TracerMode.FIRST_ACCESS, () -> {
                 Configuration.config().properties().setProperty("statictracer.first_access.test", minimized.dependentTest());
 
-                runner.runList(minimized.withDeps());
+                runner.runList(polluterData.withDeps(minimized.dependentTest()));
                 Files.move(StaticFieldPathManager.infoFor(TracerMode.FIRST_ACCESS, minimized), withDeps);
 
                 runner.runList(Collections.singletonList(minimized.dependentTest()));
@@ -107,14 +109,15 @@ public class Pollution extends FileCache<Map<String, PollutedField>> {
         return !fieldName.startsWith("com.thoughtworks.xstream") &&
                !fieldName.startsWith("java.") &&
                !fieldName.startsWith("jdk.") &&
-               !fieldName.startsWith("sun.");
+               !fieldName.startsWith("sun.") &&
+               !fieldName.startsWith("com.google.gson");
     }
 
-    public Map<String, PollutedField> findPollutions(final Map<String, StaticAccessInfo> fieldList) {
+    public Map<String, PollutedField> findPollutions() {
         final Map<String, PollutedField> pollutions = new HashMap<>();
 
         forEachFiltered((fieldName, field) -> {
-            if (fieldList.containsKey(fieldName) && field.different()) {
+            if (field.different()) {
                 pollutions.put(fieldName, field);
             }
         });

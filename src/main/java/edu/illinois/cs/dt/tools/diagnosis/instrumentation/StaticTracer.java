@@ -5,6 +5,7 @@ import com.reedoei.eunomia.functional.Cons;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
+import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
@@ -52,6 +53,7 @@ public class StaticTracer {
     private final Map<String, StaticAccessInfo> staticFields = new ConcurrentHashMap<>();
     private final Map<String, String> firstAccessVals = new ConcurrentHashMap<>();
     private final Set<String> rewrittenProperties = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> tracked = Collections.synchronizedSet(new HashSet<>());
 
     public static StaticTracer tracer() {
         return tracer;
@@ -85,6 +87,8 @@ public class StaticTracer {
         tracerModes
             .getOrDefault(mode(), Cons.ignore())
             .accept(fieldName);
+
+        tracer().tracked.add(fieldName);
     }
 
     private static void track(final String fieldName) {
@@ -129,7 +133,8 @@ public class StaticTracer {
             if (!tracer().rewrittenProperties.contains(fieldName)) {
                 final String rewriteValue = Configuration.config().getProperty("statictracer.rewrite.value", "");
                 final String rewriteField = Configuration.config().getProperty("statictracer.rewrite.field", "");
-//                System.err.println("Rewriting " + rewriteField + " using value " + StringUtils.abbreviate(rewriteValue, 50));
+
+                System.err.println("Rewriting " + rewriteField + " using value " + StringUtils.abbreviate(rewriteValue, 50));
                 final Object o = TestResult.getXStreamInstance().fromXML(rewriteValue);
 
                 // Null because that gives us the static field
@@ -150,7 +155,11 @@ public class StaticTracer {
 //                                System.err.println(rewriteField + " is now: " + sra.get());
 //                            });
 //                } else {
-                    staticRootAccessor.ifPresent(sra -> sra.set(o));
+                    staticRootAccessor.ifPresent(sra -> {
+                        sra.set(o);
+
+                        System.out.println("The reset field " + rewriteField + " is now: " + sra.get());
+                    });
 //                }
 
                 tracer().rewrittenProperties.add(rewriteField);
@@ -165,10 +174,10 @@ public class StaticTracer {
         final @NonNull String testToCheck = Configuration.config().getProperty("statictracer.first_access.test", "none");
 
         if (currentTest.equals(testToCheck)) {
-            if (!tracer().firstAccessVals().containsKey(fieldName)) {
+            if (!tracer().tracked.contains(fieldName)) {
                 FieldAccessorFactory.accessorFor(fieldName).ifPresent(accessor -> {
                     final String serialized = sanitizeXmlChars(TestResult.getXStreamInstance().toXML(accessor.get()));
-                    tracer().firstAccessVals().putIfAbsent(fieldName, serialized);
+                    tracer().firstAccessVals().put(fieldName, serialized);
                 });
             }
         }

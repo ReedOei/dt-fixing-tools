@@ -11,9 +11,10 @@ import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutedField;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.Pollution;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
+import edu.illinois.cs.dt.tools.minimizer.PolluterData;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
-import org.apache.commons.lang3.StringUtils;
+import edu.illinois.cs.dt.tools.utility.PathManager;
 import scala.util.Try;
 
 import java.util.ArrayList;
@@ -24,7 +25,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class TestDiagnoser {
-    private final StaticTracer tracer; // The static fields used by the dependent tryRewrite.
     private final MinimizeTestsResult minimized;
 
     private final InstrumentingSmartRunner runner;
@@ -34,39 +34,46 @@ public class TestDiagnoser {
         this.minimized = minimized;
 
         System.out.println();
-        System.out.println("-----------------------------------------------------------------");
+        System.out.println("==============================================================");
         System.out.println("Running diagnoser for " + minimized.dependentTest() + " (expected result in this order: " + minimized.expected() + ")");
-        if (minimized.polluters().size() > 0) { // Did it find any polluters? Print for first one
-            System.out.println(minimized.getFirstDeps().size() + " known dependencies: " + minimized.getFirstDeps());
-        } else {
-            System.out.println("Found no polluters");
+        if (minimized.polluters().isEmpty()) { // Did it find any polluters? Print for first one
+            System.out.println("Found no polluters.");
         }
 
-        this.tracer = new StaticFieldInfo(runner, minimized).get();
+        new StaticFieldInfo(runner, minimized).get();
     }
 
     public Optional<DiagnosisResult> run() {
         try {
-            final Map<String, PollutedField> pollutions =
-                    new Pollution(runner, minimized).findPollutions(tracer.staticFields());
+            final List<PolluterDiagnosis> diagnoses = new ArrayList<>();
 
-            System.out.println("All polluted fields are: " + pollutions.keySet());
-            System.out.println();
+            for (final PolluterData polluterData : minimized.polluters()) {
+                System.out.println("-------------------------------");
+                System.out.println("Diagnosing polluter: " + polluterData.deps());
 
-            final RewriteTargetContainer rewriteTargetContainer = new RewriteTargetContainer();
+                final Map<String, PollutedField> pollutions =
+                        new Pollution(runner, minimized, polluterData).findPollutions();
 
-            final RewritingResultContainer rewritingResults =
-                    new RewritingResultContainer(PairStream.fromMap(pollutions)
-                            .mapToStream(this::rewriteTargets)
-                            .flatMap(Function.identity())
-                            .peek(rewriteTargetContainer::add)
-                            .flatMap(this::tryRewrite));
+                System.out.println("All polluted fields are: " + pollutions.keySet());
 
-            System.out.println();
-            System.out.println("The causes are: " + rewritingResults.causes());
-            System.out.println("-----------------------------------------------------------------");
+                final RewriteTargetContainer rewriteTargetContainer = new RewriteTargetContainer();
 
-            return Optional.of(new DiagnosisResult(minimized, pollutions, rewritingResults));
+                final RewritingResultContainer rewritingResults =
+                        new RewritingResultContainer(PairStream.fromMap(pollutions)
+                                .mapToStream(this::rewriteTargets)
+                                .flatMap(Function.identity())
+                                .peek(rewriteTargetContainer::add)
+                                .flatMap(target -> tryRewrite(polluterData, target)));
+
+                System.out.println();
+                System.out.println("The causes are: " + rewritingResults.causes());
+
+                diagnoses.add(new PolluterDiagnosis(polluterData, pollutions, rewritingResults));
+            }
+
+            System.out.println("==============================================================");
+
+            return Optional.of(new DiagnosisResult(minimized, diagnoses));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -102,23 +109,31 @@ public class TestDiagnoser {
         return targets.stream();
     }
 
-    private Stream<RewritingResult> tryRewrite(final RewriteTarget target) {
+    private Stream<RewritingResult> tryRewrite(final PolluterData polluterData, final RewriteTarget target) {
         try {
             return Stream.of(StaticTracer.inMode(TracerMode.REWRITE, () -> {
                 Configuration.config().properties().setProperty("statictracer.rewrite.test_name", minimized.dependentTest());
                 Configuration.config().properties().setProperty("statictracer.rewrite.static_field", target.staticFieldName());
                 Configuration.config().properties().setProperty("statictracer.rewrite.field", target.fieldName());
-                Configuration.config().properties().setProperty("statictracer.rewrite.value", target.field().withoutDepsVal());
 
-                System.out.println();
-                System.out.println("Resetting " + target.fieldName() + " to " +
-                        StringUtils.abbreviate(String.valueOf(target.field().withoutDepsVal()), 50));
+                if (target.field().withoutDepsVal() == null) {
+                    Configuration.config().properties().setProperty("statictracer.rewrite.value", "<null/>");
+                } else {
+                    Configuration.config().properties().setProperty("statictracer.rewrite.value", target.field().withoutDepsVal());
+                }
 
-                final Try<TestRunResult> testRunResult = runner.runList(minimized.withDeps());
+                System.out.println("Resetting " + target.fieldName()); // + " to " +
+//                        StringUtils.abbreviate(String.valueOf(target.field().withoutDepsVal()), 50));
+
+                final Try<TestRunResult> testRunResult = runner.runList(polluterData.withDeps(minimized.dependentTest()));
                 final TestResult testResult = testRunResult.get().results().get(minimized.dependentTest());
 
-                System.out.println("REWRITE_RUN (" + RunnerPathManager.outputPath(testRunResult.get()) + "): " + testResult.result());
-                System.out.println("NO_REWRITE (" + RunnerPathManager.outputPath(minimized.expectedRun()) + "): " + minimized.expected());
+                System.out.printf("REWRITE_RUN (%s): %s%n",
+                        PathManager.modulePath().relativize(RunnerPathManager.outputPath(testRunResult.get())),
+                        testResult.result());
+                System.out.printf("NO_REWRITE (%s): %s%n",
+                        PathManager.modulePath().relativize(RunnerPathManager.outputPath(minimized.expectedRun())),
+                        minimized.expected());
 
                 return new RewritingResult(target, testRunResult.get(), testResult.result(), minimized.expected());
             }, minimized.hash()));

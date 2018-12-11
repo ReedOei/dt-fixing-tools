@@ -8,6 +8,7 @@ import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
+import edu.illinois.cs.dt.tools.utility.OperationTime;
 import edu.illinois.cs.dt.tools.utility.TestRunParser;
 import org.codehaus.plexus.util.StringUtils;
 import scala.util.Try;
@@ -52,38 +53,55 @@ public class CleanerFinder {
      * @return Cleaner data, containing the confirmed cleaner groups.
      * @throws IOException If the original order file does not exist
      */
-    public CleanerData find() throws IOException {
+    public CleanerData find() throws Exception {
         final long startTime = System.currentTimeMillis();
         TestPluginPlugin.info("Looking for cleaners for: " + dependentTest);
 
         // If it's empty, we can't have any cleaners (they'd be polluters, not cleaners
         if (deps.isEmpty()) {
             TestPluginPlugin.info("No dependencies for " + dependentTest + " in this order, so no cleaners.");
-            return new CleanerData(dependentTest, deps, expected, isolationResult, testOrder, new ListEx<>());
+            return new CleanerData(dependentTest, OperationTime.instantaneous(),
+                    expected, isolationResult, new ListEx<>());
         } else {
             final ListEx<String> originalOrder = new ListEx<>(Files.readAllLines(DetectorPathManager.originalOrderPath()));
+            return summarizeCleanerGroups(makeCleanerData(findCleanerGroups(originalOrder)));
+        }
+    }
 
-            final ListEx<ListEx<String>> candidates = new ListEx<>(cleanerCandidates(originalOrder)).distinct();
+    private CleanerData makeCleanerData(final ListEx<ListEx<String>> cleanerGroups) throws Exception {
+        return OperationTime.runOperation(() -> cleanerGroups
+                .mapWithIndex(this::minimalCleanerGroup)
+                .distinct()
+                .filter(cleanerGroup -> cleanerGroup.confirm(runner, new ListEx<>(deps), expected, isolationResult)),
+            (minimizedCleanerGroups, time) -> {
+                final CleanerData cleanerData = new CleanerData(dependentTest, time, expected, isolationResult, minimizedCleanerGroups);
+                TestPluginPlugin.info(dependentTest + " has " + cleanerData.cleaners().size() + " cleaners: " + cleanerData.cleaners());
+                return cleanerData;
+            });
+    }
 
-            TestPluginPlugin.info("Found " + candidates.size() + " cleaner group candidates.");
+    private ListEx<ListEx<String>> findCleanerGroups(final ListEx<String> originalOrder) {
+        final ListEx<ListEx<String>> candidates = new ListEx<>(cleanerCandidates(originalOrder)).distinct();
+        TestPluginPlugin.info("Found " + candidates.size() + " cleaner group candidates.");
 
-            final ListEx<ListEx<String>> cleanerGroups = filterCleanerGroups(candidates);
+        final ListEx<ListEx<String>> cleanerGroups = filterCleanerGroups(candidates);
+        TestPluginPlugin.info("Found " + cleanerGroups.size() + " cleaner groups.");
 
-            TestPluginPlugin.info("Found " + cleanerGroups.size() + " cleaner groups.");
+        return cleanerGroups;
+    }
 
-            final CleanerData cleanerData = new CleanerData(dependentTest, deps, expected, isolationResult, testOrder,
-                    cleanerGroups.mapWithIndex(this::minimalCleanerGroup).distinct());
+    private CleanerData summarizeCleanerGroups(final CleanerData cleanerData) {
+        if (!cleanerData.cleaners().isEmpty()) {
+            for (final CleanerGroup cleanerGroup : cleanerData.cleaners()) {
+                TestPluginPlugin.info(dependentTest + " cleaner group size: " + cleanerGroup.cleanerTests().size());
 
-            TestPluginPlugin.info(dependentTest + " has " + cleanerData.cleaners().size() + " cleaners: " + cleanerData.cleaners());
-
-            if (!cleanerData.cleaners().isEmpty()) {
-                for (final CleanerGroup cleanerGroup : cleanerData.cleaners()) {
-                    TestPluginPlugin.info(dependentTest + " cleaner group size: " + cleanerGroup.cleanerTests().size());
+                if (cleanerGroup.cleanerTests().any(testOrder::contains)) {
+                    TestPluginPlugin.info("Cleaner group contains a test that is in the failing order: " + cleanerGroup.cleanerTests());
                 }
             }
-
-            return cleanerData;
         }
+
+        return cleanerData;
     }
 
     private ListEx<ListEx<String>> filterCleanerGroups(final ListEx<ListEx<String>> candidates) {
@@ -91,7 +109,7 @@ public class CleanerFinder {
 
         for (int i = 0; i < candidates.size(); i++) {
             final ListEx<String> candidate = candidates.get(i);
-            System.out.printf("\rTrying group %d of %d", i, candidates.size());
+            System.out.printf("\rTrying group %d of %d (found %d so far)", i, candidates.size(), result.size());
 
             if (isCleanerGroup(candidate)) {
                 result.add(candidate);
@@ -125,7 +143,7 @@ public class CleanerFinder {
     private CleanerGroup minimalCleanerGroup(final int i, final ListEx<String> cleanerGroup) {
         TestPluginPlugin.info("Minimizing cleaner group " + i + ": " +
                 StringUtils.abbreviate(String.valueOf(cleanerGroup), 500));
-        return new CleanerGroup(dependentTest, reduce(cleanerGroup));
+        return new CleanerGroup(dependentTest, cleanerGroup.size(), reduce(cleanerGroup));
     }
 
     private ListEx<String> reduce(final ListEx<String> cleanerGroup) {
@@ -189,8 +207,10 @@ public class CleanerFinder {
 
         return Stream.concat(
                 Stream.concat(highLikelihoodCleanerGroups(), Stream.of(possibleCleaners(originalOrder))),
-                // Consider each possible cleaner individually as well, in case there are other polluters
-                Stream.of(possibleCleaners(originalOrder)).flatMap(l -> l.map(ListEx::fromArray).stream()));
+                // Consider each test as a possible cleaner
+                originalOrder.stream().map(ListEx::fromArray));
+//                // Consider each possible cleaner individually as well, in case there are other polluters
+//                Stream.of(possibleCleaners(originalOrder)).flatMap(l -> l.map(ListEx::fromArray).stream()));
     }
 
     /**

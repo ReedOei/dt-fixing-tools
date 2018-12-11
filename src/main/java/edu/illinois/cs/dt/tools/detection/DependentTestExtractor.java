@@ -6,7 +6,7 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
-import edu.illinois.cs.dt.tools.utility.analysis.ResultDirVisitor;
+import edu.illinois.cs.dt.tools.analysis.ResultDirVisitor;
 import edu.illinois.cs.dt.tools.detection.classifiers.DependentClassifier;
 import edu.illinois.cs.dt.tools.detection.classifiers.NonorderClassifier;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
@@ -17,7 +17,6 @@ import edu.illinois.cs.dt.tools.utility.TestRunParser;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

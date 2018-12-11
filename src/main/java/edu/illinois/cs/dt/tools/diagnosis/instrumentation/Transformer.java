@@ -31,8 +31,11 @@ public class Transformer implements ClassFileTransformer, Opcodes {
             !className.startsWith("com/thoughtworks/xstream/") &&
             !className.startsWith("javax/xml/") &&
             !className.startsWith("javax/management/") &&
+            !className.startsWith("javax/crypto/") &&
+            !className.startsWith("javax/security/auth") &&
             !className.startsWith("edu/illinois/cs/dt/tools/") &&
-            !className.startsWith("com/reedoei/") &&
+            !className.startsWith("com/reedoei/eunomia") &&
+            !className.startsWith("com/reedoei/testrunner") &&
             !className.startsWith("org/objectweb/asm/") &&
             !className.startsWith("jdk/")) { // prefixesMatch(prefixes, className)) {
 //            System.err.println(className);

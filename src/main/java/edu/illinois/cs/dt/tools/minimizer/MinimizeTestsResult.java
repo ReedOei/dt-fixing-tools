@@ -7,6 +7,7 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
+import edu.illinois.cs.dt.tools.analysis.SQLite;
 import edu.illinois.cs.dt.tools.utility.MD5;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 
@@ -166,7 +167,7 @@ public class MinimizeTestsResult {
     }
 
     public List<String> withDeps() {
-        final List<String> order = new ArrayList<>(getFirstDeps()); // TODO: What should this return?
+        final List<String> order = new ArrayList<>(getFirstDeps());
         if (!order.contains(dependentTest())) {
             order.add(dependentTest());
         }

@@ -15,6 +15,10 @@ public class OperationTime {
         return constructor.apply(t, new OperationTime(startTime, endTime));
     }
 
+    public static OperationTime instantaneous() {
+        return new OperationTime(System.currentTimeMillis(), System.currentTimeMillis());
+    }
+
     private final long startTime;
     private final long endTime;
     private final double elapsedSeconds;
