@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.diagnosis;
+package edu.illinois.cs.dt.tools.diagnosis.rewrite;
 
 import com.reedoei.eunomia.collections.ListEx;
 
@@ -22,6 +22,7 @@ public class RewritingResultContainer {
     }
 
     public ListEx<String> causes() {
-        return rewritingResults.filter(r -> !r.result().equals(r.expected())).map(r -> r.target().fieldName());
+        return rewritingResults.filter(r -> !r.result().equals(r.expected()))
+                .map(r -> r.target().fields());
     }
 }

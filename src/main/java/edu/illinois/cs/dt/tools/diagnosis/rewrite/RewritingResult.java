@@ -1,23 +1,23 @@
-package edu.illinois.cs.dt.tools.diagnosis;
+package edu.illinois.cs.dt.tools.diagnosis.rewrite;
 
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 
 public class RewritingResult {
-    private final RewriteTarget target;
+    private final RewriteTargetContainer targets;
     private final TestRunResult testRunResult;
     private final Result result;
     private final Result expected;
 
-    public RewritingResult(final RewriteTarget target, final TestRunResult testRunResult, final Result result, final Result expected) {
-        this.target = target;
+    public RewritingResult(final RewriteTargetContainer targets, final TestRunResult testRunResult, final Result result, final Result expected) {
+        this.targets = targets;
         this.testRunResult = testRunResult;
         this.result = result;
         this.expected = expected;
     }
 
-    public RewriteTarget target() {
-        return target;
+    public RewriteTargetContainer target() {
+        return targets;
     }
 
     public TestRunResult testRunResult() {

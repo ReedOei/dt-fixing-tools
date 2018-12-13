@@ -1,7 +1,9 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
+import com.google.gson.Gson;
 import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.eunomia.collections.PairStream;
+import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
@@ -10,18 +12,33 @@ import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutedField;
 import edu.illinois.cs.dt.tools.diagnosis.pollution.Pollution;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.FieldDiff;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewriteTarget;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewriteTargetContainer;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewritingResult;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewritingResultContainer;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.minimizer.PolluterData;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
+import edu.illinois.cs.dt.tools.utility.MD5;
 import edu.illinois.cs.dt.tools.utility.PathManager;
+import org.xmlunit.builder.DiffBuilder;
+import org.xmlunit.builder.Input;
+import org.xmlunit.diff.Diff;
+import org.xmlunit.diff.Difference;
 import scala.util.Try;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TestDiagnoser {
@@ -56,13 +73,11 @@ public class TestDiagnoser {
 
                 System.out.println("All polluted fields are: " + pollutions.keySet());
 
-                final RewriteTargetContainer rewriteTargetContainer = new RewriteTargetContainer();
-
                 final RewritingResultContainer rewritingResults =
-                        new RewritingResultContainer(PairStream.fromMap(pollutions)
-                                .mapToStream(this::rewriteTargets)
-                                .flatMap(Function.identity())
-                                .peek(rewriteTargetContainer::add)
+                        new RewritingResultContainer(
+                                makeTargets(PairStream.fromMap(pollutions)
+                                .mapToStream(rewriteTargets(polluterData))
+                                .flatMap(Function.identity()))
                                 .flatMap(target -> tryRewrite(polluterData, target)));
 
                 System.out.println();
@@ -81,61 +96,100 @@ public class TestDiagnoser {
         return Optional.empty();
     }
 
-    private Stream<RewriteTarget> rewriteTargets(final String fieldName, final PollutedField field) {
-//        final Diff diff = DiffBuilder.compare(Input.fromString(field.withoutDepsVal()))
-//                .withTest(Input.fromString(field.withDepsVal()))
-//                .build();
+    private Stream<RewriteTargetContainer> makeTargets(final Stream<RewriteTarget> targetStream) {
+        final List<RewriteTarget> allTargets = targetStream.collect(Collectors.toList());
 
-        System.out.println();
-        System.out.println("Finding rewrite targets for: " + fieldName);
-        final ListEx<RewriteTarget> targets = new ListEx<>();
-        targets.add(new RewriteTarget(fieldName, fieldName, field));
-
-        // TODO: Implement this (reset specific parts of static fields). For now it prints far too much useless information
-//        for (final Difference difference : diff.getDifferences()) {
-//            final String innerFieldName = fieldNameFromXPath(difference.getComparison().getControlDetails().getXPath());
-//            final String withoutDepsVal = String.valueOf(difference.getComparison().getControlDetails().getValue());
-//            final String withDepsVal = String.valueOf(difference.getComparison().getTestDetails().getValue());
-//
-////            System.out.println("Found difference. XPath: " + difference.getComparison().getControlDetails().getXPath());
-////            System.out.println("    Field name: " + innerFieldName);
-////            System.out.println("    withoutDepsValue: " + withoutDepsVal);
-////            System.out.println("    withDepsvalue: " + withDepsVal);
-//
-//            // TODO: Implement this better (specifically rewrite inside StaticTracer)
-////            targets.add(new RewriteTarget(fieldName, innerFieldName, field));
-//        }
-
-        return targets.stream();
+        return Stream.concat(
+                allTargets.stream().map(RewriteTargetContainer::new),
+                Stream.of(new RewriteTargetContainer(allTargets)));
     }
 
-    private Stream<RewritingResult> tryRewrite(final PolluterData polluterData, final RewriteTarget target) {
+    private BiFunction<String, PollutedField, Stream<RewriteTarget>> rewriteTargets(final PolluterData polluterData) {
+        return (fieldName, field) -> {
+            System.out.println("Finding rewrite targets for: " + fieldName);
+
+            final ListEx<RewriteTarget> targets = new ListEx<>();
+            targets.add(new RewriteTarget(fieldName, fieldName, field));
+
+            final ListEx<FieldDiff> diffs = new ListEx<>();
+
+            if (field.withDepsVal() != null && field.withoutDepsVal() != null) {
+                final Diff diff = DiffBuilder.compare(Input.fromString(field.withoutDepsVal()))
+                        .withTest(Input.fromString(field.withDepsVal()))
+                        .build();
+
+                // TODO: Implement this (reset specific parts of static fields).
+                for (final Difference difference : diff.getDifferences()) {
+                    final String xpath = difference.getComparison().getControlDetails().getXPath();
+                    final String innerFieldName = fieldNameFromXPath(difference.getComparison().getControlDetails().getXPath());
+                    final String withoutDepsVal = String.valueOf(difference.getComparison().getControlDetails().getValue());
+                    final String withDepsVal = String.valueOf(difference.getComparison().getTestDetails().getValue());
+
+                    diffs.add(new FieldDiff(fieldName, xpath, innerFieldName, withDepsVal, withoutDepsVal));
+
+                    // TODO: Implement this better (specifically rewrite inside StaticTracer)
+                    //            targets.add(new RewriteTarget(fieldName, innerFieldName, field));
+                }
+            }
+
+            try {
+                saveDiffs(polluterData, fieldName, diffs);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            return targets.stream();
+        };
+    }
+
+    private void saveDiffs(final PolluterData polluterData, final String fieldName, final ListEx<FieldDiff> diffs)
+            throws IOException {
+        final String hash = MD5.hashOrder(polluterData.deps());
+
+
+        final Path path = DiagnoserPathManager.diffsPath(hash, fieldName).toAbsolutePath();
+        Files.createDirectories(path.getParent());
+        Files.write(path, new Gson().toJson(diffs).getBytes());
+    }
+
+    private Stream<RewritingResult> tryRewrite(final PolluterData polluterData, final RewriteTargetContainer targets) {
         try {
             return Stream.of(StaticTracer.inMode(TracerMode.REWRITE, () -> {
-                Configuration.config().properties().setProperty("statictracer.rewrite.test_name", minimized.dependentTest());
-                Configuration.config().properties().setProperty("statictracer.rewrite.static_field", target.staticFieldName());
-                Configuration.config().properties().setProperty("statictracer.rewrite.field", target.fieldName());
+                final Path tempFile = Files.createTempFile("rewrite", "container");
+                try {
+                    System.out.println("Resetting: " + targets.fields());
+                    Files.write(tempFile, new Gson().toJson(targets).getBytes());
 
-                if (target.field().withoutDepsVal() == null) {
-                    Configuration.config().properties().setProperty("statictracer.rewrite.value", "<null/>");
-                } else {
-                    Configuration.config().properties().setProperty("statictracer.rewrite.value", target.field().withoutDepsVal());
+                    Configuration.config().properties().setProperty("statictracer.rewrite.test_name", minimized.dependentTest());
+                    Configuration.config().properties().setProperty("statictracer.rewrite.container", tempFile.toAbsolutePath().toString());
+
+                    final Try<TestRunResult> testRunResult = runner.runList(polluterData.withDeps(minimized.dependentTest()));
+                    final TestResult testResult = testRunResult.get().results().get(minimized.dependentTest());
+
+                    System.out.printf("REWRITE_RUN (%s): %s%n",
+                            PathManager.modulePath().relativize(RunnerPathManager.outputPath(testRunResult.get())),
+                            testResult.result());
+                    System.out.printf("NO_REWRITE (%s): %s%n",
+                            PathManager.modulePath().relativize(RunnerPathManager.outputPath(minimized.expectedRun())),
+                            minimized.expected());
+                    System.out.println();
+
+                    return new RewritingResult(targets, testRunResult.get(), testResult.result(), minimized.expected());
+                } finally {
+                    Files.deleteIfExists(tempFile);
                 }
 
-                System.out.println("Resetting " + target.fieldName()); // + " to " +
+//                Configuration.config().properties().setProperty("statictracer.rewrite.static_field", target.staticFieldName());
+//                Configuration.config().properties().setProperty("statictracer.rewrite.field", target.fieldName());
+//
+//                if (target.field().withoutDepsVal() == null) {
+//                    Configuration.config().properties().setProperty("statictracer.rewrite.value", "<null/>");
+//                } else {
+//                    Configuration.config().properties().setProperty("statictracer.rewrite.value", target.field().withoutDepsVal());
+//                }
+
+//                System.out.println("Resetting " + target.fieldName()); // + " to " +
 //                        StringUtils.abbreviate(String.valueOf(target.field().withoutDepsVal()), 50));
-
-                final Try<TestRunResult> testRunResult = runner.runList(polluterData.withDeps(minimized.dependentTest()));
-                final TestResult testResult = testRunResult.get().results().get(minimized.dependentTest());
-
-                System.out.printf("REWRITE_RUN (%s): %s%n",
-                        PathManager.modulePath().relativize(RunnerPathManager.outputPath(testRunResult.get())),
-                        testResult.result());
-                System.out.printf("NO_REWRITE (%s): %s%n",
-                        PathManager.modulePath().relativize(RunnerPathManager.outputPath(minimized.expectedRun())),
-                        minimized.expected());
-
-                return new RewritingResult(target, testRunResult.get(), testResult.result(), minimized.expected());
             }, minimized.hash()));
         } catch (Exception e) {
             e.printStackTrace();

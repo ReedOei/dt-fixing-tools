@@ -19,7 +19,6 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class ReplayPlugin extends TestPlugin {
-
     private Path replayPath;
 
     @Override

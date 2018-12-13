@@ -1,4 +1,4 @@
-package edu.illinois.cs.dt.tools.diagnosis;
+package edu.illinois.cs.dt.tools.diagnosis.rewrite;
 
 import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutedField;
 

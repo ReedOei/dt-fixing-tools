@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.diagnosis;
 
 import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutedField;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewritingResultContainer;
 import edu.illinois.cs.dt.tools.minimizer.PolluterData;
 
 import java.util.Map;

@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.reedoei.eunomia.functional.Cons;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.testrunner.configuration.Configuration;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewriteTarget;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewriteTargetContainer;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -25,6 +27,7 @@ import java.util.function.Consumer;
 public class StaticTracer {
     private static StaticTracer tracer = new StaticTracer();
     private static Map<TracerMode, Consumer<String>> tracerModes = new ConcurrentHashMap<>();
+    private static RewriteTargetContainer container = null;
 
     static {
         tracerModes.put(TracerMode.NONE, Cons.ignore());
@@ -129,19 +132,40 @@ public class StaticTracer {
             return;
         }
 
-        if (fieldName.equals(Configuration.config().getProperty("statictracer.rewrite.static_field", ""))) {
-            if (!tracer().rewrittenProperties.contains(fieldName)) {
-                final String rewriteValue = Configuration.config().getProperty("statictracer.rewrite.value", "");
-                final String rewriteField = Configuration.config().getProperty("statictracer.rewrite.field", "");
+        if (container == null) {
+            final String containerPathStr = Configuration.config().properties().getProperty("statictracer.rewrite.container");
+            if (containerPathStr != null) {
+                final Path containerPath = Paths.get(containerPathStr);
 
-                System.err.println("Rewriting " + rewriteField + " using value " + StringUtils.abbreviate(rewriteValue, 50));
-                final Object o = TestResult.getXStreamInstance().fromXML(rewriteValue);
+                if (containerPath != null && Files.exists(containerPath)) {
+                    FileUtil.safeReadJson(RewriteTargetContainer.class, containerPath)
+                            .findFirst()
+                            .ifPresent(loadedContainer -> container = loadedContainer);
+                }
+            }
+        }
 
-                // Null because that gives us the static field
-                final Optional<? extends FieldAccessor> staticRootAccessor = FieldAccessorFactory.accessorFor(fieldName, null);
+        if (container != null) {
+            final Optional<RewriteTarget> targetOpt = container.get(fieldName);
+            targetOpt.ifPresent(target -> {
+                if (!tracer().rewrittenProperties.contains(fieldName)) {
+                    final String rewriteField = target.fieldName();
 
-                // If these are NOT the same, then we're resetting just part of a static root
-                // TODO: Implement this better (currently works, but only for one level deep...)
+                    final String rewriteValue;
+                    if (target.field().withoutDepsVal() == null) {
+                        rewriteValue = "<null/>";
+                    } else {
+                        rewriteValue = target.field().withoutDepsVal();
+                    }
+
+                    System.err.println("Rewriting " + rewriteField + " using value " + StringUtils.abbreviate(rewriteValue, 50));
+                    final Object o = TestResult.getXStreamInstance().fromXML(rewriteValue);
+
+                    // Null because that gives us the static field
+                    final Optional<? extends FieldAccessor> staticRootAccessor = FieldAccessorFactory.accessorFor(fieldName, null);
+
+                    // If these are NOT the same, then we're resetting just part of a static root
+                    // TODO: Implement this better (currently works, but only for one level deep...)
 //                if (!rewriteField.equals(fieldName)) {
 //                    // To get the field value from what we deserialized
 //                    final Optional<? extends FieldAccessor> accessor = FieldAccessorFactory.accessorFor(rewriteField, o);
@@ -162,8 +186,9 @@ public class StaticTracer {
                     });
 //                }
 
-                tracer().rewrittenProperties.add(rewriteField);
-            }
+                    tracer().rewrittenProperties.add(rewriteField);
+                }
+            });
         }
     }
 
