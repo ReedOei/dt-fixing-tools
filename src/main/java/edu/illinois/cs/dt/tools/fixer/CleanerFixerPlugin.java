@@ -21,8 +21,6 @@ import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import scala.Option;
 
-import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -79,7 +77,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                     Files.write(DetectorPathManager.originalOrderPath(), DetectorPlugin.getOriginalOrder(project));
                 }
 
-                // TODO: Modify so that it will read parameters directly from the
+                // TODO: Modify so that it will read parameters directly from the minimized files
                 setupAndApplyFix();
             } else {
                 final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
@@ -135,8 +133,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         backup(victimMethod.javaFile());
 
         // Compile the test without our fix
-//        tryRecompile(victimMethod.javaFile());
-
         runMvnInstall();
 
         // Check if we pass in isolation before fix
@@ -156,8 +152,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         victimMethod.prepend(cleanerStmts);
         victimMethod.javaFile().writeAndReloadCompilationUnit();
 
-        // Check if we pass in isolation after fix
-//        tryRecompile(victimMethod.javaFile());
+        // Recompile and check if we pass in isolation after fix
         runMvnInstall();
 
         // TODO: Output to result files rather than stdout

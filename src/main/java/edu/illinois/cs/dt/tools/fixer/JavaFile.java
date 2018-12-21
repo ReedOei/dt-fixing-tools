@@ -12,8 +12,6 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 import com.github.javaparser.ast.visitor.Visitable;
 import com.google.common.base.Preconditions;
-import org.apache.commons.io.FilenameUtils;
-import sun.misc.Cleaner;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -25,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
