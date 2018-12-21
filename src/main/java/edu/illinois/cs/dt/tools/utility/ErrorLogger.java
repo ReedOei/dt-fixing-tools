@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 
 public class ErrorLogger {
@@ -25,6 +26,23 @@ public class ErrorLogger {
 
     public String coordinates() {
         return coordinates;
+    }
+
+    private String subjectName(final MavenProject project) {
+        final Path relativePath =
+                PathManager.parentPath().getParent().toAbsolutePath()
+                        .relativize(project.getBasedir().toPath().toAbsolutePath());
+
+        return relativePath.toString().replace("/", "-");
+    }
+
+    public void writeSubjectProperties() throws IOException {
+        final Properties properties = new Properties();
+        properties.setProperty("subject.coordinates", coordinates);
+        properties.setProperty("subject.name", subjectName(project));
+
+        Files.createDirectories(DiagnoserPathManager.subjectProperties().getParent());
+        properties.store(new FileOutputStream(DiagnoserPathManager.subjectProperties().toFile()), "");
     }
 
     public <T> Optional<T> runAndLogError(final Callable<T> callable) {
