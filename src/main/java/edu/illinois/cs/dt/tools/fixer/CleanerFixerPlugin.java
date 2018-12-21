@@ -126,6 +126,100 @@ public class CleanerFixerPlugin extends TestPlugin {
         Files.copy(javaFile.path(), path, StandardCopyOption.REPLACE_EXISTING);
     }
 
+    // Try applying cleaner statements and see if test passes when run after polluter
+    // Returns true if passes, returns false if not
+    private boolean checkCleanerStmts(final String polluterName,
+                                      final JavaMethod victimMethod,
+                                      final NodeList<Statement> cleanerStmts) throws Exception {
+        // Note: this modifies victimMethod, so when we eventually make it delta-debug, we will want
+        // to make a copy of the victimMethod somewhere
+        victimMethod.prepend(cleanerStmts);
+        victimMethod.javaFile().writeAndReloadCompilationUnit();
+
+        // Rebuild and see if tests run properly
+        runMvnInstall();
+        // TODO: Output to result files rather than stdout
+        TestPluginPlugin.info("Running victim test with code from cleaner.");
+        List<String> tests;
+        if (polluterName.isEmpty()) {
+            tests = ListUtil.fromArray(victimMethod.methodName());
+        } else {
+            tests = ListUtil.fromArray(polluterName, victimMethod.methodName());
+        }
+        boolean passInIsolationAfterFix = testOrderPasses(tests);
+        if (!passInIsolationAfterFix) {
+            TestPluginPlugin.error("Fix was unsuccessful. Test still fails with polluter.");
+        } else {
+            TestPluginPlugin.info("Fix was successful! Fixed file:\n" + victimMethod.javaFile().path());
+        }
+
+        // Reset the change
+        victimMethod.removeFirstBlock();
+
+        return passInIsolationAfterFix;
+
+        // TODO: Make sure our fix doesn't break any other tests
+        //  This block of code could be useful when dealing with a case where we add the necessary
+        //  setup to a victim test but our "fix" would actually now cause another test to fail.
+        //  We will need some additional logic to deal with this case (i.e., a fix reveals another
+        //  dependency) than just this block of code, but it may have its uses later.
+        // Check if we pass in the whole test class
+        // Should check before fix if class is passing
+        //        boolean didClassPass = didTestsPass(victimJavaFile.getTestListAsString());
+
+        //        if (didClassPass) {
+        //            boolean didClassPassAfterFix = didTestsPass(victimJavaFile.getTestListAsString());
+        //            if (!didClassPassAfterFix) {
+        //                System.out.println("Fix was unsuccessful. Fix causes some other test in the class to fail.");
+        //                return;
+        //            }
+        //        }
+    }
+
+    // The delta debugging logic to return minimal list of statements to add in to make victim pass
+    // In addition to polluter and victim to run, need also list of statements; assumed statements already make victim pass
+    // The value n is needed to represent granularity of partitioning the statements to get minimal list
+    private NodeList<Statement> deltaDebug(final String polluterName,
+                                           final JavaMethod victimMethod,
+                                           final NodeList<Statement> cleanerStmts,
+                                           int n) throws Exception {
+        // If n granularity is greater than number of cleaner statements, then finished, simply return cleaner statements
+        if (cleanerStmts.size() < n) {
+            return cleanerStmts;
+        }
+
+        // Cut the statements into n equal chunks and try each chunk
+        int chunkSize = (int)Math.round((double)(cleanerStmts.size()) / n);
+        List<NodeList<Statement>> chunks = new ArrayList<>();
+        for (int i = 0; i < cleanerStmts.size(); i += chunkSize) {
+            NodeList<Statement> chunk = NodeList.nodeList();
+            NodeList<Statement> otherChunk = NodeList.nodeList();
+            // Start complement chunk by grabbing statements before chunk start
+            for (int j = 0; j < i; j++) {
+                otherChunk.add(cleanerStmts.get(j));
+            }
+            // Create chunk starting at this iteration
+            for (int j = i; j < Math.min(cleanerStmts.size(), i + chunkSize); j++) {
+                chunk.add(cleanerStmts.get(j));
+            }
+            // Complete complement chunk by grabbing statements after
+            for (int j = Math.min(cleanerStmts.size(), i + chunkSize); j < cleanerStmts.size(); j++) {
+                otherChunk.add(cleanerStmts.get(j));
+            }
+
+            // Check if applying chunk works
+            if (checkCleanerStmts(polluterName, victimMethod, chunk)) {
+                return deltaDebug(polluterName, victimMethod, chunk, 2);    // If works, then delta debug some more this chunk
+            }
+            // Otherwise, check if applying complement chunk works
+            if (checkCleanerStmts(polluterName, victimMethod, otherChunk)) {
+                return deltaDebug(polluterName, victimMethod, otherChunk, n - 1);   // If works, then delta debug some more the complement chunk
+            }
+        }
+        // If not chunk/complement work, increase granularity and try again
+        return deltaDebug(polluterName, victimMethod, cleanerStmts, n * 2);
+    }
+
     // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
     // TODO: for cleaners, santa clauses, etc.
     private void applyFix(final String polluterName,
@@ -147,43 +241,22 @@ public class CleanerFixerPlugin extends TestPlugin {
             return;
         }
 
-        // Do our fix
+        // Do our fix using all cleaner code
         TestPluginPlugin.info("Applying code from cleaner and recompiling.");
         final NodeList<Statement> cleanerStmts = cleanerMethod.body().getStatements();
 
-        // Note: this modifies victimMethod, so when we eventually make it delta-debug, we will want
-        // to make a copy of the victimMethod somewhere
-        victimMethod.prepend(cleanerStmts);
-        victimMethod.javaFile().writeAndReloadCompilationUnit();
-
-        // Recompile and check if we pass in isolation after fix
-        runMvnInstall();
-
-        // TODO: Output to result files rather than stdout
-        TestPluginPlugin.info("Running victim test in isolation with code from cleaner.");
-        final boolean passInIsolationAfterFix = testOrderPasses(withPolluter);
-        if (!passInIsolationAfterFix) {
-            TestPluginPlugin.error("Fix was unsuccessful. Test still fails with polluter.");
-        } else {
-            TestPluginPlugin.info("Fix was successful! Fixed file:\n" + victimMethod.javaFile().path());
+        if (!checkCleanerStmts(polluterName, victimMethod, cleanerStmts)) {
+            TestPluginPlugin.error("Cleaner does not fix victim!");
+            return;
         }
 
-        // TODO: Make sure our fix doesn't break any other tests
-        //  This block of code could be useful when dealing with a case where we add the necessary
-        //  setup to a victim test but our "fix" would actually now cause another test to fail.
-        //  We will need some additional logic to deal with this case (i.e., a fix reveals another
-        //  dependency) than just this block of code, but it may have its uses later.
-        // Check if we pass in the whole test class
-        // Should check before fix if class is passing
-        //        boolean didClassPass = didTestsPass(victimJavaFile.getTestListAsString());
+        // Cleaner is good, so now we can start delta debugging
+        NodeList<Statement> minimalCleanerStmts = deltaDebug(polluterName, victimMethod, cleanerStmts, 2);
 
-        //        if (didClassPass) {
-        //            boolean didClassPassAfterFix = didTestsPass(victimJavaFile.getTestListAsString());
-        //            if (!didClassPassAfterFix) {
-        //                System.out.println("Fix was unsuccessful. Fix causes some other test in the class to fail.");
-        //                return;
-        //            }
-        //        }
+        // Apply the final minimal cleaner statements
+        victimMethod.prepend(minimalCleanerStmts);
+        victimMethod.javaFile().writeAndReloadCompilationUnit();
+
     }
 
     private boolean runMvnInstall() throws MavenInvocationException {
@@ -193,6 +266,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.setPomFile(project.getFile());
         request.setProperties(new Properties());
         request.getProperties().setProperty("skipTests", "true");
+        request.getProperties().setProperty("rat.skip", "true");
 
         // TODO: Log the output from the maven process somewhere
         request.setOutputHandler(s -> {});
