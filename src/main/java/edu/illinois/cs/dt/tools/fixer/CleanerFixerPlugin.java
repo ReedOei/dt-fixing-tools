@@ -29,7 +29,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -98,7 +97,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
 
         // TODO: Remove these and read from minimized files
-        final String polluterTestName = System.getProperty("dt_fixer.polluter");
+        final String polluterTestName = System.getProperty("dt_fixer.polluter", "");
         final String cleanerTestName = System.getProperty("dt_fixer.cleaner");
         final String victimTestName = System.getProperty("dt_fixer.victim");
 
@@ -117,6 +116,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             return;
         }
 
+        // TODO: applyFix should take in a location for where to output the Java file that contains the
+        //       "fixed" code or an option to directly replace the existing test source file.
         applyFix(polluterTestName, cleanerMethodOpt.get(), victimMethodOpt.get());
     }
 
@@ -136,10 +137,13 @@ public class CleanerFixerPlugin extends TestPlugin {
         runMvnInstall();
 
         // Check if we pass in isolation before fix
-        // TODO: We should get rid of this check eventually, because it won't work for the case of \santaClause
-        TestPluginPlugin.info("Running victim test in isolation without code from cleaner.");
-        if (!testOrderPasses(Collections.singletonList(victimMethod.methodName()))) {
-            TestPluginPlugin.error("Test fails in isolation");
+        TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
+        final List<String> withPolluter =
+                // This is to handle the case of a santa clause, where a test will fail with no polluter
+                polluterName.isEmpty() ? ListUtil.fromArray(victimMethod.methodName()) :
+                                         ListUtil.fromArray(polluterName, victimMethod.methodName());
+        if (testOrderPasses(withPolluter)) {
+            TestPluginPlugin.error("Test passes with the polluter, but is supposed to fail.");
             return;
         }
 
@@ -157,14 +161,18 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // TODO: Output to result files rather than stdout
         TestPluginPlugin.info("Running victim test in isolation with code from cleaner.");
-        boolean passInIsolationAfterFix = testOrderPasses(ListUtil.fromArray(polluterName, victimMethod.methodName()));
+        final boolean passInIsolationAfterFix = testOrderPasses(withPolluter);
         if (!passInIsolationAfterFix) {
             TestPluginPlugin.error("Fix was unsuccessful. Test still fails with polluter.");
         } else {
             TestPluginPlugin.info("Fix was successful! Fixed file:\n" + victimMethod.javaFile().path());
         }
 
-        // TODO: What is this for?
+        // TODO: Make sure our fix doesn't break any other tests
+        //  This block of code could be useful when dealing with a case where we add the necessary
+        //  setup to a victim test but our "fix" would actually now cause another test to fail.
+        //  We will need some additional logic to deal with this case (i.e., a fix reveals another
+        //  dependency) than just this block of code, but it may have its uses later.
         // Check if we pass in the whole test class
         // Should check before fix if class is passing
         //        boolean didClassPass = didTestsPass(victimJavaFile.getTestListAsString());
