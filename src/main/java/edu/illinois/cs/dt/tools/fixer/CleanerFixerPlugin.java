@@ -1,7 +1,10 @@
 package edu.illinois.cs.dt.tools.fixer;
 
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
@@ -25,6 +28,7 @@ import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.apache.maven.shared.invoker.SystemOutHandler;
 import scala.Option;
 
 import java.io.File;
@@ -288,6 +292,22 @@ public class CleanerFixerPlugin extends TestPlugin {
         return deltaDebug(failingOrder, victimMethod, cleanerStmts, n * 2);
     }
 
+    // Small helper to get class name from fully-qualified name of method
+    private String getClassName(final String methodName) {
+        return methodName.substring(0, methodName.lastIndexOf('.'));
+    }
+
+    private NodeList<Statement> getCodeFromAnnotatedMethod(final JavaFile javaFile, final String annotation) {
+        NodeList<Statement> stmts = NodeList.nodeList();
+        for (MethodDeclaration method : javaFile.findMethodsWithAnnotation(annotation)) {
+            Optional<BlockStmt> body = method.getBody();
+            if (body.isPresent()) {
+                stmts.addAll(body.get().getStatements());
+            }
+        }
+        return stmts;
+    }
+
     // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
     // TODO: for cleaners, santa clauses, etc.
     private void applyFix(final List<String> failingOrder,
@@ -303,9 +323,20 @@ public class CleanerFixerPlugin extends TestPlugin {
             return;
         }
 
-        // Do our fix using all cleaner code
+        // Do our fix using all cleaner code, which includes setup and teardown
         TestPluginPlugin.info("Applying code from cleaner and recompiling.");
-        final NodeList<Statement> cleanerStmts = cleanerMethod.body().getStatements();
+        final NodeList<Statement> cleanerStmts = NodeList.nodeList();
+        // Only include BeforeClass if in separate classes
+        if (!getClassName(cleanerMethod.methodName()).equals(getClassName(victimMethod.methodName()))) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
+        }
+        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
+        cleanerStmts.addAll(cleanerMethod.body().getStatements());
+        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
+        // Only include AfterClass if in separate classes
+        if (!getClassName(cleanerMethod.methodName()).equals(getClassName(victimMethod.methodName()))) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClassClass"));
+        }
 
         if (!checkCleanerStmts(failingOrder, victimMethod, cleanerStmts)) {
             TestPluginPlugin.error("Cleaner does not fix victim!");
@@ -330,8 +361,10 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.getProperties().setProperty("rat.skip", "true");
 
         // TODO: Log the output from the maven process somewhere
-        request.setOutputHandler(s -> {});
-        request.setErrorHandler(s -> {});
+        //request.setOutputHandler(s -> {});
+        request.setOutputHandler(new SystemOutHandler());
+        //request.setErrorHandler(s -> {});
+        request.setErrorHandler(new SystemOutHandler());
 
         final Invoker invoker = new DefaultInvoker();
         final InvocationResult result = invoker.execute(request);
