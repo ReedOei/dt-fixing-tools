@@ -137,7 +137,14 @@ public class CleanerFixerPlugin extends TestPlugin {
         victimMethod.javaFile().writeAndReloadCompilationUnit();
 
         // Rebuild and see if tests run properly
-        runMvnInstall();
+        try {
+            runMvnInstall();
+        } catch (Exception ex) {
+            TestPluginPlugin.info("Error building the code, passed in cleaner does not work");
+            // Reset the change
+            victimMethod.removeFirstBlock();
+            return false;
+        }
         // TODO: Output to result files rather than stdout
         TestPluginPlugin.info("Running victim test with code from cleaner.");
         List<String> tests;
