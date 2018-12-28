@@ -65,3 +65,23 @@ mvn install -DskipTests exec:java \
     -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.Analysis" \
     -Dexec.args="--results '$results_folder' --db '$database' --subjectList '$subject_list' --subjectListLoc '$subject_list_loc'"
 
+# Now that we know the flaky tests, we want to mark whether they occurred in a class with @FixMethodOrder
+# They should have already all been downloaded above, so we just need to cd and check
+
+echo "[INFO] Updating FixMethodOrder info"
+QUERY="select s.slug, ftc.subject_name, ftc.test_name from flaky_test_classification ftc join subject s on ftc.subject_name = s.name"
+lines=$(echo "$QUERY" | sqlite3 "$database")
+for l in "${#lines[@]}"; do
+    slug=$(echo $line | cut -d'|' -f1)
+    subject_name=$(echo $line | cut -d'|' -f2)
+    test_name=$(echo $line | cut -d'|' -f3)
+    # Get everything before the last '.'
+    test_class_name=$(echo $test_name | rev | cut -f2- -d"." | rev)
+
+    if grep -q "@FixMethodOrder" $(find "temp-subject/$slug" -name "*.java" | grep "$test_name"); then
+        echo "update original_order set fix_method_order = 1 where test_name = '$test_name' and subject_name='$subject_name'" | sqlite3 "$database"
+    else
+        echo "update original_order set fix_method_order = 0 where test_name = '$test_name' and subject_name='$subject_name'" | sqlite3 "$database"
+    fi
+done
+
