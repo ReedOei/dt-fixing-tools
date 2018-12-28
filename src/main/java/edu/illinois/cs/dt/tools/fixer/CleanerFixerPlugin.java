@@ -153,8 +153,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         } else {
             tests = ListUtil.fromArray(polluterName, victimMethod.methodName());
         }
-        boolean passInIsolationAfterFix = testOrderPasses(tests);
-        if (!passInIsolationAfterFix) {
+        boolean passInFailingOrder = testOrderPasses(tests);
+        if (!passInFailingOrder) {
             TestPluginPlugin.error("Fix was unsuccessful. Test still fails with polluter.");
         } else {
             TestPluginPlugin.info("Fix was successful! Fixed file:\n" + victimMethod.javaFile().path());
@@ -163,7 +163,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Reset the change
         victimMethod.removeFirstBlock();
 
-        return passInIsolationAfterFix;
+        return passInFailingOrder;
 
         // TODO: Make sure our fix doesn't break any other tests
         //  This block of code could be useful when dealing with a case where we add the necessary
@@ -201,18 +201,13 @@ public class CleanerFixerPlugin extends TestPlugin {
         for (int i = 0; i < cleanerStmts.size(); i += chunkSize) {
             NodeList<Statement> chunk = NodeList.nodeList();
             NodeList<Statement> otherChunk = NodeList.nodeList();
-            // Start complement chunk by grabbing statements before chunk start
-            for (int j = 0; j < i; j++) {
-                otherChunk.add(cleanerStmts.get(j));
-            }
             // Create chunk starting at this iteration
-            for (int j = i; j < Math.min(cleanerStmts.size(), i + chunkSize); j++) {
-                chunk.add(cleanerStmts.get(j));
-            }
-            // Complete complement chunk by grabbing statements after
-            for (int j = Math.min(cleanerStmts.size(), i + chunkSize); j < cleanerStmts.size(); j++) {
-                otherChunk.add(cleanerStmts.get(j));
-            }
+            int endpoint = Math.min(cleanerStmts.size(), i + chunkSize);
+            chunk.addAll(cleanerStmts.subList(i, endpoint));
+
+            // Complement chunk are elements before and after this current chunk
+            otherChunk.addAll(cleanerStmts.subList(0, i));
+            otherChunk.addAll(cleanerStmts.subList(endpoint, cleanerStmts.size()));
 
             // Check if applying chunk works
             if (checkCleanerStmts(polluterName, victimMethod, chunk)) {
@@ -233,9 +228,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                           final JavaMethod cleanerMethod,
                           final JavaMethod victimMethod) throws Exception {
         backup(victimMethod.javaFile());
-
-        // Compile the test without our fix
-        runMvnInstall();
 
         // Check if we pass in isolation before fix
         TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
