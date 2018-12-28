@@ -30,6 +30,6 @@ public class ReverseDetector extends ExecutingDetector {
     @Override
     public DetectionRound results() throws Exception {
         final List<String> reversed = testShuffler.shuffledOrder(absoluteRound.get());
-        return makeDts(tests, origResult, reversed, runList(reversed));
+        return makeDts(origResult, runList(reversed));
     }
 }

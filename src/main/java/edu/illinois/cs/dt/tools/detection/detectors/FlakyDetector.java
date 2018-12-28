@@ -32,6 +32,6 @@ public class FlakyDetector extends ExecutingDetector {
 
     @Override
     public DetectionRound results() throws Exception {
-        return makeDts(tests, origResult, tests, runList(tests));
+        return makeDts(origResult, runList(tests));
     }
 }

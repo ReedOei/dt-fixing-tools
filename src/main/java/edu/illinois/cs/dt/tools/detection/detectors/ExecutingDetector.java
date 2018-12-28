@@ -5,16 +5,14 @@ import com.google.common.collect.Streams;
 import com.reedoei.eunomia.io.VerbosePrinter;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.string.StringUtil;
-import com.reedoei.testrunner.data.results.Result;
-import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
+import edu.illinois.cs.dt.tools.detection.DetectorUtil;
 import edu.illinois.cs.dt.tools.detection.filters.Filter;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
-import edu.illinois.cs.dt.tools.runner.data.TestRun;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -47,40 +44,12 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
 
     public abstract DetectionRound results() throws Exception;
 
-    private static <T> List<T> before(final List<T> ts, final T t) {
-        final int i = ts.indexOf(t);
-
-        if (i != -1) {
-            return new ArrayList<>(ts.subList(0, Math.min(ts.size(), i)));
-        } else {
-            return new ArrayList<>();
-        }
-    }
-
     protected TestRunResult runList(final List<String> tests) {
         return runner.runList(tests).get();
     }
 
-    public DetectionRound makeDts(final List<String> intendedOrder, final TestRunResult intended,
-                                  final List<String> revealedOrder, final TestRunResult revealed) {
-        final List<DependentTest> result = new ArrayList<>();
-
-        for (final Map.Entry<String, TestResult> entry : intended.results().entrySet()) {
-            final String testName = entry.getKey();
-            final TestResult intendedResult = entry.getValue();
-            final Map<String, TestResult> revealedResults = revealed.results();
-
-            if (revealedResults.containsKey(testName)) {
-                final Result revealedResult = revealedResults.get(testName).result();
-                if (!revealedResult.equals(intendedResult.result())) {
-                    result.add(new DependentTest(testName,
-                            new TestRun(before(intendedOrder, testName), intendedResult.result(), intended.id()),
-                            new TestRun(before(revealedOrder, testName), revealedResult, revealed.id())));
-                    // Only keep the first failure, if any
-                    break;
-                }
-            }
-        }
+    public DetectionRound makeDts(final TestRunResult intended, final TestRunResult revealed) {
+        final List<DependentTest> result = DetectorUtil.flakyTests(intended, revealed, true);
 
         return new DetectionRound(Collections.singletonList(revealed.id()),
                 result,

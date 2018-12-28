@@ -39,6 +39,6 @@ public class RandomDetector extends ExecutingDetector {
     public DetectionRound results() throws Exception {
         final List<String> fullTestOrder = testShuffler.shuffledOrder(absoluteRound.get());
 
-        return makeDts(tests, origResult, fullTestOrder, runList(fullTestOrder));
+        return makeDts(origResult, runList(fullTestOrder));
     }
 }

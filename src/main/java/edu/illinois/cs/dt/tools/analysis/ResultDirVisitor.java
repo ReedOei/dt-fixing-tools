@@ -41,6 +41,7 @@ public class ResultDirVisitor extends SimpleFileVisitor<Path> {
 
         final Path parent = p.getParent();
 
+        // TODO: This is probably no longer needed
         // We only want to run randomizeclasses, not both, because otherwise we'll try to insert some runs twice
         return !parent.getFileName().toString().equals("randomizemethods") ||
                 !Files.exists(parent.resolveSibling("randomizeclasses"));

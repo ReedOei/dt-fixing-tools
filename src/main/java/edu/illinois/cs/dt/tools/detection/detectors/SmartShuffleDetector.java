@@ -33,6 +33,6 @@ public class SmartShuffleDetector extends ExecutingDetector {
     public DetectionRound results() throws Exception {
         final List<String> order = shuffler.nextOrder();
 
-        return makeDts(originalOrder, originalResults, order, runList(order));
+        return makeDts(originalResults, runList(order));
     }
 }
