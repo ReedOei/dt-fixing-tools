@@ -77,14 +77,12 @@ public class RebuildDetectionRounds extends StandardMain {
             final TestRunResult originalResults = makeOriginalResults(originalOrder);
 
             // To make sure we don't refind flaky tests
-            final Set<String> knownFlaky = rebuildRounds(originalOrder, originalResults, detectionResults, "flaky", new HashSet<>());
-            rebuildRounds(originalOrder, originalResults, detectionResults, "random", knownFlaky);
-            rebuildRounds(originalOrder, originalResults, detectionResults, "random-class", knownFlaky);
-            rebuildRounds(originalOrder, originalResults, detectionResults, "reverse", knownFlaky);
-            rebuildRounds(originalOrder, originalResults, detectionResults, "reverse-class", knownFlaky);
-            rebuildRounds(originalOrder, originalResults, detectionResults, "smart-shuffle", knownFlaky);
-
-            System.out.println();
+            final Set<String> knownFlaky = rebuildRounds(originalOrder, originalResults, resultsFolder, "flaky", new HashSet<>());
+            rebuildRounds(originalOrder, originalResults, resultsFolder, "random", knownFlaky);
+            rebuildRounds(originalOrder, originalResults, resultsFolder, "random-class", knownFlaky);
+            rebuildRounds(originalOrder, originalResults, resultsFolder, "reverse", knownFlaky);
+            rebuildRounds(originalOrder, originalResults, resultsFolder, "reverse-class", knownFlaky);
+            rebuildRounds(originalOrder, originalResults, resultsFolder, "smart-shuffle", knownFlaky);
         }
     }
 
@@ -109,7 +107,11 @@ public class RebuildDetectionRounds extends StandardMain {
                                       final Set<String> knownFlaky) throws IOException {
         final Set<String> newKnownFlaky = new HashSet<>(knownFlaky);
 
-        try (final Stream<Path> list = Files.list(resultsPath.resolve(roundType))) {
+        if (!Files.exists(resultsPath.resolve(roundType))) {
+            return newKnownFlaky;
+        }
+
+        try (final Stream<Path> list = Files.list(resultsPath.resolve(DetectorPathManager.DETECTION_RESULTS).resolve(roundType))) {
             final List<Path> roundPaths = list.collect(Collectors.toList());
 
             for (final Path roundPath : roundPaths) {
