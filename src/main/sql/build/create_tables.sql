@@ -126,6 +126,7 @@ create table original_order
   subject_name text not null,
   test_name text not null,
   order_index integer not null,
+  fix_method_order integer not null default 0,
 
   foreign key(subject_name) references subject(name)
 );
@@ -141,7 +142,12 @@ create table flaky_test_classification
 (
   subject_name text not null,
   test_name text not null,
-  flaky_type text not null
+
+  -- TODO: Update this to be dependent/nonorder dependent
+  flaky_type text not null check(flaky_type in ('flaky', 'random')),
+
+  foreign key(subject_name) references subject(name),
+  foreign key(test_name) references original_order(test_name)
 );
 
 create table flaky_test_failures

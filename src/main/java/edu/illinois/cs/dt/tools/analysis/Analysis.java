@@ -214,6 +214,8 @@ public class Analysis extends StandardMain {
                 statement.commit();
                 statement.endTransaction();
             }
+        } else {
+            System.out.println("[WARNING] No original order found at " + path.resolve(DetectorPathManager.ORIGINAL_ORDER));
         }
 
         if (!sqlite.checkExists("subject", name)) {

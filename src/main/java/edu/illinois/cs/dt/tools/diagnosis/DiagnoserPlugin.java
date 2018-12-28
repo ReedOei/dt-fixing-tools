@@ -44,7 +44,7 @@ public class DiagnoserPlugin extends TestPlugin {
         System.out.println("DIAGNOSER_MODULE_COORDINATES: " + logger.coordinates());
 
         logger.runAndLogError(() -> {
-            writeSubjectProperties(logger.coordinates());
+            logger.writeSubjectProperties();
 
             if (runnerOption.isDefined()) {
                 this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
@@ -64,23 +64,6 @@ public class DiagnoserPlugin extends TestPlugin {
 
             return null;
         });
-    }
-
-    private void writeSubjectProperties(final String coordinates) throws IOException {
-        final Properties properties = new Properties();
-        properties.setProperty("subject.coordinates", coordinates);
-        properties.setProperty("subject.name", subjectName(project));
-
-        Files.createDirectories(DiagnoserPathManager.subjectProperties().getParent());
-        properties.store(new FileOutputStream(DiagnoserPathManager.subjectProperties().toFile()), "");
-    }
-
-    private String subjectName(final MavenProject project) {
-        final Path relativePath =
-                PathManager.parentPath().getParent().toAbsolutePath()
-                        .relativize(project.getBasedir().toPath().toAbsolutePath());
-
-        return relativePath.toString().replace("/", "-");
     }
 
     private void diagnose() throws Exception {
