@@ -78,12 +78,17 @@ public class CommandGenerator extends StandardMain {
 
         System.out.println(commandQuery("numNOTestAllRandOrig", SQLStatements.TOTAL_NO_ORIG_AND_RANDOM));
 
-        System.out.println(commandQuery("percODTestsRandom", "\\%",
-                sqlite.statement(SQLStatements.PROBABILITY_FIND_RANDOM)));
-        System.out.println(commandQuery("percNOTestsRandom", "\\%",
-                sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY_NO_ORIGINAL)));
+//        System.out.println(commandQuery("percODTestsRandom", "\\%",
+//                sqlite.statement(SQLStatements.PROBABILITY_FIND_RANDOM)));
+//        System.out.println(commandQuery("percNOTestsRandom", "\\%",
+//                sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY_NO_ORIGINAL)));
         System.out.println(commandQuery("percNOTestsAll", "\\%",
                 sqlite.statement(SQLStatements.PROBABILITY_FIND_FLAKY)));
+
+        System.out.println(commandQuery("percRunFailOD", "\\%",
+                sqlite.statement(SQLStatements.PERC_RUN_FAIL_OD)));
+        System.out.println(commandQuery("percRunFailNO", "\\%",
+                sqlite.statement(SQLStatements.PERC_RUN_FAIL_NO)));
 
         System.out.println(commandQuery("percBestODOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_RANDOM)));
         System.out.println(commandQuery("percBestNOOrder", "\\%", sqlite.statement(SQLStatements.PROBABILITY_BEST_FLAKY)));

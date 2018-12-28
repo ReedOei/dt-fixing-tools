@@ -38,7 +38,10 @@ public class SQLStatements {
     public static final Path INSERT_STATIC_FIELD_INFO_FIELD = Paths.get("src/main/sql/build/static_field_info_field_insert.sql");
 
     public static final Path COUNT_TESTS = Paths.get("src/main/sql/figures/count_tests.sql");
+
+    // TODO: Delete if not used by 2/1/19
     public static final Path COUNT_FLAKY_TESTS = Paths.get("src/main/sql/figures/count_flaky_tests.sql");
+
     public static final Path COUNT_MODULES_RESULTS = Paths.get("src/main/sql/figures/count_modules_results.sql");
     public static final Path COUNT_PROJECTS_RESULTS = Paths.get("src/main/sql/figures/count_projects_results.sql");
     public static final Path COUNT_MODULES = Paths.get("src/main/sql/figures/count_modules.sql");
@@ -55,8 +58,11 @@ public class SQLStatements {
     public static final Path PROBABILITY_FIND_FLAKY = Paths.get("src/main/sql/figures/probability_find_flaky.sql");
     public static final Path PROBABILITY_BEST_RANDOM = Paths.get("src/main/sql/figures/probability_best_random.sql");
     public static final Path PROBABILITY_BEST_FLAKY = Paths.get("src/main/sql/figures/probability_best_flaky.sql");
+
+    // TODO: Delete both if not used by 2/1/19
     public static final Path PROBABILITY_FIND_RANDOM = Paths.get("src/main/sql/figures/probability_find_random.sql");
     public static final Path PROBABILITY_FIND_FLAKY_NO_ORIGINAL = Paths.get("src/main/sql/figures/probability_find_flaky_no_original.sql");
+
     public static final Path COUNT_ODNO_TESTS = Paths.get("src/main/sql/figures/count_odno_tests.sql");
 
     public static final Path SUBJECT_INFO_TABLE = Paths.get("src/main/sql/tables/subject_information_table.sql");
@@ -66,6 +72,9 @@ public class SQLStatements {
     public static final Path FLAKY_TEST_BY_TECHNIQUE = Paths.get("src/main/sql/tables/flaky-test-by-technique.sql");
     public static final Path FAILURE_PROB_PER_TEST_PER_RUN = Paths.get("src/main/sql/tables/failure_prob_per_test_per_run.sql");
     public static final Path FAILURE_PROB_BY_ROUND = Paths.get("src/main/sql/tables/failure_prob_by_round.sql");
+
+    public static final Path PERC_RUN_FAIL_OD = Paths.get("src/main/sql/figures/perc_run_fail_od.sql");
+    public static final Path PERC_RUN_FAIL_NO = Paths.get("src/main/sql/figures/perc_run_fail_no.sql");
 
     static {
         ensureExists(INSERT_RAW_SUBJECT);
@@ -114,8 +123,6 @@ public class SQLStatements {
         ensureExists(PROBABILITY_BEST_RANDOM);
         ensureExists(PROBABILITY_BEST_FLAKY);
         ensureExists(PROBABILITY_FIND_FLAKY);
-        ensureExists(PROBABILITY_FIND_RANDOM);
-        ensureExists(PROBABILITY_FIND_FLAKY_NO_ORIGINAL);
         ensureExists(COUNT_ODNO_TESTS);
 
         ensureExists(SUBJECT_INFO_TABLE);
@@ -125,6 +132,9 @@ public class SQLStatements {
         ensureExists(COUNT_MODULE_FLAKY_TESTS);
         ensureExists(FAILURE_PROB_PER_TEST_PER_RUN);
         ensureExists(FAILURE_PROB_BY_ROUND);
+
+        ensureExists(PERC_RUN_FAIL_OD);
+        ensureExists(PERC_RUN_FAIL_NO);
     }
 
     private static void ensureExists(final Path p) {
