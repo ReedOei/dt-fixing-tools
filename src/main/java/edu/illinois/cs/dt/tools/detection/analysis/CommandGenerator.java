@@ -12,11 +12,13 @@ import java.text.NumberFormat;
 
 public class CommandGenerator extends StandardMain {
     private final SQLite sqlite;
+    private final String commandPrefix;
 
     private CommandGenerator(final String[] args) throws SQLException {
         super(args);
 
         this.sqlite = new SQLite(Paths.get(getArgRequired("db")));
+        this.commandPrefix = getArg("prefix").orElse("");
     }
 
     public static void main(final String[] args) {
@@ -148,6 +150,6 @@ public class CommandGenerator extends StandardMain {
     }
 
     private String command(final String commandName, final String val) {
-        return String.format("\\newcommand{\\%s}{%s\\xspace}", commandName, val);
+        return String.format("\\newcommand{\\%s%s}{%s\\xspace}", commandPrefix, commandName, val);
     }
 }
