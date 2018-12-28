@@ -58,15 +58,17 @@ public class DependentTestExtractor extends StandardMain {
         final ListEx<Path> allResultsFolders = new ListEx<>();
         Files.walkFileTree(results, new ResultDirVisitor(allResultsFolders));
 
-        for (final Path resultsFolder : allResultsFolders) {
-            System.out.println("[INFO] Extracting results from " + resultsFolder);
+        for (int i = 0; i < allResultsFolders.size(); i++) {
+            final Path resultsFolder = allResultsFolders.get(i);
+            System.out.println("[INFO] Extracting results from " + resultsFolder + " (" + i + " of " + allResultsFolders.size() + ")");
             final Optional<String> subjectNameOpt = readProjectName(resultsFolder);
 
             if (subjectNameOpt.isPresent()) {
-                save(subjectNameOpt.get(), extract(resultsFolder));
+                save(subjectNameOpt.get(), extract(subjectNameOpt.get(), resultsFolder));
             } else {
                 System.out.println("[WARNING] No subject.properties in " + resultsFolder);
-                save(StringUtils.strip(resultsFolder.getFileName().toString().replace("/", "-"), "-"), extract(resultsFolder));
+                final String subjName = StringUtils.strip(resultsFolder.getFileName().toString().replace("/", "-"), "-");
+                save(subjName, extract(subjName, resultsFolder));
             }
 
             System.out.println();
@@ -123,32 +125,32 @@ public class DependentTestExtractor extends StandardMain {
         Files.write(outputFile, new Gson().toJson(extracted).getBytes());
     }
 
-    public DependentTestList extract(final Path path) throws IOException {
-        return dependentTests(new TestRunParser(path).testResults().mapToStream((output, res) -> res).collect(Collectors.toList()));
+    public DependentTestList extract(final String subjectName, final Path path) throws IOException {
+        return dependentTests(subjectName, new TestRunParser(path).testRunResults().collect(Collectors.toList()));
     }
 
-    private DependentTestList dependentTests(final List<TestRunResult> results) {
+    private DependentTestList dependentTests(final String subjectName, final List<TestRunResult> results) {
         try (final NonorderClassifier nonorderClassifier = new NonorderClassifier();
-             final DependentClassifier dependentClassifier = new DependentClassifier(true);
-            final DependentClassifier dependentClassifierWithFailures = new DependentClassifier(false)) {
+             final DependentClassifier dependentClassifier = new DependentClassifier(false)) { // TODO: Create a setting to control this
             for (int i = 0; i < results.size(); i++) {
                 final TestRunResult testRunResult = results.get(i);
-                System.out.printf("\rUpdating classifiers with test run %s of %s (no: %d, od: %d, odf: %d): %s",
+                System.out.printf("\rUpdating classifiers with test run %s of %s (no: %d, od: %d): %s",
                         i + 1,
                         results.size(),
                         nonorderClassifier.nonorderTests().size(),
                         dependentClassifier.dependentTests(nonorderClassifier.nonorderTests()).size(),
-                        dependentClassifierWithFailures.dependentTests(nonorderClassifier.nonorderTests()).size(),
                         testRunResult.id());
                 nonorderClassifier.update(testRunResult);
                 dependentClassifier.update(testRunResult);
-                dependentClassifierWithFailures.update(testRunResult);
             }
 
             if (!results.isEmpty()) {
                 System.out.println();
             }
             System.out.println("Finished updating classifiers.");
+
+            final Path outputFile = outputPath.resolve(subjectName + "-not.txt");
+            Files.write(outputFile, nonorderClassifier.nonorderTests());
 
             return new DependentTestList(makeDependentTestList(nonorderClassifier, dependentClassifier));
         } catch (Exception e) {

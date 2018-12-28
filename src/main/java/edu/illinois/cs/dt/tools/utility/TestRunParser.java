@@ -35,6 +35,10 @@ public class TestRunParser {
         return testResults(Files.walk(basePath));
     }
 
+    public Stream<TestRunResult> testRunResults() throws IOException {
+        return Files.walk(basePath).filter(this::isTestRun).flatMap(this::testRunResult);
+    }
+
     public PairStream<String, TestRunResult> testResults(final Stream<Path> paths) {
         return PairStream.fromStream(paths.filter(this::isTestRun), this::testRunOutput, this::testRunResult)
                 .flatMap((outputs, trrs) -> PairStream.zip(outputs.iterator(), trrs.iterator()));
@@ -44,7 +48,13 @@ public class TestRunParser {
         try {
             return listFiles(path.resolve("results")).stream()
                     .flatMap(FileUtil::safeReadFile)
-                    .map(s -> new Gson().fromJson(s, TestRunResult.class));
+                    .flatMap(s -> {
+                        try {
+                            return Stream.of(new Gson().fromJson(s, TestRunResult.class));
+                        } catch (Exception e) {
+                            return Stream.empty();
+                        }
+                    });
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
