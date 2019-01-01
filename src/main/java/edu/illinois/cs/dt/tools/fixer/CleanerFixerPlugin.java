@@ -126,47 +126,44 @@ public class CleanerFixerPlugin extends TestPlugin {
         Files.copy(javaFile.path(), path, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
-    // TODO: for cleaners, santa clauses, etc.
-    private void applyFix(final String polluterName,
-                          final JavaMethod cleanerMethod,
-                          final JavaMethod victimMethod) throws Exception {
-        backup(victimMethod.javaFile());
-
-        // Compile the test without our fix
-        runMvnInstall();
-
-        // Check if we pass in isolation before fix
-        TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
-        final List<String> withPolluter =
-                // This is to handle the case of a santa clause, where a test will fail with no polluter
-                polluterName.isEmpty() ? ListUtil.fromArray(victimMethod.methodName()) :
-                                         ListUtil.fromArray(polluterName, victimMethod.methodName());
-        if (testOrderPasses(withPolluter)) {
-            TestPluginPlugin.error("Test passes with the polluter, but is supposed to fail.");
-            return;
-        }
-
-        // Do our fix
-        TestPluginPlugin.info("Applying code from cleaner and recompiling.");
-        final NodeList<Statement> cleanerStmts = cleanerMethod.body().getStatements();
-
+    // Try applying cleaner statements and see if test passes when run after polluter
+    // Returns true if passes, returns false if not
+    private boolean checkCleanerStmts(final String polluterName,
+                                      final JavaMethod victimMethod,
+                                      final NodeList<Statement> cleanerStmts) throws Exception {
         // Note: this modifies victimMethod, so when we eventually make it delta-debug, we will want
         // to make a copy of the victimMethod somewhere
         victimMethod.prepend(cleanerStmts);
         victimMethod.javaFile().writeAndReloadCompilationUnit();
 
-        // Recompile and check if we pass in isolation after fix
-        runMvnInstall();
-
+        // Rebuild and see if tests run properly
+        try {
+            runMvnInstall();
+        } catch (Exception ex) {
+            TestPluginPlugin.info("Error building the code, passed in cleaner does not work");
+            // Reset the change
+            victimMethod.removeFirstBlock();
+            return false;
+        }
         // TODO: Output to result files rather than stdout
-        TestPluginPlugin.info("Running victim test in isolation with code from cleaner.");
-        final boolean passInIsolationAfterFix = testOrderPasses(withPolluter);
-        if (!passInIsolationAfterFix) {
+        TestPluginPlugin.info("Running victim test with code from cleaner.");
+        List<String> tests;
+        if (polluterName.isEmpty()) {
+            tests = ListUtil.fromArray(victimMethod.methodName());
+        } else {
+            tests = ListUtil.fromArray(polluterName, victimMethod.methodName());
+        }
+        boolean passInFailingOrder = testOrderPasses(tests);
+        if (!passInFailingOrder) {
             TestPluginPlugin.error("Fix was unsuccessful. Test still fails with polluter.");
         } else {
             TestPluginPlugin.info("Fix was successful! Fixed file:\n" + victimMethod.javaFile().path());
         }
+
+        // Reset the change
+        victimMethod.removeFirstBlock();
+
+        return passInFailingOrder;
 
         // TODO: Make sure our fix doesn't break any other tests
         //  This block of code could be useful when dealing with a case where we add the necessary
@@ -186,6 +183,81 @@ public class CleanerFixerPlugin extends TestPlugin {
         //        }
     }
 
+    // The delta debugging logic to return minimal list of statements to add in to make victim pass
+    // In addition to polluter and victim to run, need also list of statements; assumed statements already make victim pass
+    // The value n is needed to represent granularity of partitioning the statements to get minimal list
+    private NodeList<Statement> deltaDebug(final String polluterName,
+                                           final JavaMethod victimMethod,
+                                           final NodeList<Statement> cleanerStmts,
+                                           int n) throws Exception {
+        // If n granularity is greater than number of cleaner statements, then finished, simply return cleaner statements
+        if (cleanerStmts.size() < n) {
+            return cleanerStmts;
+        }
+
+        // Cut the statements into n equal chunks and try each chunk
+        int chunkSize = (int)Math.round((double)(cleanerStmts.size()) / n);
+        List<NodeList<Statement>> chunks = new ArrayList<>();
+        for (int i = 0; i < cleanerStmts.size(); i += chunkSize) {
+            NodeList<Statement> chunk = NodeList.nodeList();
+            NodeList<Statement> otherChunk = NodeList.nodeList();
+            // Create chunk starting at this iteration
+            int endpoint = Math.min(cleanerStmts.size(), i + chunkSize);
+            chunk.addAll(cleanerStmts.subList(i, endpoint));
+
+            // Complement chunk are elements before and after this current chunk
+            otherChunk.addAll(cleanerStmts.subList(0, i));
+            otherChunk.addAll(cleanerStmts.subList(endpoint, cleanerStmts.size()));
+
+            // Check if applying chunk works
+            if (checkCleanerStmts(polluterName, victimMethod, chunk)) {
+                return deltaDebug(polluterName, victimMethod, chunk, 2);    // If works, then delta debug some more this chunk
+            }
+            // Otherwise, check if applying complement chunk works
+            if (checkCleanerStmts(polluterName, victimMethod, otherChunk)) {
+                return deltaDebug(polluterName, victimMethod, otherChunk, n - 1);   // If works, then delta debug some more the complement chunk
+            }
+        }
+        // If not chunk/complement work, increase granularity and try again
+        return deltaDebug(polluterName, victimMethod, cleanerStmts, n * 2);
+    }
+
+    // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
+    // TODO: for cleaners, santa clauses, etc.
+    private void applyFix(final String polluterName,
+                          final JavaMethod cleanerMethod,
+                          final JavaMethod victimMethod) throws Exception {
+        backup(victimMethod.javaFile());
+
+        // Check if we pass in isolation before fix
+        TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
+        final List<String> withPolluter =
+                // This is to handle the case of a santa clause, where a test will fail with no polluter
+                polluterName.isEmpty() ? ListUtil.fromArray(victimMethod.methodName()) :
+                                         ListUtil.fromArray(polluterName, victimMethod.methodName());
+        if (testOrderPasses(withPolluter)) {
+            TestPluginPlugin.error("Test passes with the polluter, but is supposed to fail.");
+            return;
+        }
+
+        // Do our fix using all cleaner code
+        TestPluginPlugin.info("Applying code from cleaner and recompiling.");
+        final NodeList<Statement> cleanerStmts = cleanerMethod.body().getStatements();
+
+        if (!checkCleanerStmts(polluterName, victimMethod, cleanerStmts)) {
+            TestPluginPlugin.error("Cleaner does not fix victim!");
+            return;
+        }
+
+        // Cleaner is good, so now we can start delta debugging
+        NodeList<Statement> minimalCleanerStmts = deltaDebug(polluterName, victimMethod, cleanerStmts, 2);
+
+        // Apply the final minimal cleaner statements
+        victimMethod.prepend(minimalCleanerStmts);
+        victimMethod.javaFile().writeAndReloadCompilationUnit();
+
+    }
+
     private boolean runMvnInstall() throws MavenInvocationException {
         // TODO: Maybe support custom command lines/options?
         final InvocationRequest request = new DefaultInvocationRequest();
@@ -193,6 +265,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.setPomFile(project.getFile());
         request.setProperties(new Properties());
         request.getProperties().setProperty("skipTests", "true");
+        request.getProperties().setProperty("rat.skip", "true");
 
         // TODO: Log the output from the maven process somewhere
         request.setOutputHandler(s -> {});

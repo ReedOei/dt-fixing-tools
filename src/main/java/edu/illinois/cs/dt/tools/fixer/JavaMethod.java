@@ -66,4 +66,12 @@ public class JavaMethod {
 
         javaFile().findMethodDeclaration(methodName()).setBody(new BlockStmt(statements));
     }
+
+    // Helper method needed for delta-debugging to "reset" the state by removing that added first block
+    public void removeFirstBlock() {
+        final NodeList<Statement> statements = body.getStatements();
+        statements.remove(0);
+
+        javaFile().findMethodDeclaration(methodName()).setBody(new BlockStmt(statements));
+    }
 }
