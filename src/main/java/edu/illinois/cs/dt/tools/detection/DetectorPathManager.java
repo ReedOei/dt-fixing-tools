@@ -24,9 +24,9 @@ public class DetectorPathManager extends PathManager {
 
     public static Path pathWithRound(final Path path, final String testName, final int round) {
         if (testName == null || testName.isEmpty()) {
-            return path.resolve("round" + String.valueOf(round) + ".json");
+            return path.resolve("round" + round + ".json");
         } else {
-            return path.resolve(testName + "-round" + String.valueOf(round) + ".json");
+            return path.resolve(testName + "-round" + round + ".json");
         }
     }
 

@@ -2,13 +2,19 @@ package edu.illinois.cs.dt.tools.fixer;
 
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.stmt.Statement;
-import com.reedoei.eunomia.collections.ListUtil;
+import com.reedoei.testrunner.configuration.Configuration;
+import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.DetectorPlugin;
+import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
+import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
+import edu.illinois.cs.dt.tools.minimizer.MinimizerPlugin;
+import edu.illinois.cs.dt.tools.minimizer.PolluterData;
+import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerGroup;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.utility.ErrorLogger;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -24,6 +30,7 @@ import scala.Option;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -76,8 +83,17 @@ public class CleanerFixerPlugin extends TestPlugin {
                     Files.write(DetectorPathManager.originalOrderPath(), DetectorPlugin.getOriginalOrder(project));
                 }
 
-                // TODO: Modify so that it will read parameters directly from the minimized files
-                setupAndApplyFix();
+                minimizedResults()
+                        // Nothing to fix if the order is already passing
+                        // TODO: Make sure we don't break the passing order though
+                        .filter(minimized -> !minimized.expected().equals(Result.PASS))
+                        .forEach(minimized -> {
+                            try {
+                                setupAndApplyFix(minimized);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
             } else {
                 final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
                 TestPluginPlugin.info(errorMsg);
@@ -88,18 +104,65 @@ public class CleanerFixerPlugin extends TestPlugin {
         });
     }
 
-    private void setupAndApplyFix() throws Exception {
-        // Get all test source files
-        final List<Path> testFiles = new ArrayList<>();
-        try (final Stream<Path> paths = Files.walk(Paths.get(project.getBuild().getTestSourceDirectory()))) {
-            paths.filter(Files::isRegularFile)
-                    .forEach(testFiles::add);
+    private Stream<MinimizeTestsResult> minimizedResults() throws Exception {
+        if (Files.exists(MinimizerPathManager.minimized())) {
+            return Files.walk(MinimizerPathManager.minimized()).flatMap(p -> {
+                try {
+                    return Stream.of(MinimizeTestsResult.fromPath(p));
+                } catch (IOException ignored) {}
+
+                return Stream.empty();
+            });
+        } else {
+            return detect();
+        }
+    }
+
+    private Stream<MinimizeTestsResult> detect() throws Exception {
+        if (!Files.exists(DetectorPathManager.detectionFile())) {
+            if (Configuration.config().getProperty("diagnosis.run_detection", true)) {
+                new DetectorPlugin(DetectorPathManager.detectionResults(), runner).execute(project);
+            } else {
+                throw new NoSuchFileException("File " + DetectorPathManager.detectionFile() + " does not exist and diagnosis.run_detection is set to false");
+            }
         }
 
-        // TODO: Remove these and read from minimized files
-        final String polluterTestName = System.getProperty("dt_fixer.polluter", "");
-        final String cleanerTestName = System.getProperty("dt_fixer.cleaner");
-        final String victimTestName = System.getProperty("dt_fixer.victim");
+        return new MinimizerPlugin(runner).runDependentTestFile(DetectorPathManager.detectionFile());
+    }
+
+    private void setupAndApplyFix(final MinimizeTestsResult minimized) throws Exception {
+        // Get all test source files
+        final List<Path> testFiles = testSources();
+
+        // TODO: Handle the case where there are multiple polluting/cleaning groups
+        if (minimized.polluters().isEmpty()) {
+            TestPluginPlugin.error("No polluters for: " + minimized.dependentTest());
+            return;
+        }
+
+        final PolluterData polluterData = minimized.polluters().get(0);
+
+        if (polluterData.cleanerData().cleaners().isEmpty()) {
+            TestPluginPlugin.error("Found polluters for " + minimized.dependentTest() + " but no cleaners.");
+            return;
+        }
+
+        final CleanerGroup cleanerGroup = polluterData.cleanerData().cleaners().get(0);
+
+        if (cleanerGroup.cleanerTests().size() > 1) {
+            TestPluginPlugin.error("Cleaner groups is has more than one test (currently unsupported)");
+            return;
+        }
+
+        if (cleanerGroup.cleanerTests().isEmpty()) {
+            TestPluginPlugin.error("Cleaner group exists but has no tests. This should never happen, and is probably because of a bug in the cleaner finding code.");
+            return;
+        }
+
+        final List<String> failingOrder = polluterData.withDeps(minimized.dependentTest());
+        // TODO: Handle cleaner group with more than one test
+        final String cleanerTestName = cleanerGroup.cleanerTests().get(0);
+        final String victimTestName = minimized.dependentTest();
 
         final Optional<JavaMethod> cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
         final Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
@@ -118,7 +181,16 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // TODO: applyFix should take in a location for where to output the Java file that contains the
         //       "fixed" code or an option to directly replace the existing test source file.
-        applyFix(polluterTestName, cleanerMethodOpt.get(), victimMethodOpt.get());
+        applyFix(failingOrder, cleanerMethodOpt.get(), victimMethodOpt.get());
+    }
+
+    private List<Path> testSources() throws IOException {
+        final List<Path> testFiles = new ArrayList<>();
+        try (final Stream<Path> paths = Files.walk(Paths.get(project.getBuild().getTestSourceDirectory()))) {
+            paths.filter(Files::isRegularFile)
+                    .forEach(testFiles::add);
+        }
+        return testFiles;
     }
 
     private void backup(final JavaFile javaFile) throws IOException {
@@ -128,7 +200,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
     // Try applying cleaner statements and see if test passes when run after polluter
     // Returns true if passes, returns false if not
-    private boolean checkCleanerStmts(final String polluterName,
+    private boolean checkCleanerStmts(final List<String> failingOrder,
                                       final JavaMethod victimMethod,
                                       final NodeList<Statement> cleanerStmts) throws Exception {
         // Note: this modifies victimMethod, so when we eventually make it delta-debug, we will want
@@ -147,13 +219,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
         // TODO: Output to result files rather than stdout
         TestPluginPlugin.info("Running victim test with code from cleaner.");
-        List<String> tests;
-        if (polluterName.isEmpty()) {
-            tests = ListUtil.fromArray(victimMethod.methodName());
-        } else {
-            tests = ListUtil.fromArray(polluterName, victimMethod.methodName());
-        }
-        boolean passInFailingOrder = testOrderPasses(tests);
+        boolean passInFailingOrder = testOrderPasses(failingOrder);
         if (!passInFailingOrder) {
             TestPluginPlugin.error("Fix was unsuccessful. Test still fails with polluter.");
         } else {
@@ -186,7 +252,7 @@ public class CleanerFixerPlugin extends TestPlugin {
     // The delta debugging logic to return minimal list of statements to add in to make victim pass
     // In addition to polluter and victim to run, need also list of statements; assumed statements already make victim pass
     // The value n is needed to represent granularity of partitioning the statements to get minimal list
-    private NodeList<Statement> deltaDebug(final String polluterName,
+    private NodeList<Statement> deltaDebug(final List<String> failingOrder,
                                            final JavaMethod victimMethod,
                                            final NodeList<Statement> cleanerStmts,
                                            int n) throws Exception {
@@ -210,33 +276,30 @@ public class CleanerFixerPlugin extends TestPlugin {
             otherChunk.addAll(cleanerStmts.subList(endpoint, cleanerStmts.size()));
 
             // Check if applying chunk works
-            if (checkCleanerStmts(polluterName, victimMethod, chunk)) {
-                return deltaDebug(polluterName, victimMethod, chunk, 2);    // If works, then delta debug some more this chunk
+            if (checkCleanerStmts(failingOrder, victimMethod, chunk)) {
+                return deltaDebug(failingOrder, victimMethod, chunk, 2);    // If works, then delta debug some more this chunk
             }
             // Otherwise, check if applying complement chunk works
-            if (checkCleanerStmts(polluterName, victimMethod, otherChunk)) {
-                return deltaDebug(polluterName, victimMethod, otherChunk, n - 1);   // If works, then delta debug some more the complement chunk
+            if (checkCleanerStmts(failingOrder, victimMethod, otherChunk)) {
+                return deltaDebug(failingOrder, victimMethod, otherChunk, n - 1);   // If works, then delta debug some more the complement chunk
             }
         }
         // If not chunk/complement work, increase granularity and try again
-        return deltaDebug(polluterName, victimMethod, cleanerStmts, n * 2);
+        return deltaDebug(failingOrder, victimMethod, cleanerStmts, n * 2);
     }
 
     // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
     // TODO: for cleaners, santa clauses, etc.
-    private void applyFix(final String polluterName,
+    private void applyFix(final List<String> failingOrder,
                           final JavaMethod cleanerMethod,
                           final JavaMethod victimMethod) throws Exception {
         backup(victimMethod.javaFile());
 
         // Check if we pass in isolation before fix
         TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
-        final List<String> withPolluter =
-                // This is to handle the case of a santa clause, where a test will fail with no polluter
-                polluterName.isEmpty() ? ListUtil.fromArray(victimMethod.methodName()) :
-                                         ListUtil.fromArray(polluterName, victimMethod.methodName());
-        if (testOrderPasses(withPolluter)) {
-            TestPluginPlugin.error("Test passes with the polluter, but is supposed to fail.");
+
+        if (testOrderPasses(failingOrder)) {
+            TestPluginPlugin.error("Failing order doesn't fail.");
             return;
         }
 
@@ -244,18 +307,17 @@ public class CleanerFixerPlugin extends TestPlugin {
         TestPluginPlugin.info("Applying code from cleaner and recompiling.");
         final NodeList<Statement> cleanerStmts = cleanerMethod.body().getStatements();
 
-        if (!checkCleanerStmts(polluterName, victimMethod, cleanerStmts)) {
+        if (!checkCleanerStmts(failingOrder, victimMethod, cleanerStmts)) {
             TestPluginPlugin.error("Cleaner does not fix victim!");
             return;
         }
 
         // Cleaner is good, so now we can start delta debugging
-        NodeList<Statement> minimalCleanerStmts = deltaDebug(polluterName, victimMethod, cleanerStmts, 2);
+        final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, victimMethod, cleanerStmts, 2);
 
         // Apply the final minimal cleaner statements
         victimMethod.prepend(minimalCleanerStmts);
         victimMethod.javaFile().writeAndReloadCompilationUnit();
-
     }
 
     private boolean runMvnInstall() throws MavenInvocationException {

@@ -153,7 +153,7 @@ public class MinimizeTestsResult {
 
     public List<String> getFirstDeps() {
         if (polluters.isEmpty()) {
-            return new ArrayList<String>();
+            return new ArrayList<>();
         }
         return polluters.get(0).deps();
     }
