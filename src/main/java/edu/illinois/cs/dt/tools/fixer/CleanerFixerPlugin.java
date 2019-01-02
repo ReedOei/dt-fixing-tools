@@ -4,7 +4,6 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
-import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
@@ -28,7 +27,6 @@ import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.apache.maven.shared.invoker.SystemOutHandler;
 import scala.Option;
 
 import java.io.File;
@@ -330,12 +328,13 @@ public class CleanerFixerPlugin extends TestPlugin {
         if (!getClassName(cleanerMethod.methodName()).equals(getClassName(victimMethod.methodName()))) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
         }
+        // Note: logic assumes methods are annotated with annotations that have been imported, so things like @org.junit.Before are not considered
         cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
         cleanerStmts.addAll(cleanerMethod.body().getStatements());
         cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
         // Only include AfterClass if in separate classes
         if (!getClassName(cleanerMethod.methodName()).equals(getClassName(victimMethod.methodName()))) {
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClassClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
         }
 
         if (!checkCleanerStmts(failingOrder, victimMethod, cleanerStmts)) {
@@ -361,10 +360,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.getProperties().setProperty("rat.skip", "true");
 
         // TODO: Log the output from the maven process somewhere
-        //request.setOutputHandler(s -> {});
-        request.setOutputHandler(new SystemOutHandler());
-        //request.setErrorHandler(s -> {});
-        request.setErrorHandler(new SystemOutHandler());
+        request.setOutputHandler(s -> {});
+        request.setErrorHandler(s -> {});
 
         final Invoker invoker = new DefaultInvoker();
         final InvocationResult result = invoker.execute(request);
