@@ -60,6 +60,11 @@ public class JavaMethod {
         return body;
     }
 
+    // Small helper to get class name from fully-qualified name of method
+    public String getClassName() {
+        return methodName.substring(0, methodName.lastIndexOf('.'));
+    }
+
     public void prepend(final NodeList<Statement> stmts) {
         final NodeList<Statement> statements = body.getStatements();
         statements.add(0, new BlockStmt(stmts));
