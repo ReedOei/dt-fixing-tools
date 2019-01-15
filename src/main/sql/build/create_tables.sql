@@ -107,7 +107,9 @@ create table confirmation_runs
   passing_expected_result text not null,
   passing_result text not null,
   failing_expected_result text not null,
-  failing_result text not null
+  failing_result text not null,
+
+  foreign key(test_name) references original_order(test_name)
 );
 
 create table module_test_time
@@ -135,7 +137,9 @@ create table num_rounds
 (
   name text not null,
   round_type text not null,
-  number integer not null
+  number integer not null,
+
+  foreign key(name) references subject(name)
 );
 
 create table flaky_test_classification
@@ -155,7 +159,10 @@ create table flaky_test_failures
   round_type text not null,
   flaky_type text not null check(flaky_type in ('NO', 'OD')),
   failures integer not null,
-  rounds integer not null
+  rounds integer not null,
+
+  foreign key(subject_name) references subject(name),
+  foreign key(test_name) references original_order(test_name)
 );
 
 create table detection_round_failures
@@ -163,7 +170,9 @@ create table detection_round_failures
   detection_round_id integer not null,
   round_type text not null,
   no_found integer not null,
-  od_found integer not null
+  od_found integer not null,
+
+  foreign key(detection_round_id) references detection_round(id)
 );
 
 create table operation_time
@@ -178,7 +187,22 @@ create table polluter_data
 (
   id integer primary key,
   minimize_test_result_id integer not null,
-  dependencies text not null
+  dependencies text not null,
+
+  foreign key(minimize_test_result_id) references minimize_test_result(id)
+);
+
+create table minimize_test_result
+(
+  id integer primary key,
+  test_name text not null,
+  expected_run_str_id text not null,
+  expected_result text not null,
+  order_hash text not null,
+  operation_time_id integer not null,
+
+  foreign key(operation_time_id) references operation_time(id),
+  foreign key(test_name) references original_order(test_name)
 );
 
 create table cleaner_data
@@ -187,7 +211,10 @@ create table cleaner_data
   polluter_data_id integer not null,
   isolation_result text not null,
   expected_result text not null,
-  operation_time_id integer not null
+  operation_time_id integer not null,
+
+  foreign key(polluter_data_id) references polluter_data(id),
+  foreign key(operation_time_id) references operation_time(id)
 );
 
 create table cleaner_group
@@ -196,7 +223,9 @@ create table cleaner_group
   original_size integer not null,
   minimal_size integer not null,
   cleaner_data_id integer not null,
-  cleaner_tests text not null
+  cleaner_tests text not null,
+
+  foreign key(cleaner_data_id) references cleaner_data(id)
 );
 
 create table static_field_info
@@ -204,14 +233,18 @@ create table static_field_info
   id integer primary key,
   test_name text not null,
   order_hash text not null,
-  mode text not null
+  mode text not null,
+
+  foreign key(test_name) references original_order(test_name)
 );
 
 create table static_field_info_field
 (
   id integer primary key,
   static_field_info_id integer not null,
-  field_name text not null
+  field_name text not null,
+
+  foreign key(static_field_info_id) references static_field_info(id)
 );
 
 create view subject_info as
