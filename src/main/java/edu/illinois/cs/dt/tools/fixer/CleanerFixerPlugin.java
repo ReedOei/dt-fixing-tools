@@ -91,11 +91,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 Map<String, List<MinimizeTestsResult>> dependentTestResults = minimizedResults()
                         .collect(Collectors.groupingBy(MinimizeTestsResult::dependentTest));
                 for (Map.Entry<String, List<MinimizeTestsResult>> entry : dependentTestResults.entrySet()) {
-                    try {
-                        setupAndApplyFix(entry.getValue());
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                    setupAndApplyFix(entry.getValue());
                 }
             } else {
                 final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
@@ -190,7 +186,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             final CleanerGroup cleanerGroup = polluterData.cleanerData().cleaners().get(0);
 
             if (cleanerGroup.cleanerTests().size() > 1) {
-                TestPluginPlugin.error("Cleaner groups is has more than one test (currently unsupported)");
+                TestPluginPlugin.error("Cleaner groups has more than one test (currently unsupported)");
                 return;
             }
 
