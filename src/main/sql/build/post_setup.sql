@@ -1,32 +1,29 @@
 insert into confirmation_runs
 select p.test_name,
-  p.round_type,
-  p.round_number,
-  p.verify_round_number,
-  p.expected_result,
-  p.result,
-  f.expected_result,
-  f.result
+       p.round_type,
+       p.round_number,
+       p.verify_round_number,
+       p.expected_result,
+       p.result,
+       f.expected_result,
+       f.result
 from verify_round p
-  inner join verify_round f on p.test_name = f.test_name and
-                               p.round_number = f.round_number and
-                               p.verify_round_number = f.verify_round_number
-where p.expected_result = 'PASS' and
-      f.expected_result <> 'PASS';
+inner join verify_round f on p.test_name = f.test_name and
+                             p.round_number = f.round_number and
+                             p.verify_round_number = f.verify_round_number
+where p.expected_result = 'PASS' and f.expected_result <> 'PASS';
 
 insert into flaky_test_classification
 select info.subject_name,
        info.test_name,
        case
-         when info.flaky_runs > 0 then 'flaky' -- If it was EVER flaky, then we should consider it a flaky test
-        else 'random'
+         when info.flaky_runs > 0 then 'NO' -- If it was EVER NO, then we should consider it an NO test
+        else 'OD'
       end as flaky_type
 from
 (
   select fti.subject_name,
          fti.test_name,
-  sum(case when fti.round_type = 'random' then 1 else 0 end) as random_rounds,
-  sum(case when fti.round_type = 'random-class' then 1 else 0 end) as random_class_rounds,
   sum(ifnull(cbt.total_runs, 0)) as all_confirmation_rounds,
   sum(case
     -- If total_runs is null, there were never any confirmation rounds (so it must be a flaky test)
@@ -101,10 +98,11 @@ inner join
 
 insert into detection_round_failures
 select dr.id, dr.round_type,
-       sum(case when ftc.flaky_type = 'flaky' then 1 else 0 end),
-       sum(case when ftc.flaky_type = 'random' then 1 else 0 end)
+       sum(case when ftc.flaky_type = 'NO' then 1 else 0 end),
+       sum(case when ftc.flaky_type = 'OD' then 1 else 0 end)
 from detection_round dr
 left join flaky_test_list ftl on dr.unfiltered_id = ftl.flaky_test_list_id
 left join flaky_test ft on ftl.flaky_test_id = ft.id
 left join flaky_test_classification ftc on ft.name = ftc.test_name
 group by dr.id, dr.round_type
+

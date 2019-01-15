@@ -1,16 +1,33 @@
-# Detector
+# Overview
 
-The data is available in two formats: the database, and the raw data.
+The scripts in this directory are used to run the pipeline and subsequently generate the database.
+The main script to run the pipeline is `create_and_run_dockers.sh`, and can be run as follows:
+
+```
+bash create_and_run_dockers.sh <path to csv> <round num> <timeout (seconds)>
+```
+
+where `<path to csv>` is a csv file containing lines of `github url,sha`.
+
+To generate the database, you can run:
+
+```
+bash build-database.sh <output dir> <database path> <path to subject csv>
+```
+
+The `<path to subject csv>` should be the path to the `csv` file used above.
+The `<output dir>` is the directory containing all the output from every subject.
+The `<database path>` is the path to write out the database to after it has been built.
+
+# Database
 
 The database may be used to more easily explore the dataset.
-All the information found in the database comes from the raw files described below, but some information from the raw files is omitted in the database (i.e., the full output log of each test run, and the tack traces from failing tests), as it is not generally useful for querying, and greatly increases the size of the database.
+All the information found in the database comes from the raw files described below, but some information from the raw files is omitted in the database (i.e., the full output log of each test run, and the stack traces from failing tests), as it is not generally useful for querying, and greatly increases the size of the database.
 
 ## Database Format
 
 The following database contains the following tables and views.
 The full schema may be viewed in the companion file which should be located in this directory called `create_table.sql`.
-
-Below, `flaky` means non-order-dependent, and `random` means dependent, unless otherwise specified.
 
 The following tables and views contain information about the subjects in our experiments:
 - `subject_raw`: Contains each subjects GitHub slug, url, SHA used in our experiment, and LOC, both total and just for tests.
@@ -20,10 +37,10 @@ The following tables and views contain information about the subjects in our exp
 - `original_order`: The order that Surefire ran the tests in. Has a column to indicate order, with each record representing a single test.
 
 The following tables contain data that has been gathered and processed to be easier to query. These tables will be the most frequently used.
-- `flaky_test_classification`: The full list of flaky tests found, including which subject they come from and what type of flaky test they are (`flaky` means non-order-dependent, and `random` means dependent).
+- `flaky_test_classification`: The full list of flaky tests found, including which subject they come from and what type of flaky test they are.
 - `flaky_test_failures`: The number of failures for each flaky test for each detector. Also has the number of rounds that test ran in for that detector.
 - `flaky_test_counts`: The number of flaky tests of each kind for each subject.
-- `detection_round_failures`: The number of failures for each flaky test type (`flaky` and `random`, as explained above).
+- `detection_round_failures`: The number of failures for each flaky test type.
 - `num_rounds`: The number of rounds of each type ran for each subject.
 - `confirmation_effectiveness`: How often each confirmation round type confirmed the flaky test as the flaky type we found at the end of the experiment. For example, if a test was found to be order dependent (that is, to pass in the passing order and fail in the failing order) in 1 run, but was found to be non-order-dependent in 2 other runs, it would be recorded as being confirmed twice, out of a total of 3 runs (because it was found to be non-order-dependent).
 - `confirmation_by_test`: The number of times each test both passed in the passing order and failed in the failing order over all confirmation steps.
@@ -70,7 +87,7 @@ Missing files are caused by errors in the module, modules timing out, or incompa
 - `error`: The error that caused the run to stop, if any. Generally a stack trace + an exception message.
 - `test-runs/output`: The actual output, to stdout and stderr, of each test run. The filename is a unique identifier that occurs in many places through the dataset.
 - `test-runs/results`: The results of running the tests, including the order of tests, as well as the result, time, and stack trace (if applicable) for each test in the order.
-- `detection-results/dt-lists.json`: The list of dependent test methods as found by the detector run last in our experiment. Includes two orders+results for each tests, an intended (passing) order, and a revealed (failing) order. This is only a convenient summary, and may be generated from the `round<N>.json` files.
+- `detection-results/flaky-lists.json`: The list of dependent test methods as found by the detector run last in our experiment. Includes two orders+results for each tests, an intended (passing) order, and a revealed (failing) order. This is only a convenient summary, and may be generated from the `round<N>.json` files.
 - `detection-results/list.txt`: The list of dependent tests, one full qualified name per line.
 - `detection-results/<DETECTOR_TYPE>/round<N>.json`: The results from each detection round. Lists the test run(s) for each round, as well as the flaky tests found before and after filtering (filtering includes removing duplicates, and in the case of dependent tests, confirmation). Includes orders that should allow reproduction of results (but may not, as flaky tests may not *always* flake).
 - `detection-results/<DETECTOR_TYPE>-verify/round<N>.json/<TEST_NAME>-<TEST_RESULT>-round<N>.json`: The results of the confirmation step for each suspected dependent test (failing for the first time) in the given round. There will be two files, one to confirm that the test passes, and another to confirm that the test fails. This is the full test run result (as described for `test-runs/results`) for the confirmation step.
@@ -78,7 +95,7 @@ Missing files are caused by errors in the module, modules timing out, or incompa
 
 where `<DETECTOR_TYPE>` may be one of:
 
-- `flaky`: The original order detector; runs the original order many times.
+- `original`: The original order detector; runs the original order many times.
 - `random`: From running orders which shuffle both the test class and the test method order (but never test methods between test classes).
 - `random-class`: From running orders which shuffled **only** the test class order.
 - `reverse`: From reversing both the test class and test method order.

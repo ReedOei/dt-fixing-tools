@@ -152,7 +152,7 @@ public class Analysis extends StandardMain {
 
             String[] strings;
             while ((strings = reader.readNext()) != null) {
-                if (strings.length == 2) {
+                if (strings.length >= 2) {
                     insertSubjectRaw(strings[0], strings[1]);
                 }
             }
@@ -366,6 +366,11 @@ public class Analysis extends StandardMain {
     }
 
     private int insertOperationTime(final OperationTime time) throws SQLException {
+        if (time == null) {
+            System.out.println("[WARNING] Tried to insert a null operation time! This likely indicates an issue with the data files (possibly out of date format that didn't have the time)");
+            return -1;
+        }
+
         return sqlite.statement(SQLStatements.INSERT_OPERATION_TIME)
                 .param(time.startTime())
                 .param(time.endTime())
