@@ -194,7 +194,7 @@ create table cleaner_group
 (
   id integer primary key,
   original_size integer not null,
-  minimal_size integer not null
+  minimal_size integer not null,
   cleaner_data_id integer not null,
   cleaner_tests text not null
 );
