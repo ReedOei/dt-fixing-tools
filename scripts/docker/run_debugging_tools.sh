@@ -39,6 +39,7 @@ bash /home/awshi2/dt-fixing-tools/scripts/docker/download-dt-lists.sh
 # Run the plugin, get module test times
 echo "*******************REED************************"
 echo "Running the debugging tools"
+git rev-parse HEAD
 date
 
 timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Ddiagnosis.run_detection=false -Denforcer.skip=true -Drat.skip=true -Dtestplugin.className=edu.illinois.cs.dt.tools.diagnosis.DiagnoserPlugin -fn -B -e |& tee diagnosis.log
