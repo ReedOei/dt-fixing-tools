@@ -261,10 +261,8 @@ public class Analysis extends StandardMain {
             insertPollutedFields(path.resolve(PollutionPathManager.POLLUTION_DATA));
 
             insertRewriteResults(path.resolve(DiagnoserPathManager.DIAGNOSIS));
-            insertFieldDiffs(path.resolve(DiagnoserPathManager.DIFFS_PATH));
+//            insertFieldDiffs(path.resolve(DiagnoserPathManager.DIFFS_PATH));
         }
-
-//        sqlite.save();
 
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
         System.out.println();
@@ -276,7 +274,10 @@ public class Analysis extends StandardMain {
             return;
         }
 
+        System.out.println("[INFO] Inserting field diffs from: " + path);
+
         for (final Path p : FileUtil.listFiles(path)) {
+//            System.out.println(p);
             final Optional<? extends FieldDiff> fieldDiff = FileUtil.safeReadJson(FieldDiff.class, p).findFirst();
 
             if (fieldDiff.isPresent()) {
@@ -297,8 +298,10 @@ public class Analysis extends StandardMain {
             return;
         }
 
+        System.out.println("[INFO] Inserting rewrite results from: " + path);
+
         for (final Path p : FileUtil.listFiles(path)) {
-            final Optional<? extends DiagnosisResult> diagnosisResult = FileUtil.safeReadJson(DiagnosisResult.class, p).findFirst();
+            final String contents = FileUtil.readFile(p);
 
             final String[] split = FilenameUtils.removeExtension(p.getFileName().toString()).split("-");
 
@@ -311,17 +314,21 @@ public class Analysis extends StandardMain {
             final String hash = split[1];
             final String expectedResult = split[2];
 
-            if (diagnosisResult.isPresent()) {
-                final int id = sqlite.statement(SQLStatements.INSERT_DIAGNOSIS_RESULT)
-                        .param(testName)
-                        .param(hash)
-                        .param(expectedResult)
-                        .insertSingleRow();
+            final int id = sqlite.statement(SQLStatements.INSERT_DIAGNOSIS_RESULT)
+                    .param(testName)
+                    .param(hash)
+                    .param(expectedResult)
+                    .insertSingleRow();
 
+            final DiagnosisResult diagnosisResult = new Gson().fromJson(contents, DiagnosisResult.class);
 
-                for (final PolluterDiagnosis diagnosis : diagnosisResult.get().diagnoses()) {
+            if (diagnosisResult.diagnoses() != null) {
+                for (final PolluterDiagnosis diagnosis : diagnosisResult.diagnoses()) {
                     insertDiagnosis(id, diagnosis);
                 }
+            } else {
+                System.out.println("[WARNING] File " + p + " was in the wrong format (could not read diagnoses)?!");
+                continue;
             }
         }
     }
@@ -330,8 +337,18 @@ public class Analysis extends StandardMain {
         final StringBuilder queryBuilder = new StringBuilder("select pd.id\n" +
                 "from polluter_data pd\n");
 
-        for (final String dep : diagnosis.polluterData().deps()) {
-            queryBuilder.append("inner join dependency d on d.polluter_data_id = pd.id and d.test_name = '").append(dep).append("'\n");
+        final List<String> deps = diagnosis.polluterData().deps();
+        for (int i = 0; i < deps.size(); i++) {
+            final String dep = deps.get(i);
+            queryBuilder.append("inner join dependency d")
+                    .append(i)
+                    .append(" on d")
+                    .append(i)
+                    .append(".polluter_data_id = pd.id and d")
+                    .append(i)
+                    .append(".test_name = '")
+                    .append(dep)
+                    .append("'\n");
         }
 
         final ListEx<LinkedHashMap<String, String>> rows = sqlite.makeProc(queryBuilder.toString()).tableQuery().rows();
@@ -339,9 +356,7 @@ public class Analysis extends StandardMain {
         if (rows.isEmpty()) {
             System.out.println("[WARNING] No polluter data found for: " + diagnosis.polluterData().deps());
             return;
-        }
-
-        if (!rows.get(0).containsKey("id")) {
+        } else if (!rows.get(0).containsKey("id")) {
             System.out.println("[WARNING] No id column found when trying to lookup polluter data.");
             return;
         }
@@ -401,31 +416,35 @@ public class Analysis extends StandardMain {
             return;
         }
 
+        System.out.println("[INFO] Inserting polluted fields from: " + path);
+
         for (final Path p : FileUtil.listFiles(path)) {
-            final Map<String, PollutedField> pollutedFields =
-                    (Map<String, PollutedField>) TestResult.getXStreamInstance().fromXML(p.toFile());
+            if (FilenameUtils.isExtension(p.getFileName().toString(), "xml")) {
+                final Map<String, PollutedField> pollutedFields =
+                        (Map<String, PollutedField>) TestResult.getXStreamInstance().fromXML(p.toFile());
 
-            final String fname = FilenameUtils.removeExtension(path.getFileName().toString());
-            final String[] split = fname.split("-");
+                final String fname = FilenameUtils.removeExtension(path.getFileName().toString());
+                final String[] split = fname.split("-");
 
-            if (split.length < 2) {
-                System.out.println("[WARNING] SKIPPING: File " + p + " is named incorrectly! " +
-                        "There should be two parts to the filename, with the second being the expected result.");
-                continue;
-            }
+                if (split.length < 2) {
+                    System.out.println("[WARNING] SKIPPING: File " + p + " is named incorrectly! " +
+                            "There should be two parts to the filename, with the second being the expected result.");
+                    continue;
+                }
 
-            final String expected = split[1];
+                final String expected = split[1];
 
-            for (final Map.Entry<String, PollutedField> entry : pollutedFields.entrySet()) {
-                final String fieldName = entry.getKey();
-                final PollutedField field = entry.getValue();
-                sqlite.statement(SQLStatements.INSERT_POLLUTED_FIELD)
-                        .param(fieldName)
-                        .param(field.testName())
-                        .param(expected)
-                        .param(field.withoutDepsVal())
-                        .param(field.withDepsVal())
-                        .insertSingleRow();
+                for (final Map.Entry<String, PollutedField> entry : pollutedFields.entrySet()) {
+                    final String fieldName = entry.getKey();
+                    final PollutedField field = entry.getValue();
+                    sqlite.statement(SQLStatements.INSERT_POLLUTED_FIELD)
+                            .param(fieldName)
+                            .param(field.testName())
+                            .param(expected)
+                            .param(field.withoutDepsVal())
+                            .param(field.withDepsVal())
+                            .insertSingleRow();
+                }
             }
         }
     }
@@ -438,6 +457,8 @@ public class Analysis extends StandardMain {
             System.out.println("[WARNING] SKIPPING: No static field info path: " + staticFieldInfoPath);
             return;
         }
+
+        System.out.println("[INFO] Inserting static field info (mode: " + mode + ") from: " + path);
 
         for (Path p : FileUtil.listFiles(staticFieldInfoPath)) {
             final String[] filenameParts = p.getFileName().toString().split("-");
@@ -473,6 +494,8 @@ public class Analysis extends StandardMain {
             System.out.println("[WARNING] SKIPPING: No minimized folder " + minimized);
             return;
         }
+
+        System.out.println("[INFO] Inserting minimized results from: " + minimized);
 
         FileUtil.listFiles(minimized).stream()
                 .flatMap(FileUtil::safeReadFile)
@@ -537,13 +560,24 @@ public class Analysis extends StandardMain {
     }
 
     private int insertCleanerGroup(final int cleanerDataId, final CleanerGroup cleanerGroup) throws SQLException {
-        // TODO: add stats about things like same package, same class, etc.
-        return sqlite.statement(SQLStatements.INSERT_CLEANER_GROUP)
+        final int id = sqlite.statement(SQLStatements.INSERT_CLEANER_GROUP)
                 .param(cleanerDataId)
                 .param(cleanerGroup.originalSize())
                 .param(cleanerGroup.cleanerTests().size())
-                .param(cleanerGroup.cleanerTests().toString())
                 .insertSingleRow();
+
+        final ListEx<String> cleanerTests = cleanerGroup.cleanerTests();
+        for (int i = 0; i < cleanerTests.size(); i++) {
+            final String cleanerTest = cleanerTests.get(i);
+
+            sqlite.statement(SQLStatements.INSERT_CLEANER_TEST)
+                    .param(id)
+                    .param(cleanerTest)
+                    .param(i)
+                    .insertSingleRow();
+        }
+
+        return id;
     }
 
     private int insertOperationTime(final OperationTime time) throws SQLException {

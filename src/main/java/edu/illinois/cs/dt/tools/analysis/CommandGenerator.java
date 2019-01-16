@@ -45,11 +45,22 @@ public class CommandGenerator extends StandardMain {
 
         // TODO: Could display a table showing how many have each number (though atm all have just 1)
         System.out.println(tools.commandQuery("numWithSingleDep",
-                sqlite.statement(SQLStatements.COUNT_DEPENDENCIES).param(1)));
+                sqlite.statement(SQLStatements.COUNT_DEPENDENCIES).param(1).param(1)));
+        System.out.println(tools.commandQuery("numWithAnyDeps",
+                sqlite.statement(SQLStatements.COUNT_DEPENDENCIES).param(1).param(1000000000))); // Use as "infinity"
+        System.out.println(tools.commandQuery("numWithMoreThanOneDep",
+                sqlite.statement(SQLStatements.COUNT_DEPENDENCIES).param(2).param(1000000000))); // Use as "infinity"
+        System.out.println(tools.commandQuery("numWithNoDeps",
+                sqlite.statement(SQLStatements.COUNT_DEPENDENCIES).param(0).param(0)));
 
-        // TODO: Number of tests that have any dependencies
-        // TODO: Number of tests with more than one dependency
-        // TODO: Number of tests without any dependencies
+        System.out.println(tools.commandQuery("numWithSingleCleaner",
+                sqlite.statement(SQLStatements.COUNT_CLEANERS).param(1).param(1)));
+        System.out.println(tools.commandQuery("numWithAnyCleaner",
+                sqlite.statement(SQLStatements.COUNT_CLEANERS).param(1).param(1000000000))); // Use as "infinity"
+        System.out.println(tools.commandQuery("numWithMoreThanOneCleaner",
+                sqlite.statement(SQLStatements.COUNT_CLEANERS).param(2).param(1000000000))); // Use as "infinity"
+        System.out.println(tools.commandQuery("numWithNoCleaner",
+                sqlite.statement(SQLStatements.COUNT_CLEANERS).param(0).param(0)));
 
         // TODO: Number of tests with a single field
         // TODO: Number of tests with any fields
@@ -58,6 +69,6 @@ public class CommandGenerator extends StandardMain {
         // TODO: Number of lines of code to fix
         // TODO: Number of times that fixer works
 
-        // TODO: Number of cleaners, number of polluters, number of setters
+        // TODO: Number of polluters vs. number of setters
     }
 }

@@ -79,7 +79,7 @@ public class SQLStatements {
     public static final Path PERC_FAIL_FLAKY_TESTS = Paths.get("src/main/sql/detector_figures/perc_fail_flaky_tests.sql");
 
     public static final Path COUNT_OD_TYPE = Paths.get("src/main/sql/figures/count_od_type.sql");
-    public static final Path COUNT_DEPENDENCIES = Paths.get("src/main/sql/figures/count_single_dependency.sql");
+    public static final Path COUNT_DEPENDENCIES = Paths.get("src/main/sql/figures/count_dependency.sql");
     public static final Path INSERT_DEPENDENCY = Paths.get("src/main/sql/build/dependency_insert.sql");
     public static final Path INSERT_POLLUTED_FIELD = Paths.get("src/main/sql/build/polluted_field_insert.sql");
     public static final Path INSERT_FIELD_DIFF = Paths.get("src/main/sql/build/field_diff_insert.sql");
@@ -88,6 +88,8 @@ public class SQLStatements {
     public static final Path INSERT_REWRITING_RESULT = Paths.get("src/main/sql/build/rewriting_result_insert.sql");
     public static final Path INSERT_REWRITE_TARGET = Paths.get("src/main/sql/build/rewrite_target_insert.sql");
     public static final Path GET_POLLUTED_FIELD_ID = Paths.get("src/main/sql/build/polluted_field_id_get.sql");
+    public static final Path INSERT_CLEANER_TEST = Paths.get("src/main/sql/build/cleaner_test_insert.sql");
+    public static final Path COUNT_CLEANERS = Paths.get("src/main/sql/figures/count_cleaner.sql");
 
     static {
         ensureExists(COUNT_OD_TYPE);
@@ -100,6 +102,7 @@ public class SQLStatements {
         ensureExists(INSERT_REWRITING_RESULT);
         ensureExists(INSERT_REWRITE_TARGET);
         ensureExists(GET_POLLUTED_FIELD_ID);
+        ensureExists(INSERT_CLEANER_TEST);
 
         ensureExists(INSERT_RAW_SUBJECT);
 
