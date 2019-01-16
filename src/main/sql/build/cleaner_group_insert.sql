@@ -2,10 +2,11 @@ insert into cleaner_group
 (
   cleaner_data_id,
   original_size,
-  minimal_size,
-  cleaner_tests
+  minimal_size
 )
 values
 (
-  ?, ?, ?, ?
+  ?,
+  ?,
+  ?
 )

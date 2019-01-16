@@ -233,9 +233,18 @@ create table cleaner_group
   original_size integer not null,
   minimal_size integer not null,
   cleaner_data_id integer not null,
-  cleaner_tests text not null,
 
   foreign key(cleaner_data_id) references cleaner_data(id)
+);
+
+create table cleaner_test
+(
+  id integer primary key,
+  cleaner_group_id integer not null,
+  test_name text not null,
+  order_index integer not null,
+
+  foreign key(cleaner_group_id) references cleaner_group(id)
 );
 
 create table static_field_info
@@ -263,8 +272,10 @@ create table polluted_field
   field_name text not null,
   test_name text not null,
   expected_result text not null,
-  without_deps_val text not null,
-  with_deps_val text not null,
+
+  -- Intentionally nullable
+  without_deps_val text,
+  with_deps_val text,
 
   foreign key(test_name) references original_order(test_name)
 );
@@ -309,7 +320,6 @@ create table diagnosis_result
   hash text not null,
   expected_result text not null,
 
-  foreign key(minimized_id) references minimize_test_result(id),
   foreign key(test_name) references original_order(test_name)
 );
 
@@ -319,6 +329,8 @@ create table field_diff
   field_name text not null,
   xpath text not null,
   inner_field_name text not null,
-  with_deps_val text not null,
-  without_deps_val text not null
+
+  -- Intentionally nullable
+  without_deps_val text,
+  with_deps_val text
 );

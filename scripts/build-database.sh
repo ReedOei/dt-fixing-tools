@@ -2,6 +2,8 @@
 
 # Usage: bash build-database.sh RESULTS_FOLDER DATABASE SUBJECT_LIST
 
+set -e
+
 if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]]; then
     echo "arg1 - Results folder"
     echo "arg2 - Path to database to create"

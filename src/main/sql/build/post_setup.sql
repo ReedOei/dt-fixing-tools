@@ -103,14 +103,14 @@ select mtr.test_name,
 from minimize_test_result mtr
 inner join
 (
-    select mtr.test_name, mtr.expected_result, count(pd.dependencies) as num
+    select mtr.test_name, mtr.expected_result, count(pd.id) as num
     from minimize_test_result mtr
     left join polluter_data pd on mtr.id = pd.minimized_id
     group by mtr.test_name, mtr.expected_result
 ) passing on passing.test_name = mtr.test_name and passing.expected_result = 'PASS'
 inner join
 (
-    select mtr.test_name, mtr.expected_result, count(pd.dependencies) as num
+    select mtr.test_name, mtr.expected_result, count(pd.id) as num
     from minimize_test_result mtr
     left join polluter_data pd on mtr.id = pd.minimized_id
     group by mtr.test_name, mtr.expected_result
@@ -132,12 +132,26 @@ select oo.subject_name,
        mtr.test_name,
        mtr.expected_result,
        pd.id,
-       count(*) as dep_count
+       count(d.test_name) as dep_count
 from minimize_test_result mtr
-inner join polluter_data pd on mtr.id = pd.minimized_id
-inner join dependency d on pd.id = d.polluter_data_id
-inner join original_order oo on mtr.test_name = oo.test_name,
+inner join original_order oo on mtr.test_name = oo.test_name
+left join polluter_data pd on mtr.id = pd.minimized_id
+left join dependency d on pd.id = d.polluter_data_id
 group by oo.subject_name, mtr.test_name, mtr.expected_result, pd.id;
+
+create view cleaner_info as
+select oo.subject_name,
+       mtr.test_name,
+       mtr.expected_result,
+       cg.id,
+       count(ct.test_name) as cleaner_count
+from minimize_test_result mtr
+inner join original_order oo on mtr.test_name = oo.test_name
+left join polluter_data pd on mtr.id = pd.minimized_id
+left join cleaner_data cd on cd.polluter_data_id = pd.id
+left join cleaner_group cg on cg.cleaner_data_id = cd.id
+left join cleaner_test ct on ct.cleaner_group_id = cg.id
+group by oo.subject_name, mtr.test_name, mtr.expected_result, cg.id;
 
 insert into confirmation_runs
 select p.test_name,

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Usage: bash generate-commands.sh DATABASE [PREFIX]
+# Usage: bash generate-detector-commands.sh DATABASE [PREFIX]
 database="$1"
 prefix="$2"
 
@@ -13,5 +13,5 @@ fi
 # Go to where the pom is
 cd "$scripts_folder/.."
 
-mvn install -DskipTests exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.analysis.CommandGenerator" -Dexec.args="--db '$database' --prefix '$prefix'"
+mvn install -DskipTests exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.analysis.CommandGenerator" -Dexec.args="--db '$database' --prefix '$prefix'"
 

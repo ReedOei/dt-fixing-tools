@@ -1,10 +1,9 @@
 insert into polluter_data
 (
-  minimized_id,
-  dependencies
+  minimized_id
 )
 values
 (
-  ?,
   ?
 )
+
