@@ -39,6 +39,12 @@ public class SQLite {
         connection.createStatement().executeUpdate("backup to "+ db.toAbsolutePath());
     }
 
+    public Procedure makeProc(final String strProc) throws SQLException {
+        final PreparedStatement stmt = connection.prepareStatement(strProc);
+
+        return new Procedure(connection, stmt);
+    }
+
     public Procedure statement(final Path path) {
         final PreparedStatement ps = statements.computeIfAbsent(path, p -> {
             try {

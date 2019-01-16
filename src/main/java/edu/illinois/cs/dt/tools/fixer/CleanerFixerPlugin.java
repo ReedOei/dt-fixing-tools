@@ -1,6 +1,8 @@
 package edu.illinois.cs.dt.tools.fixer;
 
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
@@ -288,6 +290,17 @@ public class CleanerFixerPlugin extends TestPlugin {
         return deltaDebug(failingOrder, victimMethod, cleanerStmts, n * 2);
     }
 
+    private NodeList<Statement> getCodeFromAnnotatedMethod(final JavaFile javaFile, final String annotation) {
+        NodeList<Statement> stmts = NodeList.nodeList();
+        for (MethodDeclaration method : javaFile.findMethodsWithAnnotation(annotation)) {
+            Optional<BlockStmt> body = method.getBody();
+            if (body.isPresent()) {
+                stmts.addAll(body.get().getStatements());
+            }
+        }
+        return stmts;
+    }
+
     // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
     // TODO: for cleaners, santa clauses, etc.
     private void applyFix(final List<String> failingOrder,
@@ -303,9 +316,25 @@ public class CleanerFixerPlugin extends TestPlugin {
             return;
         }
 
-        // Do our fix using all cleaner code
+        // Do our fix using all cleaner code, which includes setup and teardown
         TestPluginPlugin.info("Applying code from cleaner and recompiling.");
-        final NodeList<Statement> cleanerStmts = cleanerMethod.body().getStatements();
+        final NodeList<Statement> cleanerStmts = NodeList.nodeList();
+        // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
+        // Only include BeforeClass if in separate classes (for both victim and polluter(s))
+        if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
+        }
+        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
+        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
+        cleanerStmts.addAll(cleanerMethod.body().getStatements());
+        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
+        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
+        // Only include AfterClass if in separate classes (for both victim and polluter(s))
+        if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.AfterClass"));
+        }
 
         if (!checkCleanerStmts(failingOrder, victimMethod, cleanerStmts)) {
             TestPluginPlugin.error("Cleaner does not fix victim!");

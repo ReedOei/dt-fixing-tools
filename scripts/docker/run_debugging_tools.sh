@@ -33,7 +33,7 @@ cd /home/awshi2/${slug}
 /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
 echo "*******************REED************************"
-echo "Downloading known dt-lists.json for ${slug}"
+echo "Downloading known flaky-lists.json for ${slug}"
 bash /home/awshi2/dt-fixing-tools/scripts/docker/download-dt-lists.sh
 
 # Run the plugin, get module test times
@@ -42,12 +42,14 @@ echo "Running the debugging tools"
 date
 
 timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Ddiagnosis.run_detection=false -Denforcer.skip=true -Drat.skip=true -Dtestplugin.className=edu.illinois.cs.dt.tools.diagnosis.DiagnoserPlugin -fn -B -e |& tee diagnosis.log
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Ddiagnosis.run_detection=false -Denforcer.skip=true -Drat.skip=true -Dtestplugin.className=edu.illinois.cs.dt.tools.fixer.CleanerFixerPlugin -fn -B -e |& tee fixer.log
 
 # Gather the results, put them up top
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 /home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
 mv diagnosis.log ${RESULTSDIR}
+mv fixer.log ${RESULTSDIR}
 mv /home/awshi2/mvn-test.log ${RESULTSDIR}
 mv /home/awshi2/mvn-test-time.log ${RESULTSDIR}
 

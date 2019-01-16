@@ -75,7 +75,7 @@ public class BuildDTLists extends StandardMain {
 
     private void save(final Path resultsFolder, final DependentTestList dependentTestList) throws IOException {
         final String moduleName = resultsFolder.getParent().getFileName().toString();
-        final String outputFileName = String.format("%s-%s", moduleName, DetectorPathManager.DT_LIST_PATH.getFileName().toString());
+        final String outputFileName = String.format("%s-%s", moduleName, DetectorPathManager.FLAKY_LIST_PATH.getFileName().toString());
         final Path outputFile = outputPath.resolve(outputFileName);
 
         if (Files.exists(outputFile)) {

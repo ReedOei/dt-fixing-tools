@@ -172,6 +172,24 @@ public class JavaFile {
         return null;
     }
 
+    public List<MethodDeclaration> findMethodsWithAnnotation(String annotation) {
+        List<MethodDeclaration> methods = new ArrayList<>();
+        for (final ClassOrInterfaceDeclaration classDeclaration : classList) {
+            for (final BodyDeclaration bodyDeclaration : classDeclaration.getMembers()) {
+                if (bodyDeclaration instanceof MethodDeclaration) {
+                    final MethodDeclaration method = (MethodDeclaration)bodyDeclaration;
+                    for (AnnotationExpr annotationExpr : method.getAnnotations()) {
+                        if (annotationExpr.toString().equals(annotation)) {
+                            methods.add(method);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return methods;
+    }
+
     private String getFullyQualifiedMethodName(MethodDeclaration method, ClassOrInterfaceDeclaration classDec) {
         final Optional<PackageDeclaration> packageDec = compilationUnit.getPackageDeclaration();
 
