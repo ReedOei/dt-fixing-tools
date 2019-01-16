@@ -10,10 +10,18 @@ import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
+import edu.illinois.cs.dt.tools.diagnosis.DiagnoserPathManager;
+import edu.illinois.cs.dt.tools.diagnosis.DiagnosisResult;
+import edu.illinois.cs.dt.tools.diagnosis.PolluterDiagnosis;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticAccessInfo;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticFieldPathManager;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.StaticTracer;
 import edu.illinois.cs.dt.tools.diagnosis.instrumentation.TracerMode;
+import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutedField;
+import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutionPathManager;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.FieldDiff;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewriteTarget;
+import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewritingResult;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
 import edu.illinois.cs.dt.tools.minimizer.PolluterData;
@@ -21,6 +29,7 @@ import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerGroup;
 import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
+import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 import org.apache.commons.io.FilenameUtils;
 
@@ -35,8 +44,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -247,12 +258,176 @@ public class Analysis extends StandardMain {
 
             insertMinimizedResults(path.resolve(MinimizerPathManager.MINIMIZED));
             insertStaticFieldInfo(path, TracerMode.TRACK);
+            insertPollutedFields(path.resolve(PollutionPathManager.POLLUTION_DATA));
+
+            insertRewriteResults(path.resolve(DiagnoserPathManager.DIAGNOSIS));
+            insertFieldDiffs(path.resolve(DiagnoserPathManager.DIFFS_PATH));
         }
 
 //        sqlite.save();
 
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
         System.out.println();
+    }
+
+    private void insertFieldDiffs(final Path path) throws IOException, SQLException {
+        if (!Files.isDirectory(path)) {
+            System.out.println("[WARNING] SKIPPING: No field diffs path: " + path);
+            return;
+        }
+
+        for (final Path p : FileUtil.listFiles(path)) {
+            final Optional<? extends FieldDiff> fieldDiff = FileUtil.safeReadJson(FieldDiff.class, p).findFirst();
+
+            if (fieldDiff.isPresent()) {
+                sqlite.statement(SQLStatements.INSERT_FIELD_DIFF)
+                        .param(fieldDiff.get().fieldName())
+                        .param(fieldDiff.get().xpath())
+                        .param(fieldDiff.get().innerFieldName())
+                        .param(fieldDiff.get().withDepsVal())
+                        .param(fieldDiff.get().withoutDepsVal())
+                        .insertSingleRow();
+            }
+        }
+    }
+
+    private void insertRewriteResults(final Path path) throws IOException, SQLException {
+        if (!Files.isDirectory(path)) {
+            System.out.println("[WARNING] SKIPPING: No rewrite results path: " + path);
+            return;
+        }
+
+        for (final Path p : FileUtil.listFiles(path)) {
+            final Optional<? extends DiagnosisResult> diagnosisResult = FileUtil.safeReadJson(DiagnosisResult.class, p).findFirst();
+
+            final String[] split = FilenameUtils.removeExtension(p.getFileName().toString()).split("-");
+
+            if (split.length < 3) {
+                System.out.println("[WARNING] File name format of " + p + " is incorrect. Most likely due to outdated data.");
+                continue;
+            }
+
+            final String testName = split[0];
+            final String hash = split[1];
+            final String expectedResult = split[2];
+
+            if (diagnosisResult.isPresent()) {
+                final int id = sqlite.statement(SQLStatements.INSERT_DIAGNOSIS_RESULT)
+                        .param(testName)
+                        .param(hash)
+                        .param(expectedResult)
+                        .insertSingleRow();
+
+
+                for (final PolluterDiagnosis diagnosis : diagnosisResult.get().diagnoses()) {
+                    insertDiagnosis(id, diagnosis);
+                }
+            }
+        }
+    }
+
+    private void insertDiagnosis(final int diagnosisResultId, final PolluterDiagnosis diagnosis) throws SQLException {
+        final StringBuilder queryBuilder = new StringBuilder("select pd.id\n" +
+                "from polluter_data pd\n");
+
+        for (final String dep : diagnosis.polluterData().deps()) {
+            queryBuilder.append("inner join dependency d on d.polluter_data_id = pd.id and d.test_name = '").append(dep).append("'\n");
+        }
+
+        final ListEx<LinkedHashMap<String, String>> rows = sqlite.makeProc(queryBuilder.toString()).tableQuery().rows();
+
+        if (rows.isEmpty()) {
+            System.out.println("[WARNING] No polluter data found for: " + diagnosis.polluterData().deps());
+            return;
+        }
+
+        if (!rows.get(0).containsKey("id")) {
+            System.out.println("[WARNING] No id column found when trying to lookup polluter data.");
+            return;
+        }
+
+        final int polluterDataId = Integer.valueOf(rows.get(0).get("id"));
+
+        final int id = sqlite.statement(SQLStatements.INSERT_POLLUTER_DIAGNOSIS)
+                .param(polluterDataId)
+                .param(diagnosisResultId)
+                .insertSingleRow();
+
+        for (final RewritingResult rewritingResult : diagnosis.rewritingResults().rewritingResults()) {
+            insertRewritingResult(polluterDataId, id, rewritingResult);
+        }
+    }
+
+    private int insertRewritingResult(final int polluterDataId,
+                                      final int polluterDiagnosisId,
+                                      final RewritingResult rewritingResult) throws SQLException {
+        final int id = sqlite.statement(SQLStatements.INSERT_REWRITING_RESULT)
+                .param(rewritingResult.testRunResult().id())
+                .param(rewritingResult.result().toString())
+                .param(rewritingResult.expected().toString())
+                .param(polluterDiagnosisId)
+                .insertSingleRow();
+
+        for (final RewriteTarget target : rewritingResult.target().targets()) {
+            insertRewriteTarget(id, target);
+        }
+
+        return id;
+    }
+
+    private int insertRewriteTarget(final int rewritingResultId, final RewriteTarget target) throws SQLException {
+        final ListEx<ListEx<String>> table = sqlite.statement(SQLStatements.GET_POLLUTED_FIELD_ID)
+                .param(target.staticFieldName())
+                .tableQuery().table();
+
+        if (table.isEmpty() || table.get(0).isEmpty()) {
+            System.out.println("[WARNING] Did not find polluted field: " + target.staticFieldName());
+            return -1;
+        }
+
+        final int pollutedFieldId = Integer.valueOf(table.get(0).get(0));
+
+        return sqlite.statement(SQLStatements.INSERT_REWRITE_TARGET)
+                .param(target.staticFieldName())
+                .param(target.fieldName())
+                .param(pollutedFieldId)
+                .param(rewritingResultId)
+                .insertSingleRow();
+    }
+
+    private void insertPollutedFields(final Path path) throws IOException, SQLException {
+        if (!Files.isDirectory(path)) {
+            System.out.println("[WARNING] SKIPPING: No polluted fields path: " + path);
+            return;
+        }
+
+        for (final Path p : FileUtil.listFiles(path)) {
+            final Map<String, PollutedField> pollutedFields =
+                    (Map<String, PollutedField>) TestResult.getXStreamInstance().fromXML(p.toFile());
+
+            final String fname = FilenameUtils.removeExtension(path.getFileName().toString());
+            final String[] split = fname.split("-");
+
+            if (split.length < 2) {
+                System.out.println("[WARNING] SKIPPING: File " + p + " is named incorrectly! " +
+                        "There should be two parts to the filename, with the second being the expected result.");
+                continue;
+            }
+
+            final String expected = split[1];
+
+            for (final Map.Entry<String, PollutedField> entry : pollutedFields.entrySet()) {
+                final String fieldName = entry.getKey();
+                final PollutedField field = entry.getValue();
+                sqlite.statement(SQLStatements.INSERT_POLLUTED_FIELD)
+                        .param(fieldName)
+                        .param(field.testName())
+                        .param(expected)
+                        .param(field.withoutDepsVal())
+                        .param(field.withDepsVal())
+                        .insertSingleRow();
+            }
+        }
     }
 
     private void insertStaticFieldInfo(final Path path, final TracerMode mode) throws IOException, SQLException {
@@ -312,7 +487,6 @@ public class Analysis extends StandardMain {
     }
 
     private int insertMinimizeTestResult(final MinimizeTestsResult minimizeTestsResult) throws SQLException {
-        // TODO: add stats about things like cleaner group size, same package, same class, etc.
         int id = sqlite.statement(SQLStatements.INSERT_MINIMIZE_TEST_RESULT)
                 .param(minimizeTestsResult.dependentTest())
                 .param(minimizeTestsResult.expectedRun().id())
@@ -329,11 +503,18 @@ public class Analysis extends StandardMain {
     }
 
     private int insertPolluterData(final int minimizeTestResultId, final PolluterData polluter) throws SQLException {
-        // TODO: add stats about things like cleaner group size, same package, same class, etc.
         int id = sqlite.statement(SQLStatements.INSERT_POLLUTER_DATA)
                     .param(minimizeTestResultId)
-                    .param(polluter.deps().toString())
                     .insertSingleRow();
+
+        for (int i = 0; i < polluter.deps().size(); i++) {
+            sqlite.statement(SQLStatements.INSERT_DEPENDENCY)
+                    .param(id)
+                    .param(polluter.deps().get(i))
+                    .param(i)
+                    .insertSingleRow();
+        }
+
         insertCleanerData(id, polluter.cleanerData());
         return id;
     }
