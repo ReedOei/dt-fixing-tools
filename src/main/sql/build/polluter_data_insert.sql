@@ -1,6 +1,6 @@
 insert into polluter_data
 (
-  minimize_test_result_id,
+  minimized_id,
   dependencies
 )
 values

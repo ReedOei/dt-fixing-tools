@@ -146,7 +146,6 @@ public class TestDiagnoser {
             throws IOException {
         final String hash = MD5.hashOrder(polluterData.deps());
 
-
         final Path path = DiagnoserPathManager.diffsPath(hash, fieldName).toAbsolutePath();
         Files.createDirectories(path.getParent());
         Files.write(path, new Gson().toJson(diffs).getBytes());
