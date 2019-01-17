@@ -183,7 +183,7 @@ public class CleanerFinder {
             ListEx<String> otherChunk = new ListEx<>();
             // Create chunk starting at this iteration
             int endpoint = Math.min(cleanerGroup.size(), i + chunkSize);
-            chunk.addAll(deps.subList(i, endpoint));
+            chunk.addAll(cleanerGroup.subList(i, endpoint));
 
             // Complement chunk are tests before and after this current chunk
             otherChunk.addAll(cleanerGroup.subList(0, i));
