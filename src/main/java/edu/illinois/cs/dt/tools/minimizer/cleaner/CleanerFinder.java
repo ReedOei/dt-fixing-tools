@@ -178,6 +178,7 @@ public class CleanerFinder {
         // Cut the tests into n equal chunks and try each chunk
         int chunkSize = (int)Math.round((double)(cleanerGroup.size()) / n);
         List<ListEx<String>> chunks = new ArrayList<>();
+        TestPluginPlugin.info("Cleaner group size: " + cleanerGroup.size());
         for (int i = 0; i < cleanerGroup.size(); i += chunkSize) {
             ListEx<String> chunk = new ListEx<>();
             ListEx<String> otherChunk = new ListEx<>();
@@ -195,7 +196,7 @@ public class CleanerFinder {
             }
             // Otherwise, check if applying complement chunk works
             if (isCleanerGroup(otherChunk)) {
-                return deltaDebug(otherChunk, n - 1);    // If works, then delta debug some more the complement chunk
+                return deltaDebug(otherChunk, 2);   // If works, then delta debug some more the complement chunk
             }
         }
         // If not chunk/complement work, increase granularity and try again
