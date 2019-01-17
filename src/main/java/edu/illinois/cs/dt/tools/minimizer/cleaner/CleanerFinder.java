@@ -16,6 +16,7 @@ import scala.util.Try;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -57,7 +58,7 @@ public class CleanerFinder {
         final long startTime = System.currentTimeMillis();
         TestPluginPlugin.info("Looking for cleaners for: " + dependentTest);
 
-        // If it's empty, we can't have any cleaners (they'd be polluters, not cleaners
+        // If it's empty, we can't have any cleaners (they'd be polluters, not cleaners)
         if (deps.isEmpty()) {
             TestPluginPlugin.info("No dependencies for " + dependentTest + " in this order, so no cleaners.");
             return new CleanerData(dependentTest, OperationTime.instantaneous(),
@@ -86,6 +87,23 @@ public class CleanerFinder {
 
         final ListEx<ListEx<String>> cleanerGroups = filterCleanerGroups(candidates);
         TestPluginPlugin.info("Found " + cleanerGroups.size() + " cleaner groups.");
+
+        // If there are no cleaner groups, then get desperate and try each single test as a potential cleaner
+        if (cleanerGroups.isEmpty()) {
+            TestPluginPlugin.info("Desperately trying out every single test as potential cleaner.");
+            for (String test : originalOrder) {
+                // Assume that cleaner cannot be one of the polluters (but assume can potentially be the test itself, also assume idempotency)
+                if (deps.contains(test)) {
+                    continue;
+                }
+                final ListEx<String> singleTest = new ListEx<String>(Collections.singletonList(test));
+                if (isCleanerGroup(singleTest)) {
+                    TestPluginPlugin.info("Test " + test + " is a cleaner.");
+                    cleanerGroups.add(singleTest);
+                }
+            }
+            TestPluginPlugin.info("After trying every test, found " + cleanerGroups.size() + " cleaner groups.");
+        }
 
         return cleanerGroups;
     }
@@ -143,7 +161,45 @@ public class CleanerFinder {
     private CleanerGroup minimalCleanerGroup(final int i, final ListEx<String> cleanerGroup) {
         TestPluginPlugin.info("Minimizing cleaner group " + i + ": " +
                 StringUtils.abbreviate(String.valueOf(cleanerGroup), 500));
-        return new CleanerGroup(dependentTest, cleanerGroup.size(), reduce(cleanerGroup));
+        return new CleanerGroup(dependentTest, cleanerGroup.size(), deltaDebug(cleanerGroup, 2));
+    }
+
+    /**
+     * @param cleanerGroup The list of tests that is a known, but not necessarily yet a minimal, cleaner group
+     * @param n The granularity level at which to chunk up the tests and try to minimize
+     * @return A minimal cleanerGroup obtained using delta-debugging
+     */
+    private ListEx<String> deltaDebug(final ListEx<String> cleanerGroup, int n) {
+        // If n granularity is greater than number of tests, then finished, simply return passed in tests
+        if (cleanerGroup.size() < n) {
+            return cleanerGroup;
+        }
+
+        // Cut the tests into n equal chunks and try each chunk
+        int chunkSize = (int)Math.round((double)(cleanerGroup.size()) / n);
+        List<ListEx<String>> chunks = new ArrayList<>();
+        for (int i = 0; i < cleanerGroup.size(); i += chunkSize) {
+            ListEx<String> chunk = new ListEx<>();
+            ListEx<String> otherChunk = new ListEx<>();
+            // Create chunk starting at this iteration
+            int endpoint = Math.min(cleanerGroup.size(), i + chunkSize);
+            chunk.addAll(deps.subList(i, endpoint));
+
+            // Complement chunk are tests before and after this current chunk
+            otherChunk.addAll(cleanerGroup.subList(0, i));
+            otherChunk.addAll(cleanerGroup.subList(endpoint, cleanerGroup.size()));
+
+            // Check if running this chunk works
+            if (isCleanerGroup(chunk)) {
+                return deltaDebug(chunk, 2); // If works, then delta debug some more this chunk
+            }
+            // Otherwise, check if applying complement chunk works
+            if (isCleanerGroup(otherChunk)) {
+                return deltaDebug(otherChunk, n - 1);    // If works, then delta debug some more the complement chunk
+            }
+        }
+        // If not chunk/complement work, increase granularity and try again
+        return deltaDebug(cleanerGroup, n * 2);
     }
 
     private ListEx<String> reduce(final ListEx<String> cleanerGroup) {
@@ -215,7 +271,7 @@ public class CleanerFinder {
 
     /**
      * @return All tests that do not come between the deps and the dependent test in the expected run,
-     *         in an arbitrary order (currently it'sthe order from the original order excluding dependencies,
+     *         in an arbitrary order (currently it's the order from the original order excluding dependencies,
      *         the dependent test itself, and all tests in between the two)
      */
     private ListEx<String> possibleCleaners(final ListEx<String> originalOrder) {
