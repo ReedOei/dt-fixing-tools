@@ -88,23 +88,6 @@ public class CleanerFinder {
         final ListEx<ListEx<String>> cleanerGroups = filterCleanerGroups(candidates);
         TestPluginPlugin.info("Found " + cleanerGroups.size() + " cleaner groups.");
 
-        // If there are no cleaner groups, then get desperate and try each single test as a potential cleaner
-        if (cleanerGroups.isEmpty()) {
-            TestPluginPlugin.info("Desperately trying out every single test as potential cleaner.");
-            for (String test : originalOrder) {
-                // Assume that cleaner cannot be one of the polluters (but assume can potentially be the test itself, also assume idempotency)
-                if (deps.contains(test)) {
-                    continue;
-                }
-                final ListEx<String> singleTest = new ListEx<String>(Collections.singletonList(test));
-                if (isCleanerGroup(singleTest)) {
-                    TestPluginPlugin.info("Test " + test + " is a cleaner.");
-                    cleanerGroups.add(singleTest);
-                }
-            }
-            TestPluginPlugin.info("After trying every test, found " + cleanerGroups.size() + " cleaner groups.");
-        }
-
         return cleanerGroups;
     }
 
