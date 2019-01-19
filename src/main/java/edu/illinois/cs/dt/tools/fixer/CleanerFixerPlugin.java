@@ -224,6 +224,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // TODO: applyFix should take in a location for where to output the Java file that contains the
         //       "fixed" code or an option to directly replace the existing test source file.
+        TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " into " + victimMethodOpt.get().methodName());
         applyFix(failingOrder, cleanerMethodOpt.get(), victimMethodOpt.get());
     }
 
@@ -255,7 +256,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         try {
             runMvnInstall();
         } catch (Exception ex) {
-            TestPluginPlugin.info("Error building the code, passed in cleaner does not work");
+            TestPluginPlugin.error("Error building the code, passed in cleaner does not work");
+            TestPluginPlugin.error(ex);
             // Reset the change
             victimMethod.removeFirstBlock();
             return false;
@@ -388,6 +390,9 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Apply the final minimal cleaner statements
         victimMethod.prepend(minimalCleanerStmts);
         victimMethod.javaFile().writeAndReloadCompilationUnit();
+
+        // Log out what the statements were
+        TestPluginPlugin.info("Try patching in this code into the test: " + new BlockStmt(minimalCleanerStmts));
     }
 
     private boolean runMvnInstall() throws MavenInvocationException {
