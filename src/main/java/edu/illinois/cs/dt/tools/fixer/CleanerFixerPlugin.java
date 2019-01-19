@@ -94,6 +94,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                             try {
                                 setupAndApplyFix(minimized);
                             } catch (Exception e) {
+                                e.printStackTrace();
                                 throw new RuntimeException(e);
                             }
                         });
@@ -200,6 +201,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         // If cannot find any ideal polluter to work with, just take the first
         if (polluterData == null) {
             polluterData = minimized.polluters().get(0);
+            TestPluginPlugin.info("Could not get a suitable cleaner/setter from the same test class.");
         }
 
         String polluterTestName;
