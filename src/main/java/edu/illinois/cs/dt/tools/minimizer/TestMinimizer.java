@@ -126,6 +126,39 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
         });
     }
 
+    private List<String> deltaDebug(final List<String> deps, int n) throws Exception {
+        // If n granularity is greater than number of tests, then finished, simply return passed in tests
+        if (deps.size() < n) {
+            return deps;
+        }
+
+        // Cut the tests into n equal chunks and try each chunk
+        int chunkSize = (int)Math.round((double)(deps.size()) / n);
+        List<List<String>> chunks = new ArrayList<>();
+        for (int i = 0; i < deps.size(); i += chunkSize) {
+            List<String> chunk = new ArrayList<>();
+            List<String> otherChunk = new ArrayList<>();
+            // Create chunk starting at this iteration
+            int endpoint = Math.min(deps.size(), i + chunkSize);
+            chunk.addAll(deps.subList(i, endpoint));
+
+            // Complement chunk are tests before and after this current chunk
+            otherChunk.addAll(deps.subList(0, i));
+            otherChunk.addAll(deps.subList(endpoint, deps.size()));
+
+            // Check if running this chunk works
+            if (this.expected == result(chunk)) {
+                return deltaDebug(chunk, 2); // If works, then delta debug some more this chunk
+            }
+            // Otherwise, check if applying complement chunk works
+            if (this.expected == result(otherChunk)) {
+                return deltaDebug(otherChunk, 2);   // If works, then delta debug some more the complement chunk
+            }
+        }
+        // If not chunk/complement work, increase granularity and try again
+        return deltaDebug(deps, n * 2);
+    }
+
     private List<String> run(List<String> order) throws Exception {
         final List<String> deps = new ArrayList<>();
 
@@ -139,36 +172,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             return deps;
         }
 
-        while (order.size() > 1) {
-            debug("Trying both halves, " + order.size() + " dts remaining.");
-
-            final Result topResult = result(Util.prependAll(deps, Util.topHalf(order)));
-            debug("Top result: " + topResult);
-
-            final Result botResult = result(Util.prependAll(deps, Util.botHalf(order)));
-            debug("Bottom result: " + botResult);
-
-            if (topResult == expected && botResult != expected) {
-                order = Util.topHalf(order);
-            } else if (topResult != expected && botResult == expected) {
-                order = Util.botHalf(order);
-            } else {
-                // It's not 100% obvious what to do in this case (could have weird dependencies that are hard to deal with).
-                // But sequential will definitely work (except because of flakiness for other reasons).
-                return runSequential(deps, order);
-            }
-        }
-
-        final Result orderResult = result(order);
-        if (order.size() == 1 || orderResult == expected) {
-            debug("Found dependencies: " + order);
-
-            deps.addAll(order);
-        } else {
-            throw new MinimizeTestListException("Could not find dependencies. There is only one " +
-                    "test left but the result '" + orderResult +
-                    "' does not match expected '" + expected + "'");
-        }
+        deps.addAll(deltaDebug(order, 2));
 
         return deps;
     }
