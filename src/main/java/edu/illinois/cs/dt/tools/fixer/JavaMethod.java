@@ -35,6 +35,7 @@ public class JavaMethod {
     private final JavaFile javaFile;
     private final MethodDeclaration method;
     private final BlockStmt body;
+    private final int beginLine;
 
     private JavaMethod(final String methodName, final JavaFile javaFile, final MethodDeclaration method) {
         this.methodName = methodName;
@@ -42,6 +43,7 @@ public class JavaMethod {
         this.method = method;
         this.body = method().getBody()
                 .orElseThrow(() -> new IllegalArgumentException("Method " + methodName + " has no body!"));
+        this.beginLine = body.getRange().get().begin.line;
     }
 
     public JavaFile javaFile() {
@@ -58,6 +60,10 @@ public class JavaMethod {
 
     public BlockStmt body() {
         return body;
+    }
+
+    public int beginLine() {
+        return beginLine;
     }
 
     // Small helper to get class name from fully-qualified name of method

@@ -9,6 +9,17 @@ import java.nio.file.Paths;
 
 public class CleanerPathManager extends PathManager {
     public static final String BACKUP_EXTENSION = ".orig";
+    public static final String PATCH_EXTENSION = ".patch";
+
+    public static final Path FIXER = Paths.get("fixer");
+
+    public static Path fixer() {
+        return path(FIXER);
+    }
+
+    public static Path fixer(final Path relative) {
+        return path(FIXER.resolve(relative));
+    }
 
     public static Path backupPath(final Path path) {
         if (path.getParent() == null) {

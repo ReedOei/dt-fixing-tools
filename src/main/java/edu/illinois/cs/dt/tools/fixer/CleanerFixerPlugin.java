@@ -274,6 +274,11 @@ public class CleanerFixerPlugin extends TestPlugin {
         Files.copy(javaFile.path(), path, StandardCopyOption.REPLACE_EXISTING);
     }
 
+    private void restore(final JavaFile javaFile) throws IOException {
+        final Path path = CleanerPathManager.backupPath(javaFile.path());
+        Files.copy(path, javaFile.path(), StandardCopyOption.REPLACE_EXISTING);
+    }
+
     // Try applying cleaner statements and see if test passes when run after polluter
     // Returns true if passes, returns false if not
     private boolean checkCleanerStmts(final List<String> failingOrder,
@@ -419,12 +424,30 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Cleaner is good, so now we can start delta debugging
         final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, victimMethod, cleanerStmts, 2);
 
-        // Apply the final minimal cleaner statements
-        victimMethod.prepend(minimalCleanerStmts);
-        victimMethod.javaFile().writeAndReloadCompilationUnit();
+        // Restore the original file
+        restore(victimMethod.javaFile());
 
-        // Log out what the statements were
-        TestPluginPlugin.info("Try patching in this code into the test: " + new BlockStmt(minimalCleanerStmts));
+        // Write out the changes in the form of a patch
+        int begin = victimMethod.beginLine() + 1;   // Shift one, do not include declaration line
+        Path patchFile = CleanerPathManager.fixer().resolve(
+            CleanerPathManager.changeExtension(victimMethod.javaFile().path(), CleanerPathManager.PATCH_EXTENSION).getFileName());
+        writePatch(patchFile, begin, new BlockStmt(minimalCleanerStmts));
+
+        // Report successful patching, report where the patch is
+        TestPluginPlugin.info("Patching successful, patch file for " + victimMethod.methodName() + " found at: " + patchFile);
+
+    }
+
+    // Helper method to create a patch file adding in the passed in block
+    private void writePatch(Path patchFile, int begin, BlockStmt blockStmt) throws IOException {
+        List<String> patchLines = new ArrayList<>();
+        String[] lines = blockStmt.toString().split("\n");
+        patchLines.add("@@ -" + begin +",0 +" + begin + "," + lines.length + " @@");
+        for (String line : lines) {
+            patchLines.add("+ " + line);
+        }
+        Files.createDirectories(patchFile.getParent());
+        Files.write(patchFile, patchLines);
     }
 
     private boolean runMvnInstall() throws MavenInvocationException {
