@@ -161,7 +161,6 @@ public class CleanerFinder {
         // Cut the tests into n equal chunks and try each chunk
         int chunkSize = (int)Math.round((double)(cleanerGroup.size()) / n);
         List<ListEx<String>> chunks = new ArrayList<>();
-        TestPluginPlugin.info("Cleaner group size: " + cleanerGroup.size());
         for (int i = 0; i < cleanerGroup.size(); i += chunkSize) {
             ListEx<String> chunk = new ListEx<>();
             ListEx<String> otherChunk = new ListEx<>();
