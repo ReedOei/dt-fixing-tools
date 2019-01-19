@@ -133,6 +133,10 @@ public class CleanerFixerPlugin extends TestPlugin {
         return new MinimizerPlugin(runner).runDependentTestFile(DetectorPathManager.detectionFile());
     }
 
+    private boolean sameTestClass(String test1, String test2) {
+        return test1.substring(0, test1.lastIndexOf('.')).equals(test2.substring(0, test2.lastIndexOf('.')));
+    }
+
     private void setupAndApplyFix(final MinimizeTestsResult minimized) throws Exception {
         // Get all test source files
         final List<Path> testFiles = testSources();
@@ -152,15 +156,43 @@ public class CleanerFixerPlugin extends TestPlugin {
                 if (pd.deps().size() == 1) {
                     String setter = pd.deps().get(0);
                     // Want the one in the same test class
-                    if (setter.substring(0, setter.lastIndexOf('.'))
-                            .equals(minimized.dependentTest().substring(0, minimized.dependentTest().lastIndexOf('.')))) {
+                    if (sameTestClass(setter, minimized.dependentTest())) {
                         polluterData = pd;
                         break;
                     }
                 }
             }
+        } else {
+            // If case of failing order with polluters, best bet is one that has a cleaner, and in same test class as victim
+            List<PolluterData> pdWithCleaner = new ArrayList<PolluterData>();
+            List<PolluterData> pdWithSingleCleaner = new ArrayList<PolluterData>();
+            List<PolluterData> pdWithSingleCleanerSameTestClass = new ArrayList<PolluterData>();
+            for (PolluterData pd : minimized.polluters()) {
+                // Consider if has a cleaner
+                if (!pd.cleanerData().cleaners().isEmpty()) {
+                    pdWithCleaner.add(pd);
+                    // Would be best to have a cleaner group that is only one test
+                    for (CleanerGroup cleanerGroup : pd.cleanerData().cleaners()) {
+                        if (cleanerGroup.cleanerTests().size() == 1) {
+                            pdWithSingleCleaner.add(pd);
+                            // Even more ideal, if the cleaner is in the same test class as victim
+                            String cleaner = cleanerGroup.cleanerTests().get(0);
+                            if (sameTestClass(cleaner, minimized.dependentTest())) {
+                                pdWithSingleCleanerSameTestClass.add(pd);
+                            }
+                        }
+                    }
+                }
+            }
+            if (!pdWithSingleCleanerSameTestClass.isEmpty()) {
+                polluterData = pdWithSingleCleanerSameTestClass.get(0);
+            } else if (!pdWithSingleCleaner.isEmpty()) {
+                polluterData = pdWithSingleCleaner.get(0);
+            } else if (!pdWithCleaner.isEmpty()) {
+                polluterData = pdWithCleaner.get(0);
+            }
         }
-        // Otherwise, just choose the first
+        // If cannot find any ideal polluter to work with, just take the first
         if (polluterData == null) {
             polluterData = minimized.polluters().get(0);
         }
