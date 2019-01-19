@@ -143,7 +143,27 @@ public class CleanerFixerPlugin extends TestPlugin {
             return;
         }
 
-        final PolluterData polluterData = minimized.polluters().get(0);
+        // TODO: Handle the case where there are multiple polluting/cleaning groups
+        // If in a passing order and there are multiple potential setters, then want the one in the same test class as dependent test
+        PolluterData polluterData = null;
+        if (minimized.expected().equals(Result.PASS)) {
+            for (PolluterData pd : minimized.polluters()) {
+                // Only care about if case of one polluter
+                if (pd.deps().size() == 1) {
+                    String setter = pd.deps().get(0);
+                    // Want the one in the same test class
+                    if (setter.substring(0, setter.lastIndexOf('.'))
+                            .equals(minimized.dependentTest().substring(0, minimized.dependentTest().lastIndexOf('.')))) {
+                        polluterData = pd;
+                        break;
+                    }
+                }
+            }
+        }
+        // Otherwise, just choose the first
+        if (polluterData == null) {
+            polluterData = minimized.polluters().get(0);
+        }
 
         String cleanerTestName;
         Optional<JavaMethod> cleanerMethodOpt;
@@ -159,7 +179,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             final CleanerGroup cleanerGroup = polluterData.cleanerData().cleaners().get(0);
 
             if (cleanerGroup.cleanerTests().size() > 1) {
-                TestPluginPlugin.error("Cleaner groups has more than one test (currently unsupported)");
+                TestPluginPlugin.error("Cleaner group has more than one test (currently unsupported)");
                 return;
             }
 
@@ -176,6 +196,10 @@ public class CleanerFixerPlugin extends TestPlugin {
         } else {
             // "Cleaner" when result is passing is the "polluting" test(s)
             // TODO: Handler group of setters with more than one test
+            if (polluterData.deps().size() > 1) {
+                TestPluginPlugin.error("There is more than one setter test (currently unsupported)");
+                return;
+            }
             cleanerTestName = polluterData.deps().get(0);  // Assume only one, get first...
             cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
 
