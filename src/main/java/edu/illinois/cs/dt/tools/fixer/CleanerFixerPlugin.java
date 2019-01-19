@@ -88,11 +88,15 @@ public class CleanerFixerPlugin extends TestPlugin {
                     Files.write(DetectorPathManager.originalOrderPath(), DetectorPlugin.getOriginalOrder(project));
                 }
 
-                Map<String, List<MinimizeTestsResult>> dependentTestResults = minimizedResults()
-                        .collect(Collectors.groupingBy(MinimizeTestsResult::dependentTest));
-                for (Map.Entry<String, List<MinimizeTestsResult>> entry : dependentTestResults.entrySet()) {
-                    setupAndApplyFix(entry.getValue());
-                }
+                minimizedResults()
+                        // TODO: Make sure we don't break the passing order though
+                        .forEach(minimized -> {
+                            try {
+                                setupAndApplyFix(minimized);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
             } else {
                 final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
                 TestPluginPlugin.info(errorMsg);
@@ -129,42 +133,11 @@ public class CleanerFixerPlugin extends TestPlugin {
         return new MinimizerPlugin(runner).runDependentTestFile(DetectorPathManager.detectionFile());
     }
 
-    // Determine which minimized result to try and fix
-    private void setupAndApplyFix(final List<MinimizeTestsResult> minimizedResults) throws Exception {
-        // Check that there are only two passed in results
-        if (minimizedResults.size() != 2) {
-            TestPluginPlugin.error("There are " + minimizedResults.size() + " results, should be two");
-            return;
-        }
-
-        // Go through the results, looking specifically for not passing and has polluters
-        for (MinimizeTestsResult minimized : minimizedResults) {
-            if (!minimized.expected().equals(Result.PASS)) {
-                if (!minimized.polluters().isEmpty()) {
-                    setupAndApplyFix(minimized);
-                    return;
-                }
-            }
-        }
-        // Otherwise, it must require a setter, so iterate again and work with the passing one
-        for (MinimizeTestsResult minimized : minimizedResults) {
-            if (minimized.expected().equals(Result.PASS)) {
-                if (!minimized.polluters().isEmpty()) {
-                    setupAndApplyFix(minimized);
-                    return;
-                }
-            }
-        }
-
-        // Otherwise, if reached here, then weird case, dunno what to do
-        TestPluginPlugin.error("Strange case, not standard case with polluters or setters");
-    }
-
     private void setupAndApplyFix(final MinimizeTestsResult minimized) throws Exception {
         // Get all test source files
         final List<Path> testFiles = testSources();
 
-        // TODO: Handle the case where there are multiple polluting/cleaning groups
+        // All minimized orders passed in should have some polluters before (or setters in the case of the order passing)
         if (minimized.polluters().isEmpty()) {
             TestPluginPlugin.error("No polluters for: " + minimized.dependentTest());
             return;
