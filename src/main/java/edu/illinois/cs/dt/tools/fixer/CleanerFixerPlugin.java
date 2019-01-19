@@ -363,18 +363,18 @@ public class CleanerFixerPlugin extends TestPlugin {
         TestPluginPlugin.info("Applying code from cleaner and recompiling.");
         final NodeList<Statement> cleanerStmts = NodeList.nodeList();
         // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
-        // Only include BeforeClass if in separate classes (for both victim and polluter(s))
+        // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
         if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
         }
-        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
-        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
         cleanerStmts.addAll(cleanerMethod.body().getStatements());
-        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
-        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
-        // Only include AfterClass if in separate classes (for both victim and polluter(s))
+        // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
         if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.AfterClass"));
         }
