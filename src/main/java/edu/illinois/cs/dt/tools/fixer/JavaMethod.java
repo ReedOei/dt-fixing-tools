@@ -85,4 +85,19 @@ public class JavaMethod {
 
         javaFile().findMethodDeclaration(methodName()).setBody(new BlockStmt(statements));
     }
+
+    public void append(final NodeList<Statement> stmts) {
+        final NodeList<Statement> statements = body.getStatements();
+        statements.add(new BlockStmt(stmts));
+
+        javaFile().findMethodDeclaration(methodName()).setBody(new BlockStmt(statements));
+    }
+
+    // Helper method needed for delta-debugging to "reset" the state by removing that added first block
+    public void removeLastBlock() {
+        final NodeList<Statement> statements = body.getStatements();
+        statements.remove(statements.size() - 1);
+
+        javaFile().findMethodDeclaration(methodName()).setBody(new BlockStmt(statements));
+    }
 }

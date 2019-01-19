@@ -171,6 +171,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 // Consider if has a cleaner
                 if (!pd.cleanerData().cleaners().isEmpty()) {
                     pdWithCleaner.add(pd);
+                    String polluter = pd.deps().get(0); // TODO: Assuming just one polluter for now...
                     // Would be best to have a cleaner group that is only one test
                     for (CleanerGroup cleanerGroup : pd.cleanerData().cleaners()) {
                         if (cleanerGroup.cleanerTests().size() == 1) {
@@ -178,6 +179,10 @@ public class CleanerFixerPlugin extends TestPlugin {
                             // Even more ideal, if the cleaner is in the same test class as victim
                             String cleaner = cleanerGroup.cleanerTests().get(0);
                             if (sameTestClass(cleaner, minimized.dependentTest())) {
+                                pdWithSingleCleanerSameTestClass.add(pd);
+                            }
+                            // Also valid is if in the same test class as the polluter
+                            if (sameTestClass(cleaner, polluter)) {
                                 pdWithSingleCleanerSameTestClass.add(pd);
                             }
                         }
@@ -197,6 +202,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             polluterData = minimized.polluters().get(0);
         }
 
+        String polluterTestName;
+        Optional<JavaMethod> polluterMethodOpt;
         String cleanerTestName;
         Optional<JavaMethod> cleanerMethodOpt;
         List<String> failingOrder;
@@ -219,6 +226,9 @@ public class CleanerFixerPlugin extends TestPlugin {
                 TestPluginPlugin.error("Cleaner group exists but has no tests. This should never happen, and is probably because of a bug in the cleaner finding code.");
                 return;
             }
+            polluterTestName = polluterData.deps().get(0);  // Assume only one, get first...
+            polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath);
+
             // TODO: Handle cleaner group with more than one test
             cleanerTestName = cleanerGroup.cleanerTests().get(0);
             cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
@@ -232,6 +242,9 @@ public class CleanerFixerPlugin extends TestPlugin {
                 TestPluginPlugin.error("There is more than one setter test (currently unsupported)");
                 return;
             }
+            polluterTestName = null;    // No polluter if minimized order is passing
+            polluterMethodOpt = Optional.ofNullable(null);
+
             cleanerTestName = polluterData.deps().get(0);  // Assume only one, get first...
             cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
 
@@ -241,6 +254,12 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         final String victimTestName = minimized.dependentTest();
         final Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+
+        if (polluterTestName != null && !polluterMethodOpt.isPresent()) {
+            TestPluginPlugin.error("Could not find method " + polluterTestName);
+            TestPluginPlugin.error("Tried looking in: " + testFiles);
+            return;
+        }
 
         if (!cleanerMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find method " + cleanerTestName);
@@ -256,8 +275,8 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // TODO: applyFix should take in a location for where to output the Java file that contains the
         //       "fixed" code or an option to directly replace the existing test source file.
-        TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " into " + victimMethodOpt.get().methodName());
-        applyFix(failingOrder, cleanerMethodOpt.get(), victimMethodOpt.get());
+        TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " to make " + victimMethodOpt.get().methodName() + " pass.");
+        applyFix(failingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get());
     }
 
     private List<Path> testSources() throws IOException {
@@ -282,12 +301,16 @@ public class CleanerFixerPlugin extends TestPlugin {
     // Try applying cleaner statements and see if test passes when run after polluter
     // Returns true if passes, returns false if not
     private boolean checkCleanerStmts(final List<String> failingOrder,
-                                      final JavaMethod victimMethod,
-                                      final NodeList<Statement> cleanerStmts) throws Exception {
-        // Note: this modifies victimMethod, so when we eventually make it delta-debug, we will want
-        // to make a copy of the victimMethod somewhere
-        victimMethod.prepend(cleanerStmts);
-        victimMethod.javaFile().writeAndReloadCompilationUnit();
+                                      final JavaMethod methodToModify,
+                                      final NodeList<Statement> cleanerStmts,
+                                      boolean prepend) throws Exception {
+        // If want to prepend set to true, then prepend to victim
+        if (prepend) {
+            methodToModify.prepend(cleanerStmts);
+        } else {
+            methodToModify.append(cleanerStmts);
+        }
+        methodToModify.javaFile().writeAndReloadCompilationUnit();
 
         // Rebuild and see if tests run properly
         try {
@@ -296,20 +319,28 @@ public class CleanerFixerPlugin extends TestPlugin {
             TestPluginPlugin.error("Error building the code, passed in cleaner does not work");
             TestPluginPlugin.error(ex);
             // Reset the change
-            victimMethod.removeFirstBlock();
+            if (prepend) {
+                methodToModify.removeFirstBlock();
+            } else {
+                methodToModify.removeLastBlock();
+            }
             return false;
         }
         // TODO: Output to result files rather than stdout
-        TestPluginPlugin.info("Running victim test with code from cleaner.");
+        TestPluginPlugin.info("Running order with code from cleaner.");
         boolean passInFailingOrder = testOrderPasses(failingOrder);
         if (!passInFailingOrder) {
-            TestPluginPlugin.error("Fix was unsuccessful. Test still fails with polluter.");
+            TestPluginPlugin.error("Fix was unsuccessful. Test still fails.");
         } else {
-            TestPluginPlugin.info("Fix was successful! Fixed file:\n" + victimMethod.javaFile().path());
+            TestPluginPlugin.info("Fix was successful! Fixed file:\n" + methodToModify.javaFile().path());
         }
 
         // Reset the change
-        victimMethod.removeFirstBlock();
+        if (prepend) {
+            methodToModify.removeFirstBlock();
+        } else {
+            methodToModify.removeLastBlock();
+        }
 
         return passInFailingOrder;
 
@@ -331,13 +362,14 @@ public class CleanerFixerPlugin extends TestPlugin {
         //        }
     }
 
-    // The delta debugging logic to return minimal list of statements to add in to make victim pass
-    // In addition to polluter and victim to run, need also list of statements; assumed statements already make victim pass
+    // The delta debugging logic to return minimal list of statements to add in to make run pass
+    // In addition to failing order to run, need also list of statements; assumed statements already make run pass
     // The value n is needed to represent granularity of partitioning the statements to get minimal list
+    // The prepend boolean is to decide if to prepend to passed in method or to append
     private NodeList<Statement> deltaDebug(final List<String> failingOrder,
-                                           final JavaMethod victimMethod,
+                                           final JavaMethod methodToModify,
                                            final NodeList<Statement> cleanerStmts,
-                                           int n) throws Exception {
+                                           int n, boolean prepend) throws Exception {
         // If n granularity is greater than number of cleaner statements, then finished, simply return cleaner statements
         if (cleanerStmts.size() < n) {
             return cleanerStmts;
@@ -358,16 +390,16 @@ public class CleanerFixerPlugin extends TestPlugin {
             otherChunk.addAll(cleanerStmts.subList(endpoint, cleanerStmts.size()));
 
             // Check if applying chunk works
-            if (checkCleanerStmts(failingOrder, victimMethod, chunk)) {
-                return deltaDebug(failingOrder, victimMethod, chunk, 2);    // If works, then delta debug some more this chunk
+            if (checkCleanerStmts(failingOrder, methodToModify, chunk, prepend)) {
+                return deltaDebug(failingOrder, methodToModify, chunk, 2, prepend);         // If works, then delta debug some more this chunk
             }
             // Otherwise, check if applying complement chunk works
-            if (checkCleanerStmts(failingOrder, victimMethod, otherChunk)) {
-                return deltaDebug(failingOrder, victimMethod, otherChunk, 2);   // If works, then delta debug some more the complement chunk
+            if (checkCleanerStmts(failingOrder, methodToModify, otherChunk, prepend)) {
+                return deltaDebug(failingOrder, methodToModify, otherChunk, 2, prepend);    // If works, then delta debug some more the complement chunk
             }
         }
         // If not chunk/complement work, increase granularity and try again
-        return deltaDebug(failingOrder, victimMethod, cleanerStmts, n * 2);
+        return deltaDebug(failingOrder, methodToModify, cleanerStmts, n * 2, prepend);
     }
 
     private NodeList<Statement> getCodeFromAnnotatedMethod(final JavaFile javaFile, final String annotation) {
@@ -384,6 +416,7 @@ public class CleanerFixerPlugin extends TestPlugin {
     // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
     // TODO: for cleaners, santa clauses, etc.
     private void applyFix(final List<String> failingOrder,
+                          final JavaMethod polluterMethod,
                           final JavaMethod cleanerMethod,
                           final JavaMethod victimMethod) throws Exception {
         backup(victimMethod.javaFile());
@@ -416,21 +449,32 @@ public class CleanerFixerPlugin extends TestPlugin {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.AfterClass"));
         }
 
-        if (!checkCleanerStmts(failingOrder, victimMethod, cleanerStmts)) {
+        // If polluter/victim case, check if cleaner is same test class as polluter, so append to polluter
+        // Method to modify is based on this decision
+        boolean prepend = true;
+        JavaMethod methodToModify = victimMethod;
+        if (polluterMethod != null) {
+            if (sameTestClass(cleanerMethod.methodName(), polluterMethod.methodName())) {
+                prepend = false;
+                methodToModify = polluterMethod;
+            }
+        }
+
+        if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend)) {
             TestPluginPlugin.error("Cleaner does not fix victim!");
             return;
         }
 
         // Cleaner is good, so now we can start delta debugging
-        final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, victimMethod, cleanerStmts, 2);
+        final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, methodToModify, cleanerStmts, 2, prepend);
 
         // Restore the original file
-        restore(victimMethod.javaFile());
+        restore(methodToModify.javaFile());
 
         // Write out the changes in the form of a patch
-        int begin = victimMethod.beginLine() + 1;   // Shift one, do not include declaration line
+        int begin = methodToModify.beginLine() + 1; // Shift one, do not include declaration line
         Path patchFile = CleanerPathManager.fixer().resolve(
-            CleanerPathManager.changeExtension(victimMethod.javaFile().path(), CleanerPathManager.PATCH_EXTENSION).getFileName());
+            CleanerPathManager.changeExtension(methodToModify.javaFile().path(), CleanerPathManager.PATCH_EXTENSION).getFileName());
         writePatch(patchFile, begin, new BlockStmt(minimalCleanerStmts));
 
         // Report successful patching, report where the patch is
