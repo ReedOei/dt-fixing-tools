@@ -326,7 +326,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
             // Otherwise, check if applying complement chunk works
             if (checkCleanerStmts(failingOrder, victimMethod, otherChunk)) {
-                return deltaDebug(failingOrder, victimMethod, otherChunk, n - 1);   // If works, then delta debug some more the complement chunk
+                return deltaDebug(failingOrder, victimMethod, otherChunk, 2);   // If works, then delta debug some more the complement chunk
             }
         }
         // If not chunk/complement work, increase granularity and try again
