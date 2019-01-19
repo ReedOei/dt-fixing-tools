@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
 import com.google.gson.Gson;
+import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.eunomia.collections.ListUtil;
 import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.io.files.FileUtil;
@@ -11,6 +12,7 @@ import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerFinder;
+import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerGroup;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.utility.MD5;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
@@ -100,8 +102,13 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
                 info("Ran minimizer, dependencies: " + deps);
 
-                final CleanerData cleanerData =
-                        new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find();
+                // Only look for cleaners if the order is not passing; in case of minimizing for setter don't need to look for cleaner
+                CleanerData cleanerData;
+                if (!expected.equals(Result.PASS)) {
+                    cleanerData = new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find();
+                } else {
+                    cleanerData = new CleanerData(dependentTest, new OperationTime(0, 0), expected, isolationResult, new ListEx<CleanerGroup>());
+                }
 
                 polluters.add(new PolluterData(deps, cleanerData));
 
