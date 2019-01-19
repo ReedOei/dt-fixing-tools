@@ -403,6 +403,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.setProperties(new Properties());
         request.getProperties().setProperty("skipTests", "true");
         request.getProperties().setProperty("rat.skip", "true");
+        request.getProperties().setProperty("dependency-check.skip", "true");
 
         // TODO: Log the output from the maven process somewhere
         request.setOutputHandler(s -> {});
