@@ -52,7 +52,18 @@ public class DependentTest {
             }
         }
 
+        // Try running dependent test in isolation to determine which order to minimize
+        // Also run it 10 times to be more confident that test is deterministic in its result
         final Result isolationResult = runner.runList(Collections.singletonList(name)).get().results().get(name).result();
+        for (int i = 0; i < 9; i++) {
+            Result rerunIsolationResult = runner.runList(Collections.singletonList(name)).get().results().get(name).result();
+            // If ever get different result, then not confident in result, return
+            if (!rerunIsolationResult.equals(isolationResult)) {
+                System.out.println("Test " + name + " does not have consistent result in isolation, not order-dependent!");
+                return Stream.empty();
+            }
+        }
+
         if (!isolationResult.equals(Result.PASS)) { // Does not pass in isolation, needs setter, so need to minimize passing order
             return Stream.of(minimizerBuilder.testOrder(intended.order()).build());
         } else {    // Otherwise passes in isolation, needs polluter, so need to minimize failing order
