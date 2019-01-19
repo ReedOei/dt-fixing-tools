@@ -2,12 +2,14 @@ package edu.illinois.cs.dt.tools.runner.data;
 
 import com.google.gson.Gson;
 import com.reedoei.testrunner.configuration.Configuration;
+import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.runner.Runner;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizer;
 import edu.illinois.cs.dt.tools.minimizer.TestMinimizerBuilder;
 import edu.illinois.cs.dt.tools.utility.MD5;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 public class DependentTest {
@@ -50,9 +52,12 @@ public class DependentTest {
             }
         }
 
-        return Stream.of(
-                minimizerBuilder.testOrder(intended.order()).build(),
-                minimizerBuilder.testOrder(revealed.order()).build());
+        final Result isolationResult = runner.runList(Collections.singletonList(name)).get().results().get(name).result();
+        if (!isolationResult.equals(Result.PASS)) { // Does not pass in isolation, needs setter, so need to minimize passing order
+            return Stream.of(minimizerBuilder.testOrder(intended.order()).build());
+        } else {    // Otherwise passes in isolation, needs polluter, so need to minimize failing order
+            return Stream.of(minimizerBuilder.testOrder(revealed.order()).build());
+        }
     }
 
     public boolean verify(final Runner runner, final Path path) {
