@@ -38,10 +38,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CleanerFixerPlugin extends TestPlugin {
@@ -85,17 +88,11 @@ public class CleanerFixerPlugin extends TestPlugin {
                     Files.write(DetectorPathManager.originalOrderPath(), DetectorPlugin.getOriginalOrder(project));
                 }
 
-                minimizedResults()
-                        // Nothing to fix if the order is already passing
-                        // TODO: Make sure we don't break the passing order though
-                        .filter(minimized -> !minimized.expected().equals(Result.PASS))
-                        .forEach(minimized -> {
-                            try {
-                                setupAndApplyFix(minimized);
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
+                Map<String, List<MinimizeTestsResult>> dependentTestResults = minimizedResults()
+                        .collect(Collectors.groupingBy(MinimizeTestsResult::dependentTest));
+                for (Map.Entry<String, List<MinimizeTestsResult>> entry : dependentTestResults.entrySet()) {
+                    setupAndApplyFix(entry.getValue());
+                }
             } else {
                 final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
                 TestPluginPlugin.info(errorMsg);
@@ -132,6 +129,37 @@ public class CleanerFixerPlugin extends TestPlugin {
         return new MinimizerPlugin(runner).runDependentTestFile(DetectorPathManager.detectionFile());
     }
 
+    // Determine which minimized result to try and fix
+    private void setupAndApplyFix(final List<MinimizeTestsResult> minimizedResults) throws Exception {
+        // Check that there are only two passed in results
+        if (minimizedResults.size() != 2) {
+            TestPluginPlugin.error("There are " + minimizedResults.size() + " results, should be two");
+            return;
+        }
+
+        // Go through the results, looking specifically for not passing and has polluters
+        for (MinimizeTestsResult minimized : minimizedResults) {
+            if (!minimized.expected().equals(Result.PASS)) {
+                if (!minimized.polluters().isEmpty()) {
+                    setupAndApplyFix(minimized);
+                    return;
+                }
+            }
+        }
+        // Otherwise, it must require a setter, so iterate again and work with the passing one
+        for (MinimizeTestsResult minimized : minimizedResults) {
+            if (minimized.expected().equals(Result.PASS)) {
+                if (!minimized.polluters().isEmpty()) {
+                    setupAndApplyFix(minimized);
+                    return;
+                }
+            }
+        }
+
+        // Otherwise, if reached here, then weird case, dunno what to do
+        TestPluginPlugin.error("Strange case, not standard case with polluters or setters");
+    }
+
     private void setupAndApplyFix(final MinimizeTestsResult minimized) throws Exception {
         // Get all test source files
         final List<Path> testFiles = testSources();
@@ -144,29 +172,45 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         final PolluterData polluterData = minimized.polluters().get(0);
 
-        if (polluterData.cleanerData().cleaners().isEmpty()) {
-            TestPluginPlugin.error("Found polluters for " + minimized.dependentTest() + " but no cleaners.");
-            return;
+        String cleanerTestName;
+        Optional<JavaMethod> cleanerMethodOpt;
+        List<String> failingOrder;
+
+        // If dealing with a case of result with failure, then get standard cleaner logic from it
+        if (!minimized.expected().equals(Result.PASS)) {
+            if (polluterData.cleanerData().cleaners().isEmpty()) {
+                TestPluginPlugin.error("Found polluters for " + minimized.dependentTest() + " but no cleaners.");
+                return;
+            }
+
+            final CleanerGroup cleanerGroup = polluterData.cleanerData().cleaners().get(0);
+
+            if (cleanerGroup.cleanerTests().size() > 1) {
+                TestPluginPlugin.error("Cleaner groups has more than one test (currently unsupported)");
+                return;
+            }
+
+            if (cleanerGroup.cleanerTests().isEmpty()) {
+                TestPluginPlugin.error("Cleaner group exists but has no tests. This should never happen, and is probably because of a bug in the cleaner finding code.");
+                return;
+            }
+            // TODO: Handle cleaner group with more than one test
+            cleanerTestName = cleanerGroup.cleanerTests().get(0);
+            cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
+
+            // Failing order has both the dependent test and the dependencies
+            failingOrder = polluterData.withDeps(minimized.dependentTest());
+        } else {
+            // "Cleaner" when result is passing is the "polluting" test(s)
+            // TODO: Handler group of setters with more than one test
+            cleanerTestName = polluterData.deps().get(0);  // Assume only one, get first...
+            cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
+
+            // Failing order should be just the dependent test by itself
+            failingOrder = Collections.singletonList(minimized.dependentTest());
         }
 
-        final CleanerGroup cleanerGroup = polluterData.cleanerData().cleaners().get(0);
-
-        if (cleanerGroup.cleanerTests().size() > 1) {
-            TestPluginPlugin.error("Cleaner groups is has more than one test (currently unsupported)");
-            return;
-        }
-
-        if (cleanerGroup.cleanerTests().isEmpty()) {
-            TestPluginPlugin.error("Cleaner group exists but has no tests. This should never happen, and is probably because of a bug in the cleaner finding code.");
-            return;
-        }
-
-        final List<String> failingOrder = polluterData.withDeps(minimized.dependentTest());
-        // TODO: Handle cleaner group with more than one test
-        final String cleanerTestName = cleanerGroup.cleanerTests().get(0);
         final String victimTestName = minimized.dependentTest();
-
-        final Optional<JavaMethod> cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
         final Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
 
         if (!cleanerMethodOpt.isPresent()) {
