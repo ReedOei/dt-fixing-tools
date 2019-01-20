@@ -27,10 +27,13 @@ import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.apache.maven.shared.invoker.PrintStreamHandler;
 import scala.Option;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -483,6 +486,9 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
         }
 
+        // Remember the modified file so it can be restored later
+        this.patchedFiles.add(methodToModify.javaFile());
+
         if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend)) {
             TestPluginPlugin.error("Cleaner does not fix victim!");
             return;
@@ -490,9 +496,6 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Cleaner is good, so now we can start delta debugging
         final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, methodToModify, cleanerStmts, 2, prepend);
-
-        // Remember the modified file so it can be restored later
-        this.patchedFiles.add(methodToModify.javaFile());
 
         // Write out the changes in the form of a patch
         int begin = methodToModify.beginLine() + 1; // Shift one, do not include declaration line
@@ -528,13 +531,25 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.getProperties().setProperty("dependency-check.skip", "true");
 
         // TODO: Log the output from the maven process somewhere
-        request.setOutputHandler(s -> {});
-        request.setErrorHandler(s -> {});
+        ByteArrayOutputStream baosOutput = new ByteArrayOutputStream();
+        PrintStream outputStream = new PrintStream(baosOutput);
+        request.setOutputHandler(new PrintStreamHandler(outputStream, true));
+        ByteArrayOutputStream baosError = new ByteArrayOutputStream();
+        PrintStream errorStream = new PrintStream(baosError);
+        request.setErrorHandler(new PrintStreamHandler(errorStream, true));
 
         final Invoker invoker = new DefaultInvoker();
         final InvocationResult result = invoker.execute(request);
 
         if (result.getExitCode() != 0) {
+            // Restore all the patched files
+            for (JavaFile javaFile : this.patchedFiles) {
+                restore(javaFile);
+            }
+            // Print out the contents of the output/error streamed out during evocation
+            TestPluginPlugin.error(baosOutput.toString());
+            TestPluginPlugin.error(baosError.toString());
+
             if (result.getExecutionException() == null) {
                 throw new RuntimeException("Compilation failed with exit code " + result.getExitCode() + " for an unknown reason");
             } else {
