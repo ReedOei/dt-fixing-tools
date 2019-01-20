@@ -223,6 +223,13 @@ public class CleanerFixerPlugin extends TestPlugin {
             TestPluginPlugin.info("Could not get a suitable cleaner/setter from the same test class.");
         }
 
+        // Apply fix using specific passed in polluter data
+        setupAndApplyFix(minimized, polluterData, testFiles);
+    }
+
+    private void setupAndApplyFix(final MinimizeTestsResult minimized,
+                                  final PolluterData polluterData,
+                                  final List<Path> testFiles) throws Exception {
         String polluterTestName;
         Optional<JavaMethod> polluterMethodOpt;
         String cleanerTestName;
