@@ -92,8 +92,20 @@ public class CleanerFixerPlugin extends TestPlugin {
                     Files.write(DetectorPathManager.originalOrderPath(), DetectorPlugin.getOriginalOrder(project));
                 }
 
+                // First apply the results from passing orders, fix brittles first
                 minimizedResults()
-                        // TODO: Make sure we don't break the passing order though
+                        .filter(minimized -> minimized.expected().equals(Result.PASS))
+                        .forEach(minimized -> {
+                            try {
+                                setupAndApplyFix(minimized);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                throw new RuntimeException(e);
+                            }
+                        });
+                // After fixing brittles, try the polluters (though possible some get fixed due to fixing brittles)
+                minimizedResults()
+                        .filter(minimized -> !minimized.expected().equals(Result.PASS))
                         .forEach(minimized -> {
                             try {
                                 setupAndApplyFix(minimized);
