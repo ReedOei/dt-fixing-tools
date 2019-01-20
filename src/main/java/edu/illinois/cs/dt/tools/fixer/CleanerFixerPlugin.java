@@ -52,6 +52,8 @@ public class CleanerFixerPlugin extends TestPlugin {
     private MavenProject project;
     private InstrumentingSmartRunner runner;
 
+    private List<JavaFile> patchedFiles;
+
     // Don't delete. Need a default constructor for TestPlugin
     public CleanerFixerPlugin() {
     }
@@ -74,6 +76,8 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         final Option<Runner> runnerOption = RunnerFactory.from(project);
         final ErrorLogger logger = new ErrorLogger(project);
+
+        this.patchedFiles = new ArrayList<>();
 
         System.out.println("DIAGNOSER_MODULE_COORDINATES: " + logger.coordinates());
 
@@ -102,6 +106,11 @@ public class CleanerFixerPlugin extends TestPlugin {
                 final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
                 TestPluginPlugin.info(errorMsg);
                 logger.writeError(errorMsg);
+            }
+
+            // Restore all the patched files
+            for (JavaFile javaFile : this.patchedFiles) {
+                restore(javaFile);
             }
 
             return null;
@@ -470,8 +479,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Cleaner is good, so now we can start delta debugging
         final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, methodToModify, cleanerStmts, 2, prepend);
 
-        // Restore the original file
-        restore(methodToModify.javaFile());
+        // Remember the modified file so it can be restored later
+        this.patchedFiles.add(methodToModify.javaFile());
 
         // Write out the changes in the form of a patch
         int begin = methodToModify.beginLine() + 1; // Shift one, do not include declaration line
