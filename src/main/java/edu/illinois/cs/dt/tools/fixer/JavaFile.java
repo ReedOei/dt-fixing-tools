@@ -133,7 +133,6 @@ public class JavaFile {
     }
 
     public void writeAndReloadCompilationUnit() throws IOException {
-        System.out.println(compilationUnit);
         writeFile();
         loadClassList();
     }
