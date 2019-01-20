@@ -55,7 +55,7 @@ public class CleanerFixerPlugin extends TestPlugin {
     private MavenProject project;
     private InstrumentingSmartRunner runner;
 
-    private List<JavaFile> patchedFiles;
+    private List<Patch> patches;
 
     // Don't delete. Need a default constructor for TestPlugin
     public CleanerFixerPlugin() {
@@ -80,7 +80,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         final Option<Runner> runnerOption = RunnerFactory.from(project);
         final ErrorLogger logger = new ErrorLogger(project);
 
-        this.patchedFiles = new ArrayList<>();
+        this.patches = new ArrayList<>();
 
         System.out.println("DIAGNOSER_MODULE_COORDINATES: " + logger.coordinates());
 
@@ -121,11 +121,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                 final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
                 TestPluginPlugin.info(errorMsg);
                 logger.writeError(errorMsg);
-            }
-
-            // Restore all the patched files
-            for (JavaFile javaFile : this.patchedFiles) {
-                restore(javaFile);
             }
 
             return null;
@@ -445,8 +440,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                           final JavaMethod polluterMethod,
                           final JavaMethod cleanerMethod,
                           final JavaMethod victimMethod) throws Exception {
-        backup(victimMethod.javaFile());
-
         // Check if we pass in isolation before fix
         TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
 
@@ -486,11 +479,12 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
         }
 
-        // Remember the modified file so it can be restored later
-        this.patchedFiles.add(methodToModify.javaFile());
+        // Back up the file we are going to modify
+        backup(methodToModify.javaFile());
 
         if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend)) {
             TestPluginPlugin.error("Cleaner does not fix victim!");
+            restore(methodToModify.javaFile());
             return;
         }
 
@@ -501,11 +495,15 @@ public class CleanerFixerPlugin extends TestPlugin {
         int begin = methodToModify.beginLine() + 1; // Shift one, do not include declaration line
         Path patchFile = CleanerPathManager.fixer().resolve(
             CleanerPathManager.changeExtension(methodToModify.javaFile().path(), CleanerPathManager.PATCH_EXTENSION).getFileName());
-        writePatch(patchFile, begin, new BlockStmt(minimalCleanerStmts));
+        BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
+        writePatch(patchFile, begin, patchedBlock);
+        patches.add(new Patch(methodToModify, patchedBlock, prepend));
 
         // Report successful patching, report where the patch is
         TestPluginPlugin.info("Patching successful, patch file for " + victimMethod.methodName() + " found at: " + patchFile);
 
+        // Restore the original file
+        restore(methodToModify.javaFile());
     }
 
     // Helper method to create a patch file adding in the passed in block
@@ -542,10 +540,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         final InvocationResult result = invoker.execute(request);
 
         if (result.getExitCode() != 0) {
-            // Restore all the patched files
-            for (JavaFile javaFile : this.patchedFiles) {
-                restore(javaFile);
-            }
             // Print out the contents of the output/error streamed out during evocation
             TestPluginPlugin.error(baosOutput.toString());
             TestPluginPlugin.error(baosError.toString());
