@@ -205,6 +205,7 @@ create table dependency
 create table minimize_test_result
 (
   id integer primary key,
+  subject_name text not null,
   test_name text not null,
   expected_run_str_id text not null,
   expected_result text not null,

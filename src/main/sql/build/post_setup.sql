@@ -96,62 +96,65 @@ from flaky_test_classification as ftc
 inner join confirmation_runs as cr on ftc.test_name = cr.test_name
 group by ftc.test_name, ftc.flaky_type, cr.round_type;
 
+create view minimized_tests as
+select distinct subject_name, test_name
+from minimize_test_result;
+
 create view polluter_data_count as
-select mtr.test_name,
-       passing.num as passing_count,
-       failing.num as failing_count
-from minimize_test_result mtr
-inner join
+select mt.subject_name,
+       mt.test_name,
+       count(passing.num) as passing_count,
+       count(failing.num) as failing_count
+from minimized_tests mt
+left join
 (
     select mtr.test_name, mtr.expected_result, count(pd.id) as num
     from minimize_test_result mtr
     left join polluter_data pd on mtr.id = pd.minimized_id
     group by mtr.test_name, mtr.expected_result
-) passing on passing.test_name = mtr.test_name and passing.expected_result = 'PASS'
-inner join
+) passing on passing.test_name = mt.test_name and passing.expected_result = 'PASS'
+left join
 (
     select mtr.test_name, mtr.expected_result, count(pd.id) as num
     from minimize_test_result mtr
     left join polluter_data pd on mtr.id = pd.minimized_id
     group by mtr.test_name, mtr.expected_result
-) failing on failing.test_name = mtr.test_name and failing.expected_result <> 'PASS';
+) failing on failing.test_name = mt.test_name and failing.expected_result <> 'PASS'
+group by mt.subject_name, mt.test_name;
 
 create view od_classification as
 select pdc.test_name,
-       oo.subject_name,
+       pdc.subject_name,
        case
         when passing_count > 0 then 'brittle'
         when failing_count > 0 then 'victim'
         else 'both'
       end as od_type
-from polluter_data_count pdc
-inner join original_order oo on pdc.test_name = oo.test_name;
+from polluter_data_count pdc;
 
 create view dependency_info as
-select oo.subject_name,
+select mtr.subject_name,
        mtr.test_name,
        mtr.expected_result,
        pd.id,
        count(d.test_name) as dep_count
 from minimize_test_result mtr
-inner join original_order oo on mtr.test_name = oo.test_name
 left join polluter_data pd on mtr.id = pd.minimized_id
 left join dependency d on pd.id = d.polluter_data_id
-group by oo.subject_name, mtr.test_name, mtr.expected_result, pd.id;
+group by mtr.subject_name, mtr.test_name, mtr.expected_result, pd.id;
 
 create view cleaner_info as
-select oo.subject_name,
+select mtr.subject_name,
        mtr.test_name,
        mtr.expected_result,
        cg.id,
        count(ct.test_name) as cleaner_count
 from minimize_test_result mtr
-inner join original_order oo on mtr.test_name = oo.test_name
 left join polluter_data pd on mtr.id = pd.minimized_id
 left join cleaner_data cd on cd.polluter_data_id = pd.id
 left join cleaner_group cg on cg.cleaner_data_id = cd.id
 left join cleaner_test ct on ct.cleaner_group_id = cg.id
-group by oo.subject_name, mtr.test_name, mtr.expected_result, cg.id;
+group by mtr.subject_name, mtr.test_name, mtr.expected_result, cg.id;
 
 insert into confirmation_runs
 select p.test_name,

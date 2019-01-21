@@ -90,6 +90,15 @@ public class SQLStatements {
     public static final Path GET_POLLUTED_FIELD_ID = Paths.get("src/main/sql/build/polluted_field_id_get.sql");
     public static final Path INSERT_CLEANER_TEST = Paths.get("src/main/sql/build/cleaner_test_insert.sql");
     public static final Path COUNT_CLEANERS = Paths.get("src/main/sql/figures/count_cleaner.sql");
+    public static final Path COUNT_SETTERS = Paths.get("src/main/sql/figures/count_setters.sql");
+    public static final Path COUNT_POLLUTERS = Paths.get("src/main/sql/figures/count_polluters.sql");
+    public static final Path AVERAGE_DEPENDENCIES = Paths.get("src/main/sql/figures/average_dependencies.sql");
+    public static final Path AVERAGE_CLEANERS = Paths.get("src/main/sql/figures/average_cleaners.sql");
+    public static final Path AVERAGE_POLLUTERS = Paths.get("src/main/sql/figures/average_polluters.sql");
+    public static final Path AVERAGE_SETTERS = Paths.get("src/main/sql/figures/average_setters.sql");
+    public static final Path OD_TESTS_GET = Paths.get("src/main/sql/figures/od_tests_get.sql");
+    public static final Path CLEANERS_BY_TEST = Paths.get("src/main/sql/figures/cleaners_by_test.sql");
+    public static final Path DEPENDENCIES_BY_TEST = Paths.get("src/main/sql/figures/dependencies_by_test.sql");
 
     static {
         ensureExists(COUNT_OD_TYPE);
@@ -103,6 +112,15 @@ public class SQLStatements {
         ensureExists(INSERT_REWRITE_TARGET);
         ensureExists(GET_POLLUTED_FIELD_ID);
         ensureExists(INSERT_CLEANER_TEST);
+        ensureExists(COUNT_SETTERS);
+        ensureExists(COUNT_POLLUTERS);
+        ensureExists(AVERAGE_DEPENDENCIES);
+        ensureExists(AVERAGE_CLEANERS);
+        ensureExists(AVERAGE_POLLUTERS);
+        ensureExists(AVERAGE_SETTERS);
+        ensureExists(OD_TESTS_GET);
+        ensureExists(DEPENDENCIES_BY_TEST);
+        ensureExists(CLEANERS_BY_TEST);
 
         ensureExists(INSERT_RAW_SUBJECT);
 
