@@ -2,8 +2,13 @@ package edu.illinois.cs.dt.tools.fixer;
 
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.CatchClause;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.stmt.TryStmt;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.IOException;
@@ -73,7 +78,10 @@ public class JavaMethod {
 
     public void prepend(final NodeList<Statement> stmts) {
         final NodeList<Statement> statements = body.getStatements();
-        statements.add(0, new BlockStmt(stmts));
+        //statements.add(0, new BlockStmt(stmts));
+        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
+        CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
+        statements.add(0, new TryStmt(new BlockStmt(stmts), NodeList.nodeList(catchClause), new BlockStmt()));
 
         javaFile().findMethodDeclaration(methodName()).setBody(new BlockStmt(statements));
     }
@@ -88,7 +96,10 @@ public class JavaMethod {
 
     public void append(final NodeList<Statement> stmts) {
         final NodeList<Statement> statements = body.getStatements();
-        statements.add(new BlockStmt(stmts));
+        //statements.add(new BlockStmt(stmts));
+        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
+        CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
+        statements.add(new TryStmt(new BlockStmt(stmts), NodeList.nodeList(catchClause), new BlockStmt()));
 
         javaFile().findMethodDeclaration(methodName()).setBody(new BlockStmt(statements));
     }
