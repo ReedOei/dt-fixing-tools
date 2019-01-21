@@ -456,6 +456,38 @@ public class CleanerFixerPlugin extends TestPlugin {
         methodToPatch.javaFile().writeAndReloadCompilationUnit();
     }
 
+    private boolean applyPatchesAndRun(final List<String> failingOrder, final JavaMethod victimMethod) throws Exception {
+        TestPluginPlugin.info("Applying patches from before to see if order still fails.");
+        for (Patch patch : patches) {
+            TestPluginPlugin.info("Apply patch for " + patch.methodToPatch().methodName());
+            applyPatch(patch);
+        }
+        runMvnInstall(false);
+        boolean passWithPatches = testOrderPasses(failingOrder);
+        // Regardless, restore all patched files to what they were
+        for (Patch patch : patches) {
+            if (patch.prepend()) {
+                patch.methodToPatch().removeFirstBlock();
+            } else {
+                patch.methodToPatch().removeLastBlock();
+            }
+            patch.methodToPatch().javaFile().writeAndReloadCompilationUnit();
+            restore(patch.methodToPatch().javaFile());
+        }
+        runMvnInstall(false);    // Rebuild again, in preparation for next run
+        if (passWithPatches) {
+            TestPluginPlugin.info("Failing order no longer fails after patches.");
+            // If this is a new dependent test and the patches fix it, then save an empty file for it
+            // just to help indicate that the test has been fixed
+            Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");
+            if (!patchFile.toFile().exists()) {
+                Files.write(patchFile, new ArrayList<String>());
+            }
+            return true;
+        }
+        return false;
+    }
+
     // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
     // TODO: for cleaners, santa clauses, etc.
     private void applyFix(final List<String> failingOrder,
@@ -472,29 +504,10 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // If failing order still failing, apply all the patches from before first to see if already fixed
         if (!patches.isEmpty()) {
-            TestPluginPlugin.info("Applying patches from before to see if order still fails.");
-            for (Patch patch : patches) {
-                TestPluginPlugin.info("Apply patch for " + patch.methodToPatch().methodName());
-                applyPatch(patch);
-            }
-            runMvnInstall(false);
-            boolean passWithPatches = testOrderPasses(failingOrder);
-            // Regardless, restore all patched files to what they were
-            for (Patch patch : patches) {
-                if (patch.prepend()) {
-                    patch.methodToPatch().removeFirstBlock();
-                } else {
-                    patch.methodToPatch().removeLastBlock();
-                }
-                patch.methodToPatch().javaFile().writeAndReloadCompilationUnit();
-                restore(patch.methodToPatch().javaFile());
-            }
-            runMvnInstall(false);    // Rebuild again, in preparation for next run
-            if (passWithPatches) {
-                TestPluginPlugin.info("Failing order no longer fails after patches.");
+            boolean passWithPatch = applyPatchesAndRun(failingOrder, victimMethod);
+            if (passWithPatch) {
                 return;
             }
-            TestPluginPlugin.info("Failing order " + failingOrder + " still fails after patches.");
         }
 
         // Do our fix using all cleaner code, which includes setup and teardown
