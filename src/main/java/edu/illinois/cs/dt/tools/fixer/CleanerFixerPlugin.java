@@ -497,9 +497,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         return false;
     }
 
-    // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
-    // TODO: for cleaners, santa clauses, etc.
-    private void applyFix(final List<String> failingOrder,
+    // Returns if applying the fix was successful or not
+    private boolean applyFix(final List<String> failingOrder,
                           final JavaMethod polluterMethod,
                           final JavaMethod cleanerMethod,
                           final JavaMethod victimMethod) throws Exception {
@@ -508,14 +507,14 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         if (testOrderPasses(failingOrder)) {
             TestPluginPlugin.error("Failing order doesn't fail.");
-            return;
+            return false;
         }
 
         // If failing order still failing, apply all the patches from before first to see if already fixed
         if (!patches.isEmpty()) {
             boolean passWithPatch = applyPatchesAndRun(failingOrder, victimMethod);
             if (passWithPatch) {
-                return;
+                return true;
             }
         }
 
@@ -524,12 +523,12 @@ public class CleanerFixerPlugin extends TestPlugin {
         final NodeList<Statement> cleanerStmts = NodeList.nodeList();
         // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
         // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
-        if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
+        //if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
-        }
+        //}
         cleanerStmts.addAll(cleanerMethod.body().getStatements());
         // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
         if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
@@ -570,10 +569,10 @@ public class CleanerFixerPlugin extends TestPlugin {
                 if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, false)) {
                     TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
                     restore(methodToModify.javaFile());
-                    return;
+                    return false;
                 }
             } else {
-                return;
+                return false;
             }
         }
 
@@ -592,6 +591,8 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Restore the original file
         restore(methodToModify.javaFile());
+
+        return true;
     }
 
     // Helper method to create a patch file adding in the passed in block
