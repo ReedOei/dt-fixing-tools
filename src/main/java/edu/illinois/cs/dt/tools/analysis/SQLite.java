@@ -152,4 +152,13 @@ public class SQLite {
         return new Procedure(connection, connection.prepareStatement(checkExistsStatement(tableName, columnName)))
                 .param(val).exists();
     }
+
+    public Procedure statement(final Path path, final Object... params) throws SQLException {
+        Procedure procedure = statement(path);
+        for (final Object param : params) {
+            procedure = procedure.param(param);
+        }
+
+        return procedure;
+    }
 }

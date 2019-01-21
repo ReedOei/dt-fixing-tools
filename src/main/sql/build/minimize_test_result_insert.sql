@@ -1,5 +1,6 @@
 insert into minimize_test_result
 (
+  subject_name,
   test_name,
   expected_run_str_id,
   expected_result,
@@ -8,5 +9,10 @@ insert into minimize_test_result
 )
 values
 (
-  ?, ?, ?, ?, ?
+  ?,
+  ?,
+  ?,
+  ?,
+  ?,
+  ?
 )

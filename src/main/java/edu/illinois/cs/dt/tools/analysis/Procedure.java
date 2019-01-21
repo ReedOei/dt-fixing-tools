@@ -90,4 +90,18 @@ public class Procedure {
     public boolean exists() throws SQLException {
         return query().next();
     }
+
+    public Procedure param(final Object param) throws SQLException {
+        if (param instanceof Integer) {
+            return param(((Integer) param).intValue());
+        } else if (param instanceof Double) {
+            return param(((Double) param).doubleValue());
+        } else if (param instanceof Float) {
+            return param(((Float) param).floatValue());
+        } else if (param instanceof String) {
+            return param((String)param);
+        } else {
+            throw new IllegalArgumentException("param is of unknown class: " + param.getClass());
+        }
+    }
 }

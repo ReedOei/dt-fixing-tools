@@ -256,7 +256,7 @@ public class Analysis extends StandardMain {
             insertVerificationResults(name, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
             insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
 
-            insertMinimizedResults(path.resolve(MinimizerPathManager.MINIMIZED));
+            insertMinimizedResults(name, path.resolve(MinimizerPathManager.MINIMIZED));
             insertStaticFieldInfo(path, TracerMode.TRACK);
             insertPollutedFields(path.resolve(PollutionPathManager.POLLUTION_DATA));
 
@@ -489,7 +489,7 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private void insertMinimizedResults(final Path minimized) throws IOException {
+    private void insertMinimizedResults(final String subjectName, final Path minimized) throws IOException {
         if (!Files.isDirectory(minimized)) {
             System.out.println("[WARNING] SKIPPING: No minimized folder " + minimized);
             return;
@@ -502,15 +502,16 @@ public class Analysis extends StandardMain {
                 .map(s -> new Gson().fromJson(s, MinimizeTestsResult.class))
                 .forEach(minimizeTestsResult -> {
                     try {
-                        insertMinimizeTestResult(minimizeTestsResult);
+                        insertMinimizeTestResult(subjectName, minimizeTestsResult);
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
                 });
     }
 
-    private int insertMinimizeTestResult(final MinimizeTestsResult minimizeTestsResult) throws SQLException {
+    private int insertMinimizeTestResult(final String subjectName, final MinimizeTestsResult minimizeTestsResult) throws SQLException {
         int id = sqlite.statement(SQLStatements.INSERT_MINIMIZE_TEST_RESULT)
+                .param(subjectName)
                 .param(minimizeTestsResult.dependentTest())
                 .param(minimizeTestsResult.expectedRun().id())
                 .param(minimizeTestsResult.expected().toString())
