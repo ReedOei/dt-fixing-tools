@@ -621,6 +621,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.getProperties().setProperty("skipTests", "true");
         request.getProperties().setProperty("rat.skip", "true");
         request.getProperties().setProperty("dependency-check.skip", "true");
+        request.getProperties().setProperty("enforcer.skip", "true");
 
         // TODO: Log the output from the maven process somewhere
         ByteArrayOutputStream baosOutput = new ByteArrayOutputStream();
