@@ -229,6 +229,15 @@ public class CleanerFixerPlugin extends TestPlugin {
             polluterDataOrder.addAll(pdWithCleaner);
         }
 
+        // Even if could not find way to fix, if there are patches from before, try them to see if they make this one pass
+        // TODO: Only really applies to case of polluter/victim
+        if (polluterDataOrder.isEmpty() && !patches.isEmpty() && !minimized.expected().equals(Result.PASS)) {
+            for (PolluterData pd : minimized.polluters()) {
+                List<String> failingOrder = pd.withDeps(minimized.dependentTest());
+                JavaMethod victimMethod = JavaMethod.find(minimized.dependentTest(), testFiles, classpath).get();
+                if (applyPatchesAndRun(failingOrder, victimMethod)) {
+                    TestPluginPlugin.info("Dependent test " + victimMethod.methodName() + " can pass with patches from before.");
+                }
             }
         }
 
