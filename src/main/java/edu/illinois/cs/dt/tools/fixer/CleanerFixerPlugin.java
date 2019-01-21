@@ -557,7 +557,22 @@ public class CleanerFixerPlugin extends TestPlugin {
         if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, false)) {
             TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
             restore(methodToModify.javaFile());
-            return;
+
+            // If does not suffice (and in polluter case), do not abandon hope, try the opposite way as well
+            if (polluterMethod != null) {
+                if (prepend) {
+                    methodToModify = polluterMethod;
+                } else {
+                    methodToModify = victimMethod;
+                }
+                if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, !prepend, false)) {
+                    TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
+                    restore(methodToModify.javaFile());
+                    return;
+                }
+            } else {
+                return;
+            }
         }
 
         // Cleaner is good, so now we can start delta debugging
