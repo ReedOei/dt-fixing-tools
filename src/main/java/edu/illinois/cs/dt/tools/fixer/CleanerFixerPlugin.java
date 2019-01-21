@@ -304,19 +304,19 @@ public class CleanerFixerPlugin extends TestPlugin {
         final Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
 
         if (polluterTestName != null && !polluterMethodOpt.isPresent()) {
-            TestPluginPlugin.error("Could not find method " + polluterTestName);
+            TestPluginPlugin.error("Could not find polluter method " + polluterTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
             return;
         }
 
         if (!cleanerMethodOpt.isPresent()) {
-            TestPluginPlugin.error("Could not find method " + cleanerTestName);
+            TestPluginPlugin.error("Could not find cleaner method " + cleanerTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
             return;
         }
 
         if (!victimMethodOpt.isPresent()) {
-            TestPluginPlugin.error("Could not find method " + victimTestName);
+            TestPluginPlugin.error("Could not find victim method " + victimTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
             return;
         }
