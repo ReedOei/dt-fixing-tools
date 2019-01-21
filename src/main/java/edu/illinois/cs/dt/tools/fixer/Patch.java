@@ -12,4 +12,16 @@ public class Patch {
         this.patchedBlock = patchedBlock;
         this.prepend = prepend;
     }
+
+    public JavaMethod methodToPatch() {
+        return this.methodToPatch;
+    }
+
+    public BlockStmt patchedBlock() {
+        return this.patchedBlock;
+    }
+
+    public boolean prepend() {
+        return this.prepend;
+    }
 }

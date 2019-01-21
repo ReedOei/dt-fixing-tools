@@ -434,6 +434,17 @@ public class CleanerFixerPlugin extends TestPlugin {
         return stmts;
     }
 
+    private void applyPatch(Patch patch) throws Exception {
+        JavaMethod methodToPatch = patch.methodToPatch();
+        BlockStmt patchedBlock = patch.patchedBlock();
+        if (patch.prepend()) {
+            methodToPatch.prepend(patchedBlock.getStatements());
+        } else {
+            methodToPatch.append(patchedBlock.getStatements());
+        }
+        methodToPatch.javaFile().writeAndReloadCompilationUnit();
+    }
+
     // TODO: Extract this logic out to a more generalized fixer that is separate, so we can reuse it
     // TODO: for cleaners, santa clauses, etc.
     private void applyFix(final List<String> failingOrder,
@@ -446,6 +457,33 @@ public class CleanerFixerPlugin extends TestPlugin {
         if (testOrderPasses(failingOrder)) {
             TestPluginPlugin.error("Failing order doesn't fail.");
             return;
+        }
+
+        // If failing order still failing, apply all the patches from before first to see if already fixed
+        if (!patches.isEmpty()) {
+            TestPluginPlugin.info("Applying patches from before to see if order still fails.");
+            for (Patch patch : patches) {
+                TestPluginPlugin.info("Apply patch for " + patch.methodToPatch().methodName());
+                applyPatch(patch);
+            }
+            runMvnInstall(false);
+            boolean passWithPatches = testOrderPasses(failingOrder);
+            // Regardless, restore all patched files to what they were
+            for (Patch patch : patches) {
+                if (patch.prepend()) {
+                    patch.methodToPatch().removeFirstBlock();
+                } else {
+                    patch.methodToPatch().removeLastBlock();
+                }
+                patch.methodToPatch().javaFile().writeAndReloadCompilationUnit();
+                restore(patch.methodToPatch().javaFile());
+            }
+            runMvnInstall(false);    // Rebuild again, in preparation for next run
+            if (passWithPatches) {
+                TestPluginPlugin.info("Failing order no longer fails after patches.");
+                return;
+            }
+            TestPluginPlugin.info("Failing order " + failingOrder + " still fails after patches.");
         }
 
         // Do our fix using all cleaner code, which includes setup and teardown
