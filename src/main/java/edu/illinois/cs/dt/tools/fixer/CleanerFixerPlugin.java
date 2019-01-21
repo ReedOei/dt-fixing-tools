@@ -252,34 +252,27 @@ public class CleanerFixerPlugin extends TestPlugin {
                                   final List<Path> testFiles) throws Exception {
         String polluterTestName;
         Optional<JavaMethod> polluterMethodOpt;
-        String cleanerTestName;
-        Optional<JavaMethod> cleanerMethodOpt;
         List<String> failingOrder;
+
+        List<String> cleanerTestNames = new ArrayList<>();  // Can potentially work with many cleaners, try them all
 
         // If dealing with a case of result with failure, then get standard cleaner logic from it
         if (!minimized.expected().equals(Result.PASS)) {
+            polluterTestName = polluterData.deps().get(0);  // Assume only one, get first...
+            polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath);
+
             if (polluterData.cleanerData().cleaners().isEmpty()) {
                 TestPluginPlugin.error("Found polluters for " + minimized.dependentTest() + " but no cleaners.");
                 return;
             }
 
-            final CleanerGroup cleanerGroup = polluterData.cleanerData().cleaners().get(0);
-
-            if (cleanerGroup.cleanerTests().size() > 1) {
-                TestPluginPlugin.error("Cleaner group has more than one test (currently unsupported)");
-                return;
+            for (CleanerGroup cleanerGroup : polluterData.cleanerData().cleaners()) {
+                // Only handle cleaner groups that have one test each
+                if (cleanerGroup.cleanerTests().size() == 1) {
+                    cleanerTestNames.add(cleanerGroup.cleanerTests().get(0));   // TODO: Handle cleaner group with more than one test
+                }
             }
 
-            if (cleanerGroup.cleanerTests().isEmpty()) {
-                TestPluginPlugin.error("Cleaner group exists but has no tests. This should never happen, and is probably because of a bug in the cleaner finding code.");
-                return;
-            }
-            polluterTestName = polluterData.deps().get(0);  // Assume only one, get first...
-            polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath);
-
-            // TODO: Handle cleaner group with more than one test
-            cleanerTestName = cleanerGroup.cleanerTests().get(0);
-            cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
 
             // Failing order has both the dependent test and the dependencies
             failingOrder = polluterData.withDeps(minimized.dependentTest());
@@ -293,8 +286,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             polluterTestName = null;    // No polluter if minimized order is passing
             polluterMethodOpt = Optional.ofNullable(null);
 
-            cleanerTestName = polluterData.deps().get(0);  // Assume only one, get first...
-            cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
+            cleanerTestNames.add(polluterData.deps().get(0));   // Assume only one, get first...
 
             // Failing order should be just the dependent test by itself
             failingOrder = Collections.singletonList(minimized.dependentTest());
@@ -309,22 +301,35 @@ public class CleanerFixerPlugin extends TestPlugin {
             return;
         }
 
-        if (!cleanerMethodOpt.isPresent()) {
-            TestPluginPlugin.error("Could not find cleaner method " + cleanerTestName);
-            TestPluginPlugin.error("Tried looking in: " + testFiles);
-            return;
-        }
-
         if (!victimMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find victim method " + victimTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
             return;
         }
 
-        // TODO: applyFix should take in a location for where to output the Java file that contains the
-        //       "fixed" code or an option to directly replace the existing test source file.
-        TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " to make " + victimMethodOpt.get().methodName() + " pass.");
-        applyFix(failingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get());
+        // Give up if cannot find valid cleaner (single test that makes the order pass)
+        if (cleanerTestNames.isEmpty()) {
+            TestPluginPlugin.error("Could not get a valid cleaner for " + victimTestName);
+            return;
+        }
+
+        // Try to apply fix with all cleaners, but if one of them works, then we are good
+        for (String cleanerTestName : cleanerTestNames) {
+            Optional<JavaMethod> cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
+            if (!cleanerMethodOpt.isPresent()) {
+                TestPluginPlugin.error("Could not find cleaner method " + cleanerTestName);
+                TestPluginPlugin.error("Tried looking in: " + testFiles);
+                continue;
+            }
+            // TODO: applyFix should take in a location for where to output the Java file that contains the
+            //       "fixed" code or an option to directly replace the existing test source file.
+            TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " to make " + victimMethodOpt.get().methodName() + " pass.");
+            boolean fixSuccess = applyFix(failingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get());
+            // A successful patch means we do not need to try all the remaining cleaners for this ordering
+            if (fixSuccess) {
+                return;
+            }
+        }
     }
 
     private List<Path> testSources() throws IOException {
