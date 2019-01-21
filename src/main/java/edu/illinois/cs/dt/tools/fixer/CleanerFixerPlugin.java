@@ -351,7 +351,7 @@ public class CleanerFixerPlugin extends TestPlugin {
     private boolean checkCleanerStmts(final List<String> failingOrder,
                                       final JavaMethod methodToModify,
                                       final NodeList<Statement> cleanerStmts,
-                                      boolean prepend) throws Exception {
+                                      boolean prepend, boolean suppressError) throws Exception {
         // If want to prepend set to true, then prepend to victim
         if (prepend) {
             methodToModify.prepend(cleanerStmts);
@@ -362,7 +362,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Rebuild and see if tests run properly
         try {
-            runMvnInstall(true);
+            runMvnInstall(suppressError);
         } catch (Exception ex) {
             TestPluginPlugin.debug("Error building the code, passed in cleaner code does not compile");
             // Reset the change
@@ -431,11 +431,11 @@ public class CleanerFixerPlugin extends TestPlugin {
             otherChunk.addAll(cleanerStmts.subList(endpoint, cleanerStmts.size()));
 
             // Check if applying chunk works
-            if (checkCleanerStmts(failingOrder, methodToModify, chunk, prepend)) {
+            if (checkCleanerStmts(failingOrder, methodToModify, chunk, prepend, true)) {
                 return deltaDebug(failingOrder, methodToModify, chunk, 2, prepend);         // If works, then delta debug some more this chunk
             }
             // Otherwise, check if applying complement chunk works
-            if (checkCleanerStmts(failingOrder, methodToModify, otherChunk, prepend)) {
+            if (checkCleanerStmts(failingOrder, methodToModify, otherChunk, prepend, true)) {
                 return deltaDebug(failingOrder, methodToModify, otherChunk, 2, prepend);    // If works, then delta debug some more the complement chunk
             }
         }
@@ -553,8 +553,9 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Back up the file we are going to modify
         backup(methodToModify.javaFile());
 
-        if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend)) {
-            TestPluginPlugin.error("Cleaner does not fix victim!");
+        // Check if applying these cleaners on the method suffices
+        if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, false)) {
+            TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
             restore(methodToModify.javaFile());
             return;
         }
