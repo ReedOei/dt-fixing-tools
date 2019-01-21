@@ -555,8 +555,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Write out the changes in the form of a patch
         int begin = methodToModify.beginLine() + 1; // Shift one, do not include declaration line
-        Path patchFile = CleanerPathManager.fixer().resolve(
-            CleanerPathManager.changeExtension(methodToModify.javaFile().path(), CleanerPathManager.PATCH_EXTENSION).getFileName());
+        Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");  // The patch file is based on the dependent test
         BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
         writePatch(patchFile, begin, patchedBlock);
         patches.add(new Patch(methodToModify, patchedBlock, prepend));
