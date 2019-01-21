@@ -342,10 +342,9 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Rebuild and see if tests run properly
         try {
-            runMvnInstall();
+            runMvnInstall(true);
         } catch (Exception ex) {
-            TestPluginPlugin.error("Error building the code, passed in cleaner does not work");
-            TestPluginPlugin.error(ex);
+            TestPluginPlugin.debug("Error building the code, passed in cleaner code does not compile");
             // Reset the change
             if (prepend) {
                 methodToModify.removeFirstBlock();
@@ -355,13 +354,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             return false;
         }
         // TODO: Output to result files rather than stdout
-        TestPluginPlugin.info("Running order with code from cleaner.");
         boolean passInFailingOrder = testOrderPasses(failingOrder);
-        if (!passInFailingOrder) {
-            TestPluginPlugin.error("Fix was unsuccessful. Test still fails.");
-        } else {
-            TestPluginPlugin.info("Fix was successful! Fixed file:\n" + methodToModify.javaFile().path());
-        }
 
         // Reset the change
         if (prepend) {
@@ -525,7 +518,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         Files.write(patchFile, patchLines);
     }
 
-    private boolean runMvnInstall() throws MavenInvocationException {
+    private boolean runMvnInstall(boolean suppressOutput) throws MavenInvocationException {
         // TODO: Maybe support custom command lines/options?
         final InvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(Arrays.asList("install"));
@@ -547,9 +540,11 @@ public class CleanerFixerPlugin extends TestPlugin {
         final InvocationResult result = invoker.execute(request);
 
         if (result.getExitCode() != 0) {
-            // Print out the contents of the output/error streamed out during evocation
-            TestPluginPlugin.error(baosOutput.toString());
-            TestPluginPlugin.error(baosError.toString());
+            // Print out the contents of the output/error streamed out during evocation, if not suppressed
+            if (!suppressOutput) {
+                TestPluginPlugin.error(baosOutput.toString());
+                TestPluginPlugin.error(baosError.toString());
+            }
 
             if (result.getExecutionException() == null) {
                 throw new RuntimeException("Compilation failed with exit code " + result.getExitCode() + " for an unknown reason");
