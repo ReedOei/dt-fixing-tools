@@ -87,12 +87,33 @@ public class CommandGenerator extends StandardMain {
         showCounters("numPolluter", count(dependencies, t -> odTests.get(t).equals("victim")));
         showCounters("numSetter", count(dependencies, t -> odTests.get(t).equals("brittle")));
 
-        // TODO: Number of tests with a single field
-        // TODO: Number of tests with any fields
-        // TODO: Number of tests with more than one field
+        // TODO: Get this stuff working
+        final Map<String, List<String>> cleanersByDependency = queryCleanerByDependency("any");
+        final Map<String, List<String>> cleanersByPolluter = queryCleanerByDependency("victim");
+        final Map<String, List<String>> cleanersBySetter = queryCleanerByDependency("brittle");
 
-        // TODO: Number of lines of code to fix
-        // TODO: Number of times that fixer works
+        System.out.println(tools.command("numDependencyWithCleaner", String.valueOf(cleanersByDependency.size())));
+        System.out.println(tools.command("numPolluterWithCleaner", String.valueOf(cleanersByPolluter.size())));
+        System.out.println(tools.command("numSetterWithCleaner", String.valueOf(cleanersBySetter.size())));
+
+        // Note that these numbers may seem weird, but are correct (a single test may be the same dependency for many cleaners)
+        showCounters("numCleanerDependency", count(cleanersByDependency, t -> true));
+        showCounters("numCleanerPolluter", count(cleanersByPolluter, t -> true));
+        showCounters("numCleanerSetter", count(cleanersBySetter, t -> true));
+
+        // Not a typo. All these arguments must be passed twice, due to the way the query is written
+        print(SQLStatements.COUNT_DEPENDENCY_TOTAL, "numDependencyTotal", "any", "any");
+        print(SQLStatements.COUNT_DEPENDENCY_TOTAL, "numPolluterTotal", "victim", "victim");
+        print(SQLStatements.COUNT_DEPENDENCY_TOTAL, "numSetterTotal", "brittle", "brittle");
+        print(SQLStatements.COUNT_CLEANER_TOTAL, "numCleanerTotal", "any", "any");
+        print(SQLStatements.COUNT_CLEANER_TOTAL, "numCleanerPolluterTotal", "victim", "victim");
+        print(SQLStatements.COUNT_CLEANER_TOTAL, "numCleanerSetterTotal", "brittle", "brittle");
+    }
+
+    private Map<String, List<String>> queryCleanerByDependency(final String type) throws SQLException {
+        return mapQuery(sqlite.statement(SQLStatements.CLEANERS_BY_DEPENDENCY, type, type), // pass twice, not a typo
+                r -> r.get("test_name"),
+                r -> Arrays.asList(r.get("tests").split(",")));
     }
 
     private void showCounters(final String commandNamePrefix, final Map<String, SameClassPackageCounter> cleanerCounters) {
@@ -125,8 +146,15 @@ public class CommandGenerator extends StandardMain {
                                       final Function<LinkedHashMap<String, String>, U> keyMapper,
                                       final Function<LinkedHashMap<String, String>, V> valueMapper)
             throws SQLException {
+        return mapQuery(sqlite.statement(path), keyMapper, valueMapper);
+    }
+
+    private <U, V> Map<U, V> mapQuery(final Procedure procedure,
+                                      final Function<LinkedHashMap<String, String>, U> keyMapper,
+                                      final Function<LinkedHashMap<String, String>, V> valueMapper)
+            throws SQLException {
         final Map<U, V> result = new HashMap<>();
-        final QueryResult queryResult = sqlite.statement(path).tableQuery();
+        final QueryResult queryResult = procedure.tableQuery();
 
         for (final LinkedHashMap<String, String> row : queryResult.rows()) {
             result.put(keyMapper.apply(row), valueMapper.apply(row));

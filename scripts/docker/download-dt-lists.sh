@@ -11,5 +11,11 @@ for pom_path in $(find -name "pom.xml"); do
     echo "[DOWNLOAD] Downloading $module_key to $dir/.dtfixingtools/detection-results/flaky-lists.json"
 
     wget "http://reedoei.com/files/${module_key}-flaky-lists.json" -O "$dir/.dtfixingtools/detection-results/flaky-lists.json"
+    wget "http://reedoei.com/files/${module_key}-minimized.zip" -O "$dir/.dtfixingtools/minimized.zip"
+
+    (
+        cd "$dir/.dtfixingtools/"
+        unzip "minimized.zip"
+    )
 done
 

@@ -99,6 +99,9 @@ public class SQLStatements {
     public static final Path OD_TESTS_GET = Paths.get("src/main/sql/figures/od_tests_get.sql");
     public static final Path CLEANERS_BY_TEST = Paths.get("src/main/sql/figures/cleaners_by_test.sql");
     public static final Path DEPENDENCIES_BY_TEST = Paths.get("src/main/sql/figures/dependencies_by_test.sql");
+    public static final Path CLEANERS_BY_DEPENDENCY = Paths.get("src/main/sql/figures/cleaner_by_dependency_type.sql");
+    public static final Path COUNT_DEPENDENCY_TOTAL = Paths.get("src/main/sql/figures/count_dependency_total.sql");
+    public static final Path COUNT_CLEANER_TOTAL = Paths.get("src/main/sql/figures/count_cleaner_total.sql");
 
     static {
         ensureExists(COUNT_OD_TYPE);
@@ -121,6 +124,9 @@ public class SQLStatements {
         ensureExists(OD_TESTS_GET);
         ensureExists(DEPENDENCIES_BY_TEST);
         ensureExists(CLEANERS_BY_TEST);
+        ensureExists(CLEANERS_BY_DEPENDENCY);
+        ensureExists(COUNT_DEPENDENCY_TOTAL);
+        ensureExists(COUNT_CLEANER_TOTAL);
 
         ensureExists(INSERT_RAW_SUBJECT);
 
