@@ -565,6 +565,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 } else {
                     methodToModify = victimMethod;
                 }
+                backup(methodToModify.javaFile());
                 prepend = !prepend;
                 if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, false)) {
                     TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
