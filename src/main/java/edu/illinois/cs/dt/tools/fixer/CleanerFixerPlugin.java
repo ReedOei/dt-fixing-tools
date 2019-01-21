@@ -168,25 +168,32 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
 
         // TODO: Handle the case where there are multiple polluting/cleaning groups
-        // If in a passing order and there are multiple potential setters, then want the one in the same test class as dependent test
-        PolluterData polluterData = null;
+        List<PolluterData> polluterDataOrder = new ArrayList<PolluterData>();
+
+        // If in a passing order and there are multiple potential setters, then prioritize the one in the same test class as dependent test
         if (minimized.expected().equals(Result.PASS)) {
+            List<PolluterData> pdWithSameTestClass = new ArrayList<>();
+            List<PolluterData> pdWithDiffTestClass = new ArrayList<>();
             for (PolluterData pd : minimized.polluters()) {
-                // Only care about if case of one polluter
+                // Only care about case of one polluter
                 if (pd.deps().size() == 1) {
                     String setter = pd.deps().get(0);
                     // Want the one in the same test class
                     if (sameTestClass(setter, minimized.dependentTest())) {
-                        polluterData = pd;
-                        break;
+                        pdWithSameTestClass.add(pd);
+                    } else {
+                        pdWithDiffTestClass.add(pd);
                     }
                 }
             }
+            // Add first in same test class ones, then the remaining ones
+            polluterDataOrder.addAll(pdWithSameTestClass);
+            polluterDataOrder.addAll(pdWithDiffTestClass);
         } else {
             // If case of failing order with polluters, best bet is one that has a cleaner, and in same test class as victim
-            List<PolluterData> pdWithCleaner = new ArrayList<PolluterData>();
-            List<PolluterData> pdWithSingleCleaner = new ArrayList<PolluterData>();
-            List<PolluterData> pdWithSingleCleanerSameTestClass = new ArrayList<PolluterData>();
+            List<PolluterData> pdWithCleaner = new ArrayList<>();
+            List<PolluterData> pdWithSingleCleaner = new ArrayList<>();
+            List<PolluterData> pdWithSingleCleanerSameTestClass = new ArrayList<>();
             for (PolluterData pd : minimized.polluters()) {
                 // Consider if has a cleaner
                 if (!pd.cleanerData().cleaners().isEmpty()) {
@@ -210,21 +217,18 @@ public class CleanerFixerPlugin extends TestPlugin {
                 }
             }
             if (!pdWithSingleCleanerSameTestClass.isEmpty()) {
-                polluterData = pdWithSingleCleanerSameTestClass.get(0);
+                polluterDataOrder.add(pdWithSingleCleanerSameTestClass.get(0));
             } else if (!pdWithSingleCleaner.isEmpty()) {
-                polluterData = pdWithSingleCleaner.get(0);
+                polluterDataOrder.add(pdWithSingleCleaner.get(0));
             } else if (!pdWithCleaner.isEmpty()) {
-                polluterData = pdWithCleaner.get(0);
+                polluterDataOrder.add(pdWithCleaner.get(0));
             }
         }
-        // If cannot find any ideal polluter to work with, just take the first
-        if (polluterData == null) {
-            polluterData = minimized.polluters().get(0);
-            TestPluginPlugin.info("Could not get a suitable cleaner/setter from the same test class.");
-        }
 
-        // Apply fix using specific passed in polluter data
-        setupAndApplyFix(minimized, polluterData, testFiles);
+        for (PolluterData polluterData : polluterDataOrder) {
+            // Apply fix using specific passed in polluter data
+            setupAndApplyFix(minimized, polluterData, testFiles);
+        }
     }
 
     private void setupAndApplyFix(final MinimizeTestsResult minimized,
