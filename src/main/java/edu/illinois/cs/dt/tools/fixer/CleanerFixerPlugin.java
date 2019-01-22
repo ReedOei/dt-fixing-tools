@@ -522,11 +522,16 @@ public class CleanerFixerPlugin extends TestPlugin {
         return false;
     }
 
-    private JavaMethod addHelperMethod(JavaMethod cleanerMethod, JavaMethod methodToModify, boolean prepend) throws Exception {
-        // The modification is to modify the cleaner class to add a helper, then have the other method call the helper
+    private ExpressionStmt getHelperCallStmt(JavaMethod cleanerMethod) {
         Expression objectCreation = new ObjectCreationExpr(null, new ClassOrInterfaceType(null, cleanerMethod.getClassName()), NodeList.nodeList());
         Expression helperCall = new MethodCallExpr(objectCreation, "cleanerHelper");
         ExpressionStmt helperCallStmt = new ExpressionStmt(helperCall);
+        return helperCallStmt;
+    }
+
+    private JavaMethod addHelperMethod(JavaMethod cleanerMethod, JavaMethod methodToModify, boolean prepend) throws Exception {
+        // The modification is to modify the cleaner class to add a helper, then have the other method call the helper
+        ExpressionStmt helperCallStmt = getHelperCallStmt(cleanerMethod);
         if (prepend) {
             methodToModify.prepend(NodeList.nodeList(helperCallStmt));
         } else {
@@ -646,14 +651,10 @@ public class CleanerFixerPlugin extends TestPlugin {
         final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, helperMethod, cleanerStmts, 2, prepend);
 
         // Try to inline these statements into the method
-        /*if (prepend) {
-            methodToModify.removeFirstBlock();
-        } else {
-            methodToModify.removeLastBlock();
-        }*/
         restore(methodToModify.javaFile());
         methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
-        if (!checkCleanerStmts(failingOrder, methodToModify, minimalCleanerStmts, prepend, false)) {
+        boolean inlineSuccessful = checkCleanerStmts(failingOrder, methodToModify, minimalCleanerStmts, prepend, false);
+        if (!inlineSuccessful) {
             TestPluginPlugin.info("Inlining patch into " + methodToModify.methodName() + " still not good enough to run.");
         }
 
@@ -667,7 +668,15 @@ public class CleanerFixerPlugin extends TestPlugin {
         Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");  // The patch file is based on the dependent test
         BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
         writePatch(patchFile, startingLine, patchedBlock, methodToModify.getClassName());
-        patches.add(new Patch(methodToModify, patchedBlock, prepend));
+
+        // If can just inline the statements in, then that is the only patch to keep around
+        if (inlineSuccessful) {
+            patches.add(new Patch(methodToModify, patchedBlock, prepend));
+        } else {
+            // Otherwise, it involves two patches, one to the cleaner to introduce the helper and one to the method to modify to call the helper
+            patches.add(new Patch(helperMethod, patchedBlock, prepend));
+            patches.add(new Patch(methodToModify, new BlockStmt(NodeList.nodeList(getHelperCallStmt(cleanerMethod))), prepend));
+        }
 
         // Report successful patching, report where the patch is
         TestPluginPlugin.info("Patching successful, patch file for " + victimMethod.methodName() + " found at: " + patchFile);
