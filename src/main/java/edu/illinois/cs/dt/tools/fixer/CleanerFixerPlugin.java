@@ -249,15 +249,22 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
         }
 
+        // If more than one polluter for dependent test, then favor fixing the dependent test
+        boolean prepend = false;
+        if (polluterDataOrder.size() > 1) {
+            prepend = true;
+        }
+
         for (PolluterData polluterData : polluterDataOrder) {
             // Apply fix using specific passed in polluter data
-            setupAndApplyFix(minimized, polluterData, testFiles);
+            setupAndApplyFix(minimized, polluterData, testFiles, prepend);
         }
     }
 
     private void setupAndApplyFix(final MinimizeTestsResult minimized,
                                   final PolluterData polluterData,
-                                  final List<Path> testFiles) throws Exception {
+                                  final List<Path> testFiles,
+                                  boolean prepend) throws Exception {
         String polluterTestName;
         Optional<JavaMethod> polluterMethodOpt;
         List<String> failingOrder;
@@ -337,7 +344,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             // TODO: applyFix should take in a location for where to output the Java file that contains the
             //       "fixed" code or an option to directly replace the existing test source file.
             TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " to make " + victimMethodOpt.get().methodName() + " pass.");
-            boolean fixSuccess = applyFix(failingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get());
+            boolean fixSuccess = applyFix(failingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
             // A successful patch means we do not need to try all the remaining cleaners for this ordering
             if (fixSuccess) {
                 return;
@@ -546,7 +553,8 @@ public class CleanerFixerPlugin extends TestPlugin {
     private boolean applyFix(final List<String> failingOrder,
                           final JavaMethod polluterMethod,
                           final JavaMethod cleanerMethod,
-                          final JavaMethod victimMethod) throws Exception {
+                          final JavaMethod victimMethod,
+                          boolean prepend) throws Exception {
         // Check if we pass in isolation before fix
         TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
         if (testOrderPasses(failingOrder)) {
@@ -575,22 +583,26 @@ public class CleanerFixerPlugin extends TestPlugin {
         //}
         cleanerStmts.addAll(cleanerMethod.body().getStatements());
         // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
-        if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
+        //if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.AfterClass"));
-        }
+        //}
 
         // If polluter/victim case, check if cleaner is same test class as polluter, so append to polluter
         // Method to modify is based on this decision
-        boolean prepend = true;
+        /*boolean prepend = true;
         JavaMethod methodToModify = victimMethod;
         if (polluterMethod != null) {
             if (sameTestClass(cleanerMethod.methodName(), polluterMethod.methodName())) {
                 prepend = false;
                 methodToModify = polluterMethod;
             }
+        }*/
+        JavaMethod methodToModify = victimMethod;
+        if (!prepend) {
+            methodToModify = polluterMethod;
         }
 
         // Back up the files we are going to modify
