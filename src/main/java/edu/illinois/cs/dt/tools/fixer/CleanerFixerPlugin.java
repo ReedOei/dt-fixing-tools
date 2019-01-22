@@ -324,7 +324,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             // Reload methods
             victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
             if (polluterMethodOpt.isPresent()) {
-                polluterMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+                polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath);
             }
             Optional<JavaMethod> cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
             if (!cleanerMethodOpt.isPresent()) {
@@ -655,6 +655,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Restore the original file
         restore(methodToModify.javaFile());
         restore(helperMethod.javaFile());
+        // Final compile to get state to right place
+        runMvnInstall(false);
 
         return true;
     }
