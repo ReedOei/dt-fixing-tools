@@ -98,6 +98,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 // First apply the results from passing orders, fix brittles first
                 minimizedResults()
                         .filter(minimized -> minimized.expected().equals(Result.PASS))
+                        .collect(Collectors.toList())
                         .forEach(minimized -> {
                             try {
                                 setupAndApplyFix(minimized);
