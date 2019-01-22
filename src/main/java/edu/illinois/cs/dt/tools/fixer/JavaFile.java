@@ -3,6 +3,7 @@ package edu.illinois.cs.dt.tools.fixer;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -218,6 +219,26 @@ public class JavaFile {
             }
         }
 
+        return null;
+    }
+
+    // Adding a void, no parameter method
+    public MethodDeclaration addMethod(final String method) {
+        // First check if method exists, and don't do anything if it already does
+        MethodDeclaration existingMethod = findMethodDeclaration(method);
+        if (existingMethod != null) {
+            return existingMethod;
+        }
+
+        // Search for the class that this one should belong to
+        String className = method.substring(0, method.lastIndexOf('.'));
+        className = className.substring(className.lastIndexOf('.') + 1);
+        String methodName = method.substring(method.lastIndexOf('.') + 1);
+        for (final ClassOrInterfaceDeclaration classDeclaration : classList) {
+            if (classDeclaration.getNameAsString().equals(className)) {
+                return classDeclaration.addMethod(methodName, Modifier.PUBLIC);
+            }
+        }
         return null;
     }
 

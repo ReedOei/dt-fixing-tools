@@ -2,8 +2,13 @@ package edu.illinois.cs.dt.tools.fixer;
 
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
@@ -293,8 +298,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             failingOrder = Collections.singletonList(minimized.dependentTest());
         }
 
-        final String victimTestName = minimized.dependentTest();
-        final Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+        String victimTestName = minimized.dependentTest();
+        Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
 
         if (polluterTestName != null && !polluterMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find polluter method " + polluterTestName);
@@ -316,6 +321,11 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Try to apply fix with all cleaners, but if one of them works, then we are good
         for (String cleanerTestName : cleanerTestNames) {
+            // Reload methods
+            victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+            if (polluterMethodOpt.isPresent()) {
+                polluterMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+            }
             Optional<JavaMethod> cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
             if (!cleanerMethodOpt.isPresent()) {
                 TestPluginPlugin.error("Could not find cleaner method " + cleanerTestName);
@@ -503,6 +513,33 @@ public class CleanerFixerPlugin extends TestPlugin {
         return false;
     }
 
+    private JavaMethod addHelperMethod(JavaMethod cleanerMethod, JavaMethod methodToModify, boolean prepend) throws Exception {
+        // The modification is to modify the cleaner class to add a helper, then have the other method call the helper
+        Expression objectCreation = new ObjectCreationExpr(null, new ClassOrInterfaceType(null, cleanerMethod.getClassName()), NodeList.nodeList());
+        Expression helperCall = new MethodCallExpr(objectCreation, "cleanerHelper");
+        ExpressionStmt helperCallStmt = new ExpressionStmt(helperCall);
+        if (prepend) {
+            methodToModify.prepend(NodeList.nodeList(helperCallStmt));
+        } else {
+            methodToModify.append(NodeList.nodeList(helperCallStmt));
+        }
+        methodToModify.javaFile().writeAndReloadCompilationUnit();
+
+        String helperName = cleanerMethod.getClassName() + ".cleanerHelper";
+        //MethodDeclaration helperMethodDecl = cleanerMethod.javaFile().addMethod(helperName);
+        cleanerMethod = JavaMethod.find(cleanerMethod.methodName(), testSources(), classpath).get();    // Reload, just in case
+        cleanerMethod.javaFile().addMethod(helperName);
+        cleanerMethod.javaFile().writeAndReloadCompilationUnit();
+        JavaMethod helperMethod = JavaMethod.find(helperName, testSources(), classpath).get();
+        //JavaMethod helperMethod = new JavaMethod(helperName, cleanerMethod.javaFile(), helperMethodDecl);
+        //helperMethodDecl.setBody(new BlockStmt());
+        helperMethod.javaFile().writeAndReloadCompilationUnit();
+
+        methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
+
+        return helperMethod;
+    }
+
     // Returns if applying the fix was successful or not
     private boolean applyFix(final List<String> failingOrder,
                           final JavaMethod polluterMethod,
@@ -555,13 +592,18 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
         }
 
-        // Back up the file we are going to modify
+        // Back up the files we are going to modify
         backup(methodToModify.javaFile());
+        backup(cleanerMethod.javaFile());
+
+        // Get the helper method reference
+        JavaMethod helperMethod = addHelperMethod(cleanerMethod, methodToModify, prepend);
 
         // Check if applying these cleaners on the method suffices
-        if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, false)) {
+        if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
             TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
             restore(methodToModify.javaFile());
+            restore(helperMethod.javaFile());
 
             // If does not suffice (and in polluter case), do not abandon hope, try the opposite way as well
             if (polluterMethod != null) {
@@ -571,10 +613,13 @@ public class CleanerFixerPlugin extends TestPlugin {
                     methodToModify = victimMethod;
                 }
                 backup(methodToModify.javaFile());
+                backup(helperMethod.javaFile());
                 prepend = !prepend;
-                if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, false)) {
+                helperMethod = addHelperMethod(cleanerMethod, methodToModify, prepend);
+                if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
                     TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
                     restore(methodToModify.javaFile());
+                    restore(helperMethod.javaFile());
                     return false;
                 }
             } else {
@@ -583,13 +628,25 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
 
         // Cleaner is good, so now we can start delta debugging
-        final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, methodToModify, cleanerStmts, 2, prepend);
+        final NodeList<Statement> minimalCleanerStmts = deltaDebug(failingOrder, helperMethod, cleanerStmts, 2, prepend);
+
+        // Try to inline these statements into the method
+        /*if (prepend) {
+            methodToModify.removeFirstBlock();
+        } else {
+            methodToModify.removeLastBlock();
+        }*/
+        restore(methodToModify.javaFile());
+        methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
+        if (!checkCleanerStmts(failingOrder, methodToModify, minimalCleanerStmts, prepend, false)) {
+            TestPluginPlugin.info("Inlining patch into " + methodToModify.methodName() + " still not good enough to run.");
+        }
 
         // Write out the changes in the form of a patch
         int begin = methodToModify.beginLine() + 1; // Shift one, do not include declaration line
         Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");  // The patch file is based on the dependent test
         BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
-        writePatch(patchFile, begin, patchedBlock);
+        writePatch(patchFile, begin, patchedBlock, methodToModify.getClassName());
         patches.add(new Patch(methodToModify, patchedBlock, prepend));
 
         // Report successful patching, report where the patch is
@@ -597,14 +654,16 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Restore the original file
         restore(methodToModify.javaFile());
+        restore(helperMethod.javaFile());
 
         return true;
     }
 
     // Helper method to create a patch file adding in the passed in block
-    private void writePatch(Path patchFile, int begin, BlockStmt blockStmt) throws IOException {
+    private void writePatch(Path patchFile, int begin, BlockStmt blockStmt, String className) throws IOException {
         List<String> patchLines = new ArrayList<>();
         String[] lines = blockStmt.toString().split("\n");
+        patchLines.add(className);
         patchLines.add("@@ -" + begin +",0 +" + begin + "," + lines.length + " @@");
         for (String line : lines) {
             patchLines.add("+ " + line);
