@@ -173,6 +173,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             return;
         }
 
+        TestPluginPlugin.info("Beginning to fix dependent test " + minimized.dependentTest());
+
         // TODO: Handle the case where there are multiple polluting/cleaning groups
         List<PolluterData> polluterDataOrder = new ArrayList<PolluterData>();
 
@@ -547,7 +549,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                           final JavaMethod victimMethod) throws Exception {
         // Check if we pass in isolation before fix
         TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
-
         if (testOrderPasses(failingOrder)) {
             TestPluginPlugin.error("Failing order doesn't fail.");
             return false;
@@ -598,6 +599,8 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Get the helper method reference
         JavaMethod helperMethod = addHelperMethod(cleanerMethod, methodToModify, prepend);
+
+        TestPluginPlugin.info("Trying to modify " + methodToModify.methodName() + " to make failing order pass.");
 
         // Check if applying these cleaners on the method suffices
         if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
