@@ -1,20 +1,17 @@
 package edu.illinois.cs.dt.tools.minimizer;
 
-import com.reedoei.testrunner.configuration.Configuration;
+import com.reedoei.eunomia.collections.StreamUtil;
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
-import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory;
+import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import org.apache.maven.project.MavenProject;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
 import java.util.stream.Stream;
 
 public class MinimizerPlugin extends TestPlugin {
@@ -70,14 +67,6 @@ public class MinimizerPlugin extends TestPlugin {
         this.runner = InstrumentingSmartRunner.fromRunner(RunnerFactory.from(project).get());
         this.builder = new TestMinimizerBuilder(runner);
 
-        final Path order = Paths.get(Configuration.config().getProperty("testminimizer.order", null));
-        try {
-            final List<String> testOrder = Files.readAllLines(order, Charset.defaultCharset());
-            final String dependentTest = Configuration.config().getProperty("testminimizer.dt", testOrder.get(testOrder.size() - 1));
-
-            builder.testOrder(testOrder).dependentTest(dependentTest).build().get().save();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        StreamUtil.seq(runDependentTestFile(DetectorPathManager.detectionFile()));
     }
 }
