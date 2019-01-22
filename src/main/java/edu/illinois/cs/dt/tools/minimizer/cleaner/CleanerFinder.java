@@ -114,7 +114,6 @@ public class CleanerFinder {
 
             if (isCleanerGroup(candidate)) {
                 result.add(candidate);
-                break;
             }
         }
 
