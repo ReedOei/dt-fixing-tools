@@ -665,9 +665,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         } else {
             startingLine = methodToModify.endLine() - 1;    // Shift one, patch starts before end of method
         }
-        Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");  // The patch file is based on the dependent test
         BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
-        writePatch(patchFile, startingLine, patchedBlock, methodToModify.getClassName());
+        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, methodToModify.getClassName());
 
         // If can just inline the statements in, then that is the only patch to keep around
         if (inlineSuccessful) {
@@ -691,7 +690,7 @@ public class CleanerFixerPlugin extends TestPlugin {
     }
 
     // Helper method to create a patch file adding in the passed in block
-    private void writePatch(Path patchFile, int begin, BlockStmt blockStmt, String className) throws IOException {
+    private Path writePatch(JavaMethod victimMethod, int begin, BlockStmt blockStmt, String className) throws IOException {
         List<String> patchLines = new ArrayList<>();
         String[] lines = blockStmt.toString().split("\n");
         patchLines.add(className);
@@ -699,8 +698,25 @@ public class CleanerFixerPlugin extends TestPlugin {
         for (String line : lines) {
             patchLines.add("+ " + line);
         }
+        Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");  // The patch file is based on the dependent test
         Files.createDirectories(patchFile.getParent());
+
+        // If the file exists, then need to give it a new name
+        if (Files.exists(patchFile)) {
+            // Keep adding to a counter to make unique name
+            Path newPatchFile;
+            int counter = 1;
+            while (true) {
+                newPatchFile = Paths.get(patchFile + "." + counter);
+                if (!Files.exists(newPatchFile)) {  // Found a valid file to write to
+                    patchFile = newPatchFile;
+                    break;
+                }
+                counter++;
+            }
+        }
         Files.write(patchFile, patchLines);
+        return patchFile;
     }
 
     private boolean runMvnInstall(boolean suppressOutput) throws MavenInvocationException {
