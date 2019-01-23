@@ -227,7 +227,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             for (PolluterData pd : minimized.polluters()) {
                 List<String> failingOrder = pd.withDeps(minimized.dependentTest());
                 JavaMethod victimMethod = JavaMethod.find(minimized.dependentTest(), testFiles, classpath).get();
-                if (applyPatchesAndRun(failingOrder, victimMethod)) {
+                JavaMethod polluterMethod = JavaMethod.find(pd.deps().get(0), testFiles, classpath).get();
+                if (applyPatchesAndRun(failingOrder, victimMethod, polluterMethod)) {
                     TestPluginPlugin.info("Dependent test " + victimMethod.methodName() + " can pass with patches from before.");
                 }
             }
@@ -474,47 +475,26 @@ public class CleanerFixerPlugin extends TestPlugin {
         return stmts;
     }
 
-    private void applyPatch(Patch patch) throws Exception {
-        JavaMethod methodToPatch = patch.methodToPatch();
-        BlockStmt patchedBlock = patch.patchedBlock();
-        if (patch.prepend()) {
-            methodToPatch.prepend(patchedBlock.getStatements());
-        } else {
-            methodToPatch.append(patchedBlock.getStatements());
-        }
-        methodToPatch.javaFile().writeAndReloadCompilationUnit();
-    }
-
-    private boolean applyPatchesAndRun(final List<String> failingOrder, final JavaMethod victimMethod) throws Exception {
+    private boolean applyPatchesAndRun(final List<String> failingOrder,
+                                       final JavaMethod victimMethod,
+                                       final JavaMethod polluterMethod) throws Exception {
         TestPluginPlugin.info("Applying patches from before to see if order still fails.");
         for (Patch patch : patches) {
             TestPluginPlugin.info("Apply patch for " + patch.methodToPatch().methodName());
-            applyPatch(patch);
-        }
-        runMvnInstall(false);
-        boolean passWithPatches = testOrderPasses(failingOrder);
-        // Regardless, restore all patched files to what they were
-        for (Patch patch : patches) {
-            if (patch.prepend()) {
-                patch.methodToPatch().removeFirstBlock();
-            } else {
-                patch.methodToPatch().removeLastBlock();
+            patch.applyPatch();
+
+            // Try the patch out
+            runMvnInstall(false);
+            boolean passWithPatches = testOrderPasses(failingOrder);
+            patch.restore();        // Regardless, restore patch file(s)
+            runMvnInstall(false);   // Rebuild again, in preparation for next run
+            if (passWithPatches) {
+                TestPluginPlugin.info("Failing order no longer fails after patches.");
+                // If this is a new dependent test and the patches fix it, then save a file for it
+                // just to help indicate that the test has been fixed
+                writePatch(victimMethod, 0, null, null, null, polluterMethod, "PRIOR PATCH FIXED (" + "CLEANER=" + patch.cleanerMethod().methodName() + ", MODIFIED=" + patch.methodToPatch().methodName() + ")");
+                return true;
             }
-            patch.methodToPatch().javaFile().writeAndReloadCompilationUnit();
-            restore(patch.methodToPatch().javaFile());
-        }
-        runMvnInstall(false);    // Rebuild again, in preparation for next run
-        if (passWithPatches) {
-            TestPluginPlugin.info("Failing order no longer fails after patches.");
-            // If this is a new dependent test and the patches fix it, then save a file for it
-            // just to help indicate that the test has been fixed
-            Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");
-            if (!patchFile.toFile().exists()) {
-                List<String> lines = new ArrayList<>();
-                lines.add("This test would be fixed if using a prior patch.");
-                Files.write(patchFile, lines);
-            }
-            return true;
         }
         return false;
     }
@@ -559,7 +539,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                           boolean prepend) throws Exception {
         // If failing order still failing, apply all the patches from before first to see if already fixed
         if (!patches.isEmpty()) {
-            boolean passWithPatch = applyPatchesAndRun(failingOrder, victimMethod);
+            boolean passWithPatch = applyPatchesAndRun(failingOrder, victimMethod, polluterMethod);
             if (passWithPatch) {
                 return true;
             }
@@ -659,14 +639,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         String status = inlineSuccessful ? "INLINE SUCCESSFUL" : "INLINE FAIL";
         Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, methodToModify, cleanerMethod, polluterMethod, status);
 
-        // If can just inline the statements in, then that is the only patch to keep around
-        if (inlineSuccessful) {
-            patches.add(new Patch(methodToModify, patchedBlock, prepend));
-        } else {
-            // Otherwise, it involves two patches, one to the cleaner to introduce the helper and one to the method to modify to call the helper
-            patches.add(new Patch(helperMethod, patchedBlock, prepend));
-            patches.add(new Patch(methodToModify, new BlockStmt(NodeList.nodeList(getHelperCallStmt(cleanerMethod))), prepend));
-        }
+        patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, testSources(), classpath, inlineSuccessful));
 
         // Report successful patching, report where the patch is
         TestPluginPlugin.info("Patching successful, patch file for " + victimMethod.methodName() + " found at: " + patchFile);
