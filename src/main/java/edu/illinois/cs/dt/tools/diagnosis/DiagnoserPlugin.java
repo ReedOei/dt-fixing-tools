@@ -9,21 +9,17 @@ import com.reedoei.testrunner.runner.RunnerFactory;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.DetectorPlugin;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
-import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
 import edu.illinois.cs.dt.tools.minimizer.MinimizerPlugin;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerListener;
 import edu.illinois.cs.dt.tools.utility.ErrorLogger;
-import edu.illinois.cs.dt.tools.utility.PathManager;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Properties;
 import java.util.stream.Stream;
 
 public class DiagnoserPlugin extends TestPlugin {
@@ -67,7 +63,7 @@ public class DiagnoserPlugin extends TestPlugin {
     }
 
     private void diagnose() throws Exception {
-        results()
+        detect()
                 .map(result -> new TestDiagnoser(runner, result).run())
                 .flatMap(o -> o.map(Stream::of).orElseGet(Stream::empty))
                 .forEach(this::saveResult);
@@ -80,20 +76,6 @@ public class DiagnoserPlugin extends TestPlugin {
             Files.write(path, new Gson().toJson(diagnosisResult).getBytes());
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    private Stream<MinimizeTestsResult> results() throws Exception {
-        if (Files.exists(MinimizerPathManager.minimized())) {
-            return Files.walk(MinimizerPathManager.minimized()).flatMap(p -> {
-                try {
-                    return Stream.of(MinimizeTestsResult.fromPath(p));
-                } catch (IOException ignored) {}
-
-                return Stream.empty();
-            });
-        } else {
-            return detect();
         }
     }
 

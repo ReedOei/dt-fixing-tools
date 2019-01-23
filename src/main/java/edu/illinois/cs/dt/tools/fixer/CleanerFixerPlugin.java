@@ -18,7 +18,6 @@ import com.reedoei.testrunner.runner.RunnerFactory;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.DetectorPlugin;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
-import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
 import edu.illinois.cs.dt.tools.minimizer.MinimizerPlugin;
 import edu.illinois.cs.dt.tools.minimizer.PolluterData;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerGroup;
@@ -49,7 +48,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -101,7 +99,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 }
 
                 // First apply the results from passing orders, fix brittles first
-                minimizedResults()
+                detect()
                         .filter(minimized -> minimized.expected().equals(Result.PASS))
                         .collect(Collectors.toList())
                         .forEach(minimized -> {
@@ -113,7 +111,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                             }
                         });
                 // After fixing brittles, try the polluters (though possible some get fixed due to fixing brittles)
-                minimizedResults()
+                detect()
                         .filter(minimized -> !minimized.expected().equals(Result.PASS))
                         .forEach(minimized -> {
                             try {
@@ -131,20 +129,6 @@ public class CleanerFixerPlugin extends TestPlugin {
 
             return null;
         });
-    }
-
-    private Stream<MinimizeTestsResult> minimizedResults() throws Exception {
-        if (Files.exists(MinimizerPathManager.minimized())) {
-            return Files.walk(MinimizerPathManager.minimized()).flatMap(p -> {
-                try {
-                    return Stream.of(MinimizeTestsResult.fromPath(p));
-                } catch (IOException ignored) {}
-
-                return Stream.empty();
-            });
-        } else {
-            return detect();
-        }
     }
 
     private Stream<MinimizeTestsResult> detect() throws Exception {

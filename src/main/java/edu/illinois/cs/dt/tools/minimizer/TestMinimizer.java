@@ -234,6 +234,8 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
     @Override
     protected MinimizeTestsResult load() {
+        System.out.println("Loading from " + path());
+
         return new RuntimeThrower<>(() -> new Gson().fromJson(FileUtil.readFile(path()), MinimizeTestsResult.class)).run();
     }
 
