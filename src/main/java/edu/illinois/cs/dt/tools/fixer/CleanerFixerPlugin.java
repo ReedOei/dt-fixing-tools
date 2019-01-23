@@ -312,6 +312,14 @@ public class CleanerFixerPlugin extends TestPlugin {
             return;
         }
 
+        // Check if we pass in isolation before fix
+        TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
+        if (testOrderPasses(failingOrder)) {
+            TestPluginPlugin.error("Failing order doesn't fail.");
+            writePatch(victimMethodOpt.get(), 0, null, null, null, polluterMethodOpt.orElse(null), "NOT FAILING ORDER");
+            return;
+        }
+
         // Try to apply fix with all cleaners, but if one of them works, then we are good
         for (String cleanerTestName : cleanerTestNames) {
             // Reload methods
@@ -334,6 +342,9 @@ public class CleanerFixerPlugin extends TestPlugin {
                 return;
             }
         }
+        // If reached here, then no cleaner helped fix this dependent test, so report as such
+        TestPluginPlugin.info("No cleaner could help make " + victimMethodOpt.get().methodName() + " pass!");
+        writePatch(victimMethodOpt.get(), 0, null, null, null, polluterMethodOpt.orElse(null), "NO CLEANER FIXES");
     }
 
     private List<Path> testSources() throws IOException {
@@ -546,13 +557,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                           final JavaMethod cleanerMethod,
                           final JavaMethod victimMethod,
                           boolean prepend) throws Exception {
-        // Check if we pass in isolation before fix
-        TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
-        if (testOrderPasses(failingOrder)) {
-            TestPluginPlugin.error("Failing order doesn't fail.");
-            return false;
-        }
-
         // If failing order still failing, apply all the patches from before first to see if already fixed
         if (!patches.isEmpty()) {
             boolean passWithPatch = applyPatchesAndRun(failingOrder, victimMethod);
@@ -566,20 +570,20 @@ public class CleanerFixerPlugin extends TestPlugin {
         final NodeList<Statement> cleanerStmts = NodeList.nodeList();
         // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
         // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
-        //if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
+        if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
-        //}
+        }
         cleanerStmts.addAll(cleanerMethod.body().getStatements());
         // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
-        //if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
+        if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.AfterClass"));
-        //}
+        }
 
         // If polluter/victim case, check if cleaner is same test class as polluter, so append to polluter
         // Method to modify is based on this decision
@@ -652,7 +656,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             startingLine = methodToModify.endLine() - 1;    // Shift one, patch starts before end of method
         }
         BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
-        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, methodToModify.getClassName());
+        String status = inlineSuccessful ? "INLINE SUCCESSFUL" : "INLINE FAIL";
+        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, methodToModify, cleanerMethod, polluterMethod, status);
 
         // If can just inline the statements in, then that is the only patch to keep around
         if (inlineSuccessful) {
@@ -676,13 +681,24 @@ public class CleanerFixerPlugin extends TestPlugin {
     }
 
     // Helper method to create a patch file adding in the passed in block
-    private Path writePatch(JavaMethod victimMethod, int begin, BlockStmt blockStmt, String className) throws IOException {
+    // Includes a bunch of extra information that may be useful
+    private Path writePatch(JavaMethod victimMethod, int begin, BlockStmt blockStmt,
+                            JavaMethod modifiedMethod, JavaMethod cleanerMethod,
+                            JavaMethod polluterMethod, String status) throws IOException {
         List<String> patchLines = new ArrayList<>();
-        String[] lines = blockStmt.toString().split("\n");
-        patchLines.add(className);
-        patchLines.add("@@ -" + begin +",0 +" + begin + "," + lines.length + " @@");
-        for (String line : lines) {
-            patchLines.add("+ " + line);
+        patchLines.add("STATUS: " + status);
+        patchLines.add("MODIFIED: " + (modifiedMethod == null ? "N/A" : modifiedMethod.methodName()));
+        patchLines.add("CLEANER: " + (cleanerMethod == null ? "N/A" : cleanerMethod.methodName()));
+        patchLines.add("POLLUTER: " + (polluterMethod == null ? "N/A" : polluterMethod.methodName()));
+
+        // If there is a block to add (where it might not be if in error state and need to just output empty)
+        if (blockStmt != null) {
+            patchLines.add("==========================");
+            String[] lines = blockStmt.toString().split("\n");
+            patchLines.add("@@ -" + begin +",0 +" + begin + "," + lines.length + " @@");
+            for (String line : lines) {
+                patchLines.add("+ " + line);
+            }
         }
         Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");  // The patch file is based on the dependent test
         Files.createDirectories(patchFile.getParent());
