@@ -511,11 +511,13 @@ public class CleanerFixerPlugin extends TestPlugin {
         runMvnInstall(false);    // Rebuild again, in preparation for next run
         if (passWithPatches) {
             TestPluginPlugin.info("Failing order no longer fails after patches.");
-            // If this is a new dependent test and the patches fix it, then save an empty file for it
+            // If this is a new dependent test and the patches fix it, then save a file for it
             // just to help indicate that the test has been fixed
             Path patchFile = CleanerPathManager.fixer().resolve(victimMethod.methodName() + ".patch");
             if (!patchFile.toFile().exists()) {
-                Files.write(patchFile, new ArrayList<String>());
+                List<String> lines = new ArrayList<>();
+                lines.add("This test would be fixed if using a prior patch.");
+                Files.write(patchFile, lines);
             }
             return true;
         }
