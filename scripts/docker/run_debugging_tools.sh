@@ -34,7 +34,7 @@ cd /home/awshi2/${slug}
 
 echo "*******************REED************************"
 echo "Downloading known flaky-lists.json for ${slug}"
-bash /home/awshi2/dt-fixing-tools/scripts/docker/download-dt-lists.sh
+bash /home/awshi2/dt-fixing-tools/scripts/docker/download-minimizer-results.sh
 
 # Run the plugin, get module test times
 echo "*******************REED************************"
@@ -49,7 +49,6 @@ timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Ddi
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 /home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
-mv diagnosis.log ${RESULTSDIR}
 mv fixer.log ${RESULTSDIR}
 mv /home/awshi2/mvn-test.log ${RESULTSDIR}
 mv /home/awshi2/mvn-test-time.log ${RESULTSDIR}
