@@ -492,7 +492,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 TestPluginPlugin.info("Failing order no longer fails after patches.");
                 // If this is a new dependent test and the patches fix it, then save a file for it
                 // just to help indicate that the test has been fixed
-                writePatch(victimMethod, 0, null, null, null, polluterMethod, "PRIOR PATCH FIXED (" + "CLEANER=" + patch.cleanerMethod().methodName() + ", MODIFIED=" + patch.methodToPatch().methodName() + ")");
+                writePatch(victimMethod, 0, null, null, null, polluterMethod, "PRIOR PATCH FIXED (DEPENDENT=" + patch.victimMethod().methodName() + ",CLEANER=" + patch.cleanerMethod().methodName() + ", MODIFIED=" + patch.methodToPatch().methodName() + ")");
                 return true;
             }
         }
@@ -639,7 +639,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         String status = inlineSuccessful ? "INLINE SUCCESSFUL" : "INLINE FAIL";
         Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, methodToModify, cleanerMethod, polluterMethod, status);
 
-        patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, testSources(), classpath, inlineSuccessful));
+        patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
 
         // Report successful patching, report where the patch is
         TestPluginPlugin.info("Patching successful, patch file for " + victimMethod.methodName() + " found at: " + patchFile);
