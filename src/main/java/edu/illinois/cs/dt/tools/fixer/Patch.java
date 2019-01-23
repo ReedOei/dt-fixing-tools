@@ -24,13 +24,18 @@ public class Patch {
     private String classpath;
     private boolean inlineSuccessful;
 
+    private JavaMethod victimMethod;    // Keep around just for bookkeeping
+
     public Patch(JavaMethod methodToPatch, BlockStmt patchedBlock, boolean prepend,
-                 JavaMethod cleanerMethod, List<Path> testFiles, String classpath,
+                 JavaMethod cleanerMethod,
+                 JavaMethod victimMethod,
+                 List<Path> testFiles, String classpath,
                  boolean inlineSuccessful) {
         this.methodToPatch = methodToPatch;
         this.patchedBlock = patchedBlock;
         this.prepend = prepend;
         this.cleanerMethod = cleanerMethod;
+        this.victimMethod = victimMethod;
         this.testFiles = testFiles;
         this.classpath = classpath;
         this.inlineSuccessful = inlineSuccessful;
@@ -50,6 +55,10 @@ public class Patch {
 
     public JavaMethod cleanerMethod() {
         return this.cleanerMethod;
+    }
+
+    public JavaMethod victimMethod() {
+        return this.victimMethod;
     }
 
     public List<Path> testFiles() {
