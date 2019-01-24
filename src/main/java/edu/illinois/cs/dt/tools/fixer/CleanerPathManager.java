@@ -12,6 +12,7 @@ public class CleanerPathManager extends PathManager {
     public static final String PATCH_EXTENSION = ".patch";
 
     public static final Path FIXER = Paths.get("fixer");
+    public static final Path FIXER_LOG = Paths.get("fixer.log");
 
     public static Path fixer() {
         return path(FIXER);

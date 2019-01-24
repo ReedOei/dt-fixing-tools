@@ -1,0 +1,22 @@
+insert into test_patch
+(
+  subject_name,
+  test_name,
+  cleaner_name,
+  polluter_name,
+  modified_test_name,
+  status,
+  succeeded,
+  patch_line_count
+)
+values
+(
+  ?,
+  ?,
+  ?,
+  ?,
+  ?,
+  ?,
+  ?,
+  ?
+)

@@ -1,3 +1,14 @@
+-- We insert results for every single subject into every subject, so delete the ones that don't match
+delete from test_patch
+where id in
+-- apparently this is how you do it in sqlite, as we can't join in deletes
+(
+  select tp.id
+  from test_patch tp
+  inner join original_order oo on oo.test_name = tp.test_name
+  where oo.subject_name <> tp.subject_name
+);
+
 create view subject_info as
 select s.name as name,
        max(trr.test_count) as test_count
@@ -132,6 +143,30 @@ select pdc.test_name,
       end as od_type
 from polluter_data_count pdc;
 
+
+insert into test_patch
+(
+  subject_name,
+  test_name,
+  cleaner_name,
+  polluter_name,
+  modified_test_name,
+  status,
+  succeeded,
+  patch_line_count
+)
+select odc.subject_name,
+       odc.test_name,
+       'N/A',
+       'N/A',
+       'N/A',
+       'UNKNOWN_ERROR',
+       0,
+       -1
+from od_classification odc
+left join test_patch tp on tp.test_name = odc.test_name
+where tp.test_name is null;
+
 create view dependency_info as
 select mtr.subject_name,
        mtr.test_name,
@@ -155,6 +190,35 @@ left join cleaner_data cd on cd.polluter_data_id = pd.id
 left join cleaner_group cg on cg.cleaner_data_id = cd.id
 left join cleaner_test ct on ct.cleaner_group_id = cg.id
 group by mtr.subject_name, mtr.test_name, mtr.expected_result, cg.id;
+
+create view tests_with_cleaner as
+select test_name, max(cleaner_count) as total
+from cleaner_info
+group by test_name
+having total > 0;
+
+create view tests_with_setter as
+select di.test_name, max(dep_count) as total
+from dependency_info di
+inner join od_classification as odc on di.test_name = odc.test_name
+where odc.od_type = 'brittle' and di.expected_result = 'PASS'
+group by di.test_name
+having total > 0;
+
+create view tests_with_polluter as
+select di.test_name, max(di.dep_count) as total
+from dependency_info di
+inner join od_classification as odc on di.test_name = odc.test_name
+where odc.od_type = 'victim' and di.expected_result <> 'PASS'
+group by di.test_name
+having total > 0;
+
+create view fixable_tests as
+select odc.subject_name, odc.test_name, odc.od_type
+from od_classification odc
+left join tests_with_cleaner c on c.test_name = odc.test_name
+left join tests_with_setter s on s.test_name = odc.test_name
+where c.test_name is not null or s.test_name is not null;
 
 insert into confirmation_runs
 select p.test_name,

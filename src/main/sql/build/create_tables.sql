@@ -335,3 +335,19 @@ create table field_diff
   without_deps_val text,
   with_deps_val text
 );
+
+create table test_patch
+(
+  id integer primary key,
+  subject_name text not null,
+  test_name text not null,
+  cleaner_name text not null,
+  polluter_name text not null,
+  modified_test_name text not null,
+  status text not null,
+  succeeded integer not null,
+  patch_line_count integer not null,
+
+  foreign key(subject_name) references subject(name),
+  foreign key(test_name) references original_order(test_name)
+);

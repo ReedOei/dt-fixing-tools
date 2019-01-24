@@ -22,6 +22,7 @@ import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutionPathManager;
 import edu.illinois.cs.dt.tools.diagnosis.rewrite.FieldDiff;
 import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewriteTarget;
 import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewritingResult;
+import edu.illinois.cs.dt.tools.fixer.CleanerPathManager;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
 import edu.illinois.cs.dt.tools.minimizer.PolluterData;
@@ -49,12 +50,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 // TODO: would probably be better to have these insert methods in their respective classes with some
 //       interface or something...
 public class Analysis extends StandardMain {
+    public static final Pattern FIX_SUCCESSFUL_PATTERN = Pattern.compile("\\[INFO\\] Patching successful, patch file for (\\S+) found at: (\\S+)");
+    public static final Pattern FIX_FAIL_PATTERN = Pattern.compile("\\[ERROR\\] Applying all of (\\S+) (\\S+) to (\\S+) does not fix!");
+
     public static int roundNumber(final String filename) {
         // Files are named roundN.json, so strip extension and "round" and we'll have the number
         final String fileName = FilenameUtils.removeExtension(filename);
@@ -205,29 +210,7 @@ public class Analysis extends StandardMain {
 
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
-        if (Files.exists(path.resolve(DetectorPathManager.ORIGINAL_ORDER))) {
-            if (!sqlite.checkExists("original_order", "subject_name", name)) {
-                final List<String> originalOrder = Files.readAllLines(path.resolve(DetectorPathManager.ORIGINAL_ORDER));
-                System.out.println("[INFO] Inserting original order for " + name + " (" + originalOrder.size() + " tests)");
-
-                final Procedure statement = sqlite.statement(SQLStatements.INSERT_ORIGINAL_ORDER);
-
-                statement.beginTransaction();
-
-                for (int i = 0; i < originalOrder.size(); i++) {
-                    statement
-                            .param(name)
-                            .param(originalOrder.get(i))
-                            .param(i).addBatch();
-                }
-
-                statement.executeBatch();
-                statement.commit();
-                statement.endTransaction();
-            }
-        } else {
-            System.out.println("[WARNING] No original order found at " + path.resolve(DetectorPathManager.ORIGINAL_ORDER));
-        }
+        insertOriginalOrder(name, path.resolve(DetectorPathManager.ORIGINAL_ORDER));
 
         if (!sqlite.checkExists("subject", name)) {
             insertSubject(name, slug, path);
@@ -261,11 +244,129 @@ public class Analysis extends StandardMain {
             insertPollutedFields(path.resolve(PollutionPathManager.POLLUTION_DATA));
 
             insertRewriteResults(path.resolve(DiagnoserPathManager.DIAGNOSIS));
+
+            insertFixerResults(name, path.getParent().resolve(CleanerPathManager.FIXER_LOG), path.resolve(CleanerPathManager.FIXER));
 //            insertFieldDiffs(path.resolve(DiagnoserPathManager.DIFFS_PATH));
         }
 
         System.out.println("[INFO] Finished " + name + " (" + slug + ")");
         System.out.println();
+    }
+
+    private void insertOriginalOrder(final String subjectName, final Path originalOrderPath)
+            throws SQLException, IOException {
+        if (Files.exists(originalOrderPath)) {
+            if (!sqlite.checkExists("original_order", "subject_name", subjectName)) {
+                final List<String> originalOrder = Files.readAllLines(originalOrderPath);
+                System.out.println("[INFO] Inserting original order for " + subjectName + " (" + originalOrder.size() + " tests)");
+
+                final Procedure statement = sqlite.statement(SQLStatements.INSERT_ORIGINAL_ORDER);
+
+                statement.beginTransaction();
+
+                for (int i = 0; i < originalOrder.size(); i++) {
+                    statement
+                            .param(subjectName)
+                            .param(originalOrder.get(i))
+                            .param(i).addBatch();
+                }
+
+                statement.executeBatch();
+                statement.commit();
+                statement.endTransaction();
+            }
+        } else {
+            System.out.println("[WARNING] No original order found at " + originalOrderPath);
+        }
+    }
+
+    private void insertFixerResults(final String subjectName, final Path log, final Path patchDir)
+            throws IOException, SQLException {
+        if (!Files.exists(log)) {
+            System.out.println("[WARNING] SKIPPING: Fixing log not found at: " + log);
+            return;
+        }
+
+        if (!Files.isDirectory(patchDir)) {
+            System.out.println("[WARNING] SKIPPING: No patch dir: " + patchDir);
+            return;
+        }
+
+        System.out.println("[INFO] Inserting fixing results for " + subjectName + " from " + log + " and " + patchDir);
+        if (Files.isDirectory(patchDir)) {
+            for (final Path p : FileUtil.listFiles(patchDir)) {
+                insertFixInfo(subjectName, p);
+            }
+        }
+    }
+
+    private void insertFixInfo(final String subjectName, final Path patchFile)
+            throws IOException, SQLException {
+        final String testName = FilenameUtils.removeExtension(patchFile.getFileName().toString());
+
+        if (!Files.exists(patchFile)) {
+            System.out.println("[WARNING] Patch file " + patchFile + " does not exist!");
+            return;
+        }
+
+        final List<String> lines = Files.readAllLines(patchFile);
+
+        // TODO: Simplify this once all results are in the newer format
+        if (!lines.isEmpty()) {
+            // New format
+            if (lines.get(0).startsWith("STATUS: ")) {
+                if (lines.size() < 4) {
+                    System.out.println("[WARNING] Patch file " + patchFile + " has too few lines");
+                    return;
+                }
+
+                final String status = lines.get(0).substring("STATUS: ".length());
+                final String modified = lines.get(1).substring("MODIFIED: ".length());
+                final String cleaner = lines.get(2).substring("CLEANER: ".length());
+                final String polluter = lines.get(3).substring("POLLUTER: ".length());
+
+                sqlite.statement(SQLStatements.INSERT_TEST_PATCH)
+                        .param(subjectName)
+                        .param(testName)
+                        .param(cleaner)
+                        .param(polluter)
+                        .param(modified)
+                        .param(status)
+                        .param(1)
+                        // 6 because there's a line ========= that separates metadata from patch and
+                        // there's a line from the diff showing the patch location
+                        .param(lines.subList(Math.min(lines.size() - 1, 6), lines.size()).size())
+                        .insertSingleRow();
+            } else {
+                System.out.println("[WARNING] " + patchFile + " is still in the old format!");
+
+                //Old format
+                sqlite.statement(SQLStatements.INSERT_TEST_PATCH)
+                        .param(subjectName)
+                        .param(testName)
+                        .param("N/A")
+                        .param("N/A")
+                        .param("N/A")
+                        .param("N/A")
+                        .param(1)
+                        .param(lines.size() - 1) // Subtract one for the first line which isn't code
+                        .insertSingleRow();
+            }
+        } else {
+            System.out.println("[WARNING] Empty file " + patchFile + " is still in the old format!");
+
+            //Old format
+            sqlite.statement(SQLStatements.INSERT_TEST_PATCH)
+                    .param(subjectName)
+                    .param(testName)
+                    .param("N/A")
+                    .param("N/A")
+                    .param("N/A")
+                    .param("N/A")
+                    .param(1)
+                    .param(0)
+                    .insertSingleRow();
+        }
     }
 
     private void insertFieldDiffs(final Path path) throws IOException, SQLException {
@@ -328,7 +429,6 @@ public class Analysis extends StandardMain {
                 }
             } else {
                 System.out.println("[WARNING] File " + p + " was in the wrong format (could not read diagnoses)?!");
-                continue;
             }
         }
     }
@@ -835,5 +935,4 @@ public class Analysis extends StandardMain {
             }
         });
     }
-
 }

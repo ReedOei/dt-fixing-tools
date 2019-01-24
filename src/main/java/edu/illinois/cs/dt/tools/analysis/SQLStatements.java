@@ -102,6 +102,13 @@ public class SQLStatements {
     public static final Path CLEANERS_BY_DEPENDENCY = Paths.get("src/main/sql/figures/cleaner_by_dependency_type.sql");
     public static final Path COUNT_DEPENDENCY_TOTAL = Paths.get("src/main/sql/figures/count_dependency_total.sql");
     public static final Path COUNT_CLEANER_TOTAL = Paths.get("src/main/sql/figures/count_cleaner_total.sql");
+    public static final Path INSERT_TEST_PATCH = Paths.get("src/main/sql/build/test_patch_insert.sql");
+    public static final Path COUNT_CLEANER_GROUP_SIZE = Paths.get("src/main/sql/figures/cleaner_group_size.sql");
+    public static final Path AVERAGE_CLEANER_GROUP_SIZE = Paths.get("src/main/sql/figures/average_cleaner_group_size.sql");
+    public static final Path COUNT_FIXER_RESULTS = Paths.get("src/main/sql/figures/count_fixer_results.sql");
+    public static final Path AVERAGE_FIX_SIZE = Paths.get("src/main/sql/figures/average_fix_size.sql");
+    public static final Path COUNT_FIXED = Paths.get("src/main/sql/figures/count_fixed.sql");
+    public static final Path COUNT_FIXABLE = Paths.get("src/main/sql/figures/count_fixable.sql");
 
     static {
         ensureExists(COUNT_OD_TYPE);
@@ -127,6 +134,11 @@ public class SQLStatements {
         ensureExists(CLEANERS_BY_DEPENDENCY);
         ensureExists(COUNT_DEPENDENCY_TOTAL);
         ensureExists(COUNT_CLEANER_TOTAL);
+        ensureExists(INSERT_TEST_PATCH);
+        ensureExists(AVERAGE_CLEANER_GROUP_SIZE);
+        ensureExists(COUNT_CLEANER_GROUP_SIZE);
+        ensureExists(COUNT_FIXER_RESULTS);
+        ensureExists(AVERAGE_FIX_SIZE);
 
         ensureExists(INSERT_RAW_SUBJECT);
 

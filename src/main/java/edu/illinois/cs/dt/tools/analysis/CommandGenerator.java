@@ -45,9 +45,10 @@ public class CommandGenerator extends StandardMain {
         final NumberFormat percentInstance = NumberFormat.getPercentInstance();
         percentInstance.setMaximumFractionDigits(1);
 
-        print(SQLStatements.COUNT_OD_TYPE, "numBrittleTests", "brittle");
-        print(SQLStatements.COUNT_OD_TYPE, "numVictimTests", "victim");
-        print(SQLStatements.COUNT_OD_TYPE, "numBothTests", "both");
+        print(SQLStatements.COUNT_OD_TYPE, "numBrittleTests", "brittle", "brittle");
+        print(SQLStatements.COUNT_OD_TYPE, "numVictimTests", "victim", "victim");
+        print(SQLStatements.COUNT_OD_TYPE, "numDepTests", "any", "any");
+        print(SQLStatements.COUNT_OD_TYPE, "numBothTests", "both", "both");
 
         // TODO: Could display a plot showing how many have each number (though atm all have just 1)
         print(SQLStatements.COUNT_DEPENDENCIES, "numWithSingleDep", 1, 1);
@@ -55,28 +56,34 @@ public class CommandGenerator extends StandardMain {
         print(SQLStatements.COUNT_DEPENDENCIES, "numWithMoreThanOneDep", 2, Integer.MAX_VALUE);
         print(SQLStatements.COUNT_DEPENDENCIES, "numWithNoDep", 0, 0);
         print(SQLStatements.AVERAGE_DEPENDENCIES, "avgNumDep", 1);
-        print(SQLStatements.AVERAGE_DEPENDENCIES, "avgNumDepWith0", 0);
+        print(SQLStatements.AVERAGE_DEPENDENCIES, "avgNumDepWithZero", 0);
 
         print(SQLStatements.COUNT_CLEANERS, "numWithSingleCleaner", 1, 1);
         print(SQLStatements.COUNT_CLEANERS, "numWithAnyCleaner", 1, Integer.MAX_VALUE);
         print(SQLStatements.COUNT_CLEANERS, "numWithMoreThanOneCleaner", 2, Integer.MAX_VALUE);
         print(SQLStatements.COUNT_CLEANERS, "numWithNoCleaner", 0, 0);
         print(SQLStatements.AVERAGE_CLEANERS, "avgNumCleaners", 1);
-        print(SQLStatements.AVERAGE_CLEANERS, "avgNumCleanersWith0", 0);
+        print(SQLStatements.AVERAGE_CLEANERS, "avgNumCleanersWithZero", 0);
+
+        print(SQLStatements.COUNT_CLEANER_GROUP_SIZE, "numCleanerGroupWithSingleTest", 1, 1);
+        print(SQLStatements.COUNT_CLEANER_GROUP_SIZE, "numCleanerGroupWithAnyTest", 1, Integer.MAX_VALUE);
+        print(SQLStatements.COUNT_CLEANER_GROUP_SIZE, "numCleanerGroupWithMoreThanOneTest", 2, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE, "numCleanerGroupWithSingleTest", 1, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE, "numCleanerGroupWithSingleTest", 0, Integer.MAX_VALUE);
 
         print(SQLStatements.COUNT_POLLUTERS, "numWithSinglePolluter", 1, 1);
         print(SQLStatements.COUNT_POLLUTERS, "numWithAnyPolluter", 1, Integer.MAX_VALUE);
         print(SQLStatements.COUNT_POLLUTERS, "numWithMoreThanOnePolluter", 2, Integer.MAX_VALUE);
         print(SQLStatements.COUNT_POLLUTERS, "numWithNoPolluter", 0, 0);
         print(SQLStatements.AVERAGE_POLLUTERS, "avgNumPolluters", 1);
-        print(SQLStatements.AVERAGE_POLLUTERS, "avgNumPollutersWith0", 0);
+        print(SQLStatements.AVERAGE_POLLUTERS, "avgNumPollutersWithZero", 0);
 
         print(SQLStatements.COUNT_SETTERS, "numWithSingleSetter", 1, 1);
         print(SQLStatements.COUNT_SETTERS, "numWithAnySetter", 1, Integer.MAX_VALUE);
         print(SQLStatements.COUNT_SETTERS, "numWithMoreThanOneSetter", 2, Integer.MAX_VALUE);
         print(SQLStatements.COUNT_SETTERS, "numWithNoSetter", 0, 0);
         print(SQLStatements.AVERAGE_SETTERS, "avgNumSetters", 1);
-        print(SQLStatements.AVERAGE_SETTERS, "avgNumSettersWith0", 0);
+        print(SQLStatements.AVERAGE_SETTERS, "avgNumSettersWithZero", 0);
 
         final Map<String, String> odTests = queryOdTests();
         final Map<String, List<String>> cleaners = queryCleaners();
@@ -108,6 +115,13 @@ public class CommandGenerator extends StandardMain {
         print(SQLStatements.COUNT_CLEANER_TOTAL, "numCleanerTotal", "any", "any");
         print(SQLStatements.COUNT_CLEANER_TOTAL, "numCleanerPolluterTotal", "victim", "victim");
         print(SQLStatements.COUNT_CLEANER_TOTAL, "numCleanerSetterTotal", "brittle", "brittle");
+
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numSuccessFix", 1);
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numFailFix", 0);
+        print(SQLStatements.COUNT_FIXED, "numFixed", 1);
+        print(SQLStatements.COUNT_FIXED, "numNotFixed", 0);
+        print(SQLStatements.COUNT_FIXABLE, "numFixable");
+        print(SQLStatements.AVERAGE_FIX_SIZE, "avgFixSize");
     }
 
     private Map<String, List<String>> queryCleanerByDependency(final String type) throws SQLException {
