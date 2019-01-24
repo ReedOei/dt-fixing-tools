@@ -122,6 +122,21 @@ public class CommandGenerator extends StandardMain {
         print(SQLStatements.COUNT_FIXED, "numNotFixed", 0);
         print(SQLStatements.COUNT_FIXABLE, "numFixable");
         print(SQLStatements.AVERAGE_FIX_SIZE, "avgFixSize");
+
+        print(SQLStatements.COUNT_FIX_STATUS, "numFixNA", "N/A");
+        print(SQLStatements.COUNT_FIX_STATUS, "numFixUnknownError", "UNKNOWN ERROR");
+        print(SQLStatements.COUNT_FIX_STATUS, "numFixNotFailingOrder", "NOT FAILING ORDER");
+        print(SQLStatements.COUNT_FIX_STATUS, "numNoCleanerFixes", "NO CLEANER FIXES");
+        print(SQLStatements.COUNT_FIX_STATUS, "numPriorPatchFixed", "PRIOR PATCH FIXED%");
+        print(SQLStatements.COUNT_FIX_STATUS, "numInlineSuccessful", "INLINE SUCCESSFUL");
+        print(SQLStatements.COUNT_FIX_STATUS, "numInlineFail", "INLINE FAIL");
+
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithSingleField", 1, 1);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithAnyField", 1, Integer.MAX_VALUE);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithMoreThanOneField", 2, Integer.MAX_VALUE);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithNoField", 0, 0);
+        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFields", 1, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFieldsWithZero", 0, Integer.MAX_VALUE);
     }
 
     private Map<String, List<String>> queryCleanerByDependency(final String type) throws SQLException {

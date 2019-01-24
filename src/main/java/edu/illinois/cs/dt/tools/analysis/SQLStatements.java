@@ -109,6 +109,9 @@ public class SQLStatements {
     public static final Path AVERAGE_FIX_SIZE = Paths.get("src/main/sql/figures/average_fix_size.sql");
     public static final Path COUNT_FIXED = Paths.get("src/main/sql/figures/count_fixed.sql");
     public static final Path COUNT_FIXABLE = Paths.get("src/main/sql/figures/count_fixable.sql");
+    public static final Path COUNT_DIAGNOSED_FIELDS = Paths.get("src/main/sql/figures/count_diagnosed_fields.sql");
+    public static final Path AVERAGE_DIAGNOSED_FIELDS = Paths.get("src/main/sql/figures/average_diagnosed_fields.sql");
+    public static final Path COUNT_FIX_STATUS = Paths.get("src/main/sql/figures/count_fix_status.sql");
 
     static {
         ensureExists(COUNT_OD_TYPE);
@@ -139,6 +142,10 @@ public class SQLStatements {
         ensureExists(COUNT_CLEANER_GROUP_SIZE);
         ensureExists(COUNT_FIXER_RESULTS);
         ensureExists(AVERAGE_FIX_SIZE);
+        ensureExists(COUNT_FIXABLE);
+        ensureExists(COUNT_DIAGNOSED_FIELDS);
+        ensureExists(AVERAGE_DIAGNOSED_FIELDS);
+        ensureExists(COUNT_FIX_STATUS);
 
         ensureExists(INSERT_RAW_SUBJECT);
 

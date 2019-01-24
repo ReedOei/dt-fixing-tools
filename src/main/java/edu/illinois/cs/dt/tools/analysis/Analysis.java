@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -59,6 +60,7 @@ import java.util.stream.Stream;
 public class Analysis extends StandardMain {
     public static final Pattern FIX_SUCCESSFUL_PATTERN = Pattern.compile("\\[INFO\\] Patching successful, patch file for (\\S+) found at: (\\S+)");
     public static final Pattern FIX_FAIL_PATTERN = Pattern.compile("\\[ERROR\\] Applying all of (\\S+) (\\S+) to (\\S+) does not fix!");
+    public static final Pattern PRIOR_PATCH_PATTERN = Pattern.compile("PRIOR PATCH FIXED \\(DEPENDENT=([^,]+),CLEANER=([^,]+),MODIFIED=([^,]+)\\)");
 
     public static int roundNumber(final String filename) {
         // Files are named roundN.json, so strip extension and "round" and we'll have the number
@@ -321,9 +323,33 @@ public class Analysis extends StandardMain {
                 }
 
                 final String status = lines.get(0).substring("STATUS: ".length());
-                final String modified = lines.get(1).substring("MODIFIED: ".length());
-                final String cleaner = lines.get(2).substring("CLEANER: ".length());
-                final String polluter = lines.get(3).substring("POLLUTER: ".length());
+
+                final Matcher matcher = PRIOR_PATCH_PATTERN.matcher(status);
+
+                final String modified;
+                final String cleaner;
+                final String polluter;
+                if (matcher.matches()) {
+                    cleaner = matcher.group(2);
+                    modified = matcher.group(3);
+
+                    final String priorFixTestName = matcher.group(1);
+                    final ListEx<ListEx<String>> queryRes =
+                            sqlite.makeProc("select polluter_name from test_patch where test_name = ?;")
+                            .param(priorFixTestName)
+                            .tableQuery().table();
+
+                    if (!queryRes.isEmpty() && !queryRes.get(0).isEmpty()) {
+                        polluter = queryRes.get(0).get(0);
+                    } else {
+                        // TODO: We can handle this case by inserting this after the other test, or maybe updating it afterwards
+                        polluter = "N/A";
+                    }
+                } else {
+                    modified = lines.get(1).substring("MODIFIED: ".length());
+                    cleaner = lines.get(2).substring("CLEANER: ".length());
+                    polluter = lines.get(3).substring("POLLUTER: ".length());
+                }
 
                 sqlite.statement(SQLStatements.INSERT_TEST_PATCH)
                         .param(subjectName)
