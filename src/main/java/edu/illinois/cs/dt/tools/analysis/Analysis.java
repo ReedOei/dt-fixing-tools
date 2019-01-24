@@ -204,6 +204,7 @@ public class Analysis extends StandardMain {
         final String parent = findParent(path);
 
         if (parent == null) {
+            System.out.println("[WARNING] Parent is null!");
             return;
         }
 

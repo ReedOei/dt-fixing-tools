@@ -1,6 +1,13 @@
 -- Count how many of the tests that have cleaners or setters succeeded
-select count(*)
+select ifnull(sum(case when tp.succeeded = ? then 1 else 0 end), 0) as c
 from fixable_tests ft
 inner join test_patch tp on tp.test_name = ft.test_name
-group by tp.succeeded
-having tp.succeeded = ?;
+inner join od_classification odc on tp.test_name = odc.test_name
+left join
+(
+  select id, test_name, min(cleaner_count) as total
+  from cleaner_info
+  group by test_name
+) c on c.test_name = tp.test_name
+where odc.od_type like ? and
+      (case when c.id is not null then 'has_cleaner' else 'no_cleaner' end like ?);

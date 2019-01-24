@@ -68,8 +68,8 @@ public class CommandGenerator extends StandardMain {
         print(SQLStatements.COUNT_CLEANER_GROUP_SIZE, "numCleanerGroupWithSingleTest", 1, 1);
         print(SQLStatements.COUNT_CLEANER_GROUP_SIZE, "numCleanerGroupWithAnyTest", 1, Integer.MAX_VALUE);
         print(SQLStatements.COUNT_CLEANER_GROUP_SIZE, "numCleanerGroupWithMoreThanOneTest", 2, Integer.MAX_VALUE);
-        print(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE, "numCleanerGroupWithSingleTest", 1, Integer.MAX_VALUE);
-        print(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE, "numCleanerGroupWithSingleTest", 0, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE, "avgCleanerGroupSize", 1, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE, "avgCleanerGroupSizeWithZero", 0, Integer.MAX_VALUE);
 
         print(SQLStatements.COUNT_POLLUTERS, "numWithSinglePolluter", 1, 1);
         print(SQLStatements.COUNT_POLLUTERS, "numWithAnyPolluter", 1, Integer.MAX_VALUE);
@@ -116,12 +116,41 @@ public class CommandGenerator extends StandardMain {
         print(SQLStatements.COUNT_CLEANER_TOTAL, "numCleanerPolluterTotal", "victim", "victim");
         print(SQLStatements.COUNT_CLEANER_TOTAL, "numCleanerSetterTotal", "brittle", "brittle");
 
-        print(SQLStatements.COUNT_FIXER_RESULTS, "numSuccessFix", 1);
-        print(SQLStatements.COUNT_FIXER_RESULTS, "numFailFix", 0);
-        print(SQLStatements.COUNT_FIXED, "numFixed", 1);
-        print(SQLStatements.COUNT_FIXED, "numNotFixed", 0);
-        print(SQLStatements.COUNT_FIXABLE, "numFixable");
-        print(SQLStatements.AVERAGE_FIX_SIZE, "avgFixSize");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numSuccessFix", 1, "%", "%");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numSuccessVictimFix", 1, "victim", "%");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numSuccessVictimNoCleanerFix", 1, "victim", "no_cleaner");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numSuccessVictimCleanerFix", 1, "victim", "has_cleaner");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numSuccessBrittleFix", 1, "brittle", "%");
+
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numFailFix", 0, "%", "%");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numFailVictimFix", 0, "victim", "%");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numFailVictimNoCleanerFix", 0, "victim", "no_cleaner");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numFailVictimCleanerFix", 0, "victim", "has_cleaner");
+        print(SQLStatements.COUNT_FIXER_RESULTS, "numFailBrittleFix", 0, "brittle", "%");
+
+        print(SQLStatements.COUNT_FIXED, "numFixed", "%", "%", 1);
+        print(SQLStatements.COUNT_FIXED, "numVictimFixed", "victim", "%", 1);
+        print(SQLStatements.COUNT_FIXED, "numVictimNoCleanerFixed", "victim", "no_cleaner", 1);
+        print(SQLStatements.COUNT_FIXED, "numVictimCleanerFixed", "victim", "has_cleaner", 1);
+        print(SQLStatements.COUNT_FIXED, "numBrittleFixed", "brittle", "%", 1);
+
+        print(SQLStatements.COUNT_FIXED, "numNotFixed", 0, "%", "%");
+        print(SQLStatements.COUNT_FIXED, "numVictimNotFixed", 0, "victim", "%");
+        print(SQLStatements.COUNT_FIXED, "numVictimNoCleanerNotFixed", 0, "victim", "no_cleaner");
+        print(SQLStatements.COUNT_FIXED, "numVictimCleanerNotFixed", 0, "victim", "has_cleaner");
+        print(SQLStatements.COUNT_FIXED, "numBrittleNotFixed", 0, "brittle", "%");
+
+        print(SQLStatements.COUNT_FIXABLE, "numFixable", "%", "%");
+        print(SQLStatements.COUNT_FIXABLE, "numVictimFixable", "victim", "%");
+        print(SQLStatements.COUNT_FIXABLE, "numVictimNoCleanerFixable", "victim", "no_cleaner");
+        print(SQLStatements.COUNT_FIXABLE, "numVictimCleanerFixable", "victim", "has_cleaner");
+        print(SQLStatements.COUNT_FIXABLE, "numBrittleFixable", "brittle", "%");
+
+        print(SQLStatements.AVERAGE_FIX_SIZE, "avgFixSize", "%", "%");
+        print(SQLStatements.AVERAGE_FIX_SIZE, "avgVictimFixSize", "victim", "%");
+        print(SQLStatements.AVERAGE_FIX_SIZE, "avgVictimNoCleanerFixSize", "victim", "no_cleaner");
+        print(SQLStatements.AVERAGE_FIX_SIZE, "avgVictimCleanerFixSize", "victim", "has_cleaner");
+        print(SQLStatements.AVERAGE_FIX_SIZE, "avgBrittleFixSize", "brittle", "%");
 
         print(SQLStatements.COUNT_FIX_STATUS, "numFixNA", "N/A");
         print(SQLStatements.COUNT_FIX_STATUS, "numFixUnknownError", "UNKNOWN ERROR");
@@ -131,12 +160,29 @@ public class CommandGenerator extends StandardMain {
         print(SQLStatements.COUNT_FIX_STATUS, "numInlineSuccessful", "INLINE SUCCESSFUL");
         print(SQLStatements.COUNT_FIX_STATUS, "numInlineFail", "INLINE FAIL");
 
-        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithSingleField", 1, 1);
-        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithAnyField", 1, Integer.MAX_VALUE);
-        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithMoreThanOneField", 2, Integer.MAX_VALUE);
-        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithNoField", 0, 0);
-        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFields", 1, Integer.MAX_VALUE);
-        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFieldsWithZero", 0, Integer.MAX_VALUE);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithSingleField", "%", 1, 1);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithSingleFieldVictim", "victim", 1, 1);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithSingleFieldBrittle", "brittle", 1, 1);
+
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithAnyField", "%", 1, Integer.MAX_VALUE);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithAnyFieldVictim", "victim", 1, Integer.MAX_VALUE);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithAnyFieldBrittle", "brittle", 1, Integer.MAX_VALUE);
+
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithMoreThanOneField", "%", 2, Integer.MAX_VALUE);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithMoreThanOneFieldVictim", "victim", 2, Integer.MAX_VALUE);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithMoreThanOneFieldBrittle", "brittle", 2, Integer.MAX_VALUE);
+
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithNoField", "%", 0, 0);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithNoFieldVictim", "victim", 0, 0);
+        print(SQLStatements.COUNT_DIAGNOSED_FIELDS, "numWithNoFieldBrittle", "brittle", 0, 0);
+
+        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFields", "%", 1, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFieldsVictim", "victim", 1, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFieldsBrittle", "brittle", 1, Integer.MAX_VALUE);
+
+        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFieldsWithZero", "%", 0, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFieldsWithZeroVictim", "victim", 0, Integer.MAX_VALUE);
+        print(SQLStatements.AVERAGE_DIAGNOSED_FIELDS, "avgNumFieldsWithZeroBrittle", "brittle", 0, Integer.MAX_VALUE);
     }
 
     private Map<String, List<String>> queryCleanerByDependency(final String type) throws SQLException {
