@@ -29,6 +29,8 @@ timeout=$3
 git rev-parse HEAD
 date
 
+sudo apt-get install -y zip unzip
+
 # Update all tooling
 su - awshi2 -c "cd /home/awshi2/dt-fixing-tools/; git pull"
 
