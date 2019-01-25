@@ -5,4 +5,4 @@ inner join od_classification odc on odc.test_name = mtr.test_name
 inner join cleaner_data cd on cd.polluter_data_id = pd.id
 inner join cleaner_group cg on cg.cleaner_data_id = cd.id
 inner join cleaner_test ct on ct.cleaner_group_id = cg.id
-where 'any' = ? or odc.od_type = ?;
+where odc.od_type like ?;

@@ -1,4 +1,4 @@
-select count(distinct test_name)
+select distinct test_name
 from
 (
   select test_name, min(dep_count) as total

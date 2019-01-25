@@ -1,4 +1,4 @@
-select count(*)
+select tp.test_name
 from test_patch tp
 inner join od_classification odc on tp.test_name = odc.test_name
 left join

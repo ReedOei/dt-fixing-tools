@@ -10,6 +10,10 @@ public class SameClassPackageCounter {
         this.testName = testName;
     }
 
+    public String testName() {
+        return testName;
+    }
+
     public boolean anyClassSame() {
         return sameClass > 0;
     }

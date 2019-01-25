@@ -35,7 +35,12 @@ public class MinimizerPlugin extends TestPlugin {
         TestPluginPlugin.info("Creating minimizers for file: " + path);
 
         try {
-            return DependentTestList.fromFile(path).dts().stream()
+            final DependentTestList dependentTestList = DependentTestList.fromFile(path);
+            if (dependentTestList == null) {
+                throw new IllegalArgumentException("Dependent test list file is empty");
+            }
+
+            return dependentTestList.dts().stream()
                     .flatMap(dt -> dt.minimizers(builder, runner));
         } catch (IOException e) {
             return Stream.empty();
