@@ -545,26 +545,6 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
         }
 
-        // Do our fix using all cleaner code, which includes setup and teardown
-        TestPluginPlugin.info("Applying code from cleaner and recompiling.");
-        final NodeList<Statement> cleanerStmts = NodeList.nodeList();
-        // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
-        // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
-        if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
-        }
-        cleanerStmts.addAll(cleanerMethod.body().getStatements());
-        // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
-        if (!cleanerMethod.getClassName().equals(victimMethod.getClassName())) {
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.AfterClass"));
-        }
-
         // If polluter/victim case, check if cleaner is same test class as polluter, so append to polluter
         // Method to modify is based on this decision
         /*boolean prepend = true;
@@ -583,6 +563,26 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Back up the files we are going to modify
         backup(methodToModify.javaFile());
         backup(cleanerMethod.javaFile());
+
+        // Do our fix using all cleaner code, which includes setup and teardown
+        TestPluginPlugin.info("Applying code from cleaner and recompiling.");
+        final NodeList<Statement> cleanerStmts = NodeList.nodeList();
+        // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
+        // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
+        if (!cleanerMethod.getClassName().equals(methodToModify.getClassName())) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
+        }
+        cleanerStmts.addAll(cleanerMethod.body().getStatements());
+        // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
+        if (!cleanerMethod.getClassName().equals(methodToModify.getClassName())) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.AfterClass"));
+        }
 
         // Get the helper method reference
         JavaMethod helperMethod = addHelperMethod(cleanerMethod, methodToModify, prepend);
