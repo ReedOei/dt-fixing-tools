@@ -502,16 +502,19 @@ public class CleanerFixerPlugin extends TestPlugin {
         return false;
     }
 
-    private ExpressionStmt getHelperCallStmt(JavaMethod cleanerMethod) {
-        Expression objectCreation = new ObjectCreationExpr(null, new ClassOrInterfaceType(null, cleanerMethod.getClassName()), NodeList.nodeList());
+    private ExpressionStmt getHelperCallStmt(JavaMethod cleanerMethod, boolean isSameTestClass) {
+        Expression objectCreation = null;
+        if (!isSameTestClass) { // If in same test class, then no need to create a new object of that instance
+            objectCreation = new ObjectCreationExpr(null, new ClassOrInterfaceType(null, cleanerMethod.getClassName()), NodeList.nodeList());
+        }
         Expression helperCall = new MethodCallExpr(objectCreation, "cleanerHelper");
         ExpressionStmt helperCallStmt = new ExpressionStmt(helperCall);
         return helperCallStmt;
     }
 
-    private JavaMethod addHelperMethod(JavaMethod cleanerMethod, JavaMethod methodToModify, boolean prepend) throws Exception {
+    private JavaMethod addHelperMethod(JavaMethod cleanerMethod, JavaMethod methodToModify, boolean isSameTestClass, boolean prepend) throws Exception {
         // The modification is to modify the cleaner class to add a helper, then have the other method call the helper
-        ExpressionStmt helperCallStmt = getHelperCallStmt(cleanerMethod);
+        ExpressionStmt helperCallStmt = getHelperCallStmt(cleanerMethod, isSameTestClass);
         if (prepend) {
             methodToModify.prepend(NodeList.nodeList(helperCallStmt));
         } else {
@@ -567,12 +570,14 @@ public class CleanerFixerPlugin extends TestPlugin {
         backup(methodToModify.javaFile());
         backup(cleanerMethod.javaFile());
 
+        boolean isSameTestClass = cleanerMethod.getClassName().equals(methodToModify.getClassName());
+
         // Do our fix using all cleaner code, which includes setup and teardown
         TestPluginPlugin.info("Applying code from cleaner and recompiling.");
         final NodeList<Statement> cleanerStmts = NodeList.nodeList();
         // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
         // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
-        if (!cleanerMethod.getClassName().equals(methodToModify.getClassName())) {
+        if (!isSameTestClass) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
@@ -580,7 +585,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
         cleanerStmts.addAll(cleanerMethod.body().getStatements());
         // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
-        if (!cleanerMethod.getClassName().equals(methodToModify.getClassName())) {
+        if (!isSameTestClass) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
@@ -588,7 +593,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
 
         // Get the helper method reference
-        JavaMethod helperMethod = addHelperMethod(cleanerMethod, methodToModify, prepend);
+        JavaMethod helperMethod = addHelperMethod(cleanerMethod, methodToModify, isSameTestClass, prepend);
 
         TestPluginPlugin.info("Trying to modify " + methodToModify.methodName() + " to make failing order pass.");
 
@@ -608,7 +613,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 backup(methodToModify.javaFile());
                 backup(helperMethod.javaFile());
                 prepend = !prepend;
-                helperMethod = addHelperMethod(cleanerMethod, methodToModify, prepend);
+                helperMethod = addHelperMethod(cleanerMethod, methodToModify, sameTestClass(cleanerMethod.methodName(), methodToModify.methodName()), prepend);
                 if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
                     TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
                     restore(methodToModify.javaFile());
