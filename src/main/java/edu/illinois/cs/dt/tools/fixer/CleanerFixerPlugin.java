@@ -185,6 +185,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             prepend = true;
         } else {
             // If case of failing order with polluters, best bet is one that has a cleaner, and in same test class as victim
+            List<PolluterData> pdNoCleaner = new ArrayList<>();
             List<PolluterData> pdWithCleaner = new ArrayList<>();
             List<PolluterData> pdWithSingleCleaner = new ArrayList<>();
             List<PolluterData> pdWithSingleCleanerSameTestClassVictim = new ArrayList<>();
@@ -193,7 +194,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 // Consider if has a cleaner
                 if (!pd.cleanerData().cleaners().isEmpty()) {
                     pdWithCleaner.add(pd);
-                    String polluter = pd.deps().get(0); // TODO: Assuming just one polluter for now...
+                    String polluter = pd.deps().get(pd.deps().size() - 1);  // If we're going to modify polluter, do it with the last one
                     // Would be best to have a cleaner group that is only one test
                     for (CleanerGroup cleanerGroup : pd.cleanerData().cleaners()) {
                         if (cleanerGroup.cleanerTests().size() == 1) {
@@ -209,6 +210,8 @@ public class CleanerFixerPlugin extends TestPlugin {
                             }
                         }
                     }
+                } else {
+                    pdNoCleaner.add(pd);
                 }
             }
             // Remove from each level duplicates
@@ -221,6 +224,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             polluterDataOrder.addAll(pdWithSingleCleanerSameTestClassVictim);
             polluterDataOrder.addAll(pdWithSingleCleaner);
             polluterDataOrder.addAll(pdWithCleaner);
+            polluterDataOrder.addAll(pdNoCleaner);
 
             // If more than one polluter for dependent test, then favor fixing the dependent test
             if (polluterDataOrder.size() > 1) {
@@ -230,17 +234,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
         }
 
-        // Even if could not find way to fix, if there are patches from before, try them to see if they make this one pass
-        // TODO: Only really applies to case of polluter/victim
-        if (polluterDataOrder.isEmpty() && !patches.isEmpty() && !minimized.expected().equals(Result.PASS)) {
-            for (PolluterData pd : minimized.polluters()) {
-                List<String> failingOrder = pd.withDeps(minimized.dependentTest());
-                JavaMethod victimMethod = JavaMethod.find(minimized.dependentTest(), testFiles, classpath).get();
-                JavaMethod polluterMethod = JavaMethod.find(pd.deps().get(0), testFiles, classpath).get();
-                if (applyPatchesAndRun(failingOrder, victimMethod, polluterMethod)) {
-                    TestPluginPlugin.info("Dependent test " + victimMethod.methodName() + " can pass with patches from before.");
-                }
-            }
+        for (PolluterData polluterData : polluterDataOrder) {
+            System.out.println(polluterData.deps());
         }
 
         for (PolluterData polluterData : polluterDataOrder) {
@@ -259,13 +254,26 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         List<String> cleanerTestNames = new ArrayList<>();  // Can potentially work with many cleaners, try them all
 
+        String victimTestName = minimized.dependentTest();
+        Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+
         // If dealing with a case of result with failure, then get standard cleaner logic from it
         if (!minimized.expected().equals(Result.PASS)) {
-            polluterTestName = polluterData.deps().get(0);  // Assume only one, get first...
+            // Failing order has both the dependent test and the dependencies
+            failingOrder = polluterData.withDeps(minimized.dependentTest());
+
+            polluterTestName = polluterData.deps().get(polluterData.deps().size() - 1); // If more than one polluter, want to potentially modify last one
             polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath);
 
             if (polluterData.cleanerData().cleaners().isEmpty()) {
-                TestPluginPlugin.error("Found polluters for " + minimized.dependentTest() + " but no cleaners.");
+                TestPluginPlugin.info("Found polluters for " + victimTestName + " but no cleaners.");
+                TestPluginPlugin.info("Trying prior patches to see if now is fixed.");
+                if (applyPatchesAndRun(failingOrder, victimMethodOpt.get(), polluterMethodOpt.get())) {
+                    TestPluginPlugin.info("Dependent test " + victimTestName + " can pass with patches from before.");
+                } else {
+                    TestPluginPlugin.info("Prior patches do not allow " + victimTestName + " to pass.");
+                    writePatch(victimMethodOpt.get(), 0, null, null, null, polluterMethodOpt.orElse(null), "NO CLEANERS");
+                }
                 return;
             }
 
@@ -277,8 +285,6 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
 
 
-            // Failing order has both the dependent test and the dependencies
-            failingOrder = polluterData.withDeps(minimized.dependentTest());
         } else {
             // "Cleaner" when result is passing is the "polluting" test(s)
             // TODO: Handler group of setters with more than one test
@@ -294,9 +300,6 @@ public class CleanerFixerPlugin extends TestPlugin {
             // Failing order should be just the dependent test by itself
             failingOrder = Collections.singletonList(minimized.dependentTest());
         }
-
-        String victimTestName = minimized.dependentTest();
-        Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
 
         if (polluterTestName != null && !polluterMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find polluter method " + polluterTestName);
