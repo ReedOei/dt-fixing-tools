@@ -240,6 +240,30 @@ from
 left join dependency d on d.polluter_data_id = t.polluter_data_id
 group by t.subject_name, t.test_name, t.diagnosed, t.fields, t.polluter_data_id;
 
+create view dependency_groups as
+select pd.id as polluter_data_id,
+       mtr.subject_name,
+       mtr.test_name,
+       group_concat(d.test_name) as deps,
+       count(*) as dep_count
+from minimize_test_result mtr
+inner join polluter_data pd on mtr.id = pd.minimized_id
+inner join dependency d on d.polluter_data_id = pd.id
+group by pd.id, mtr.subject_name, mtr.test_name;
+
+create view cleaner_groups as
+select cg.id as cleaner_group_id,
+       dg.polluter_data_id,
+       dg.subject_name,
+       dg.test_name,
+       group_concat(ct.test_name) as cleaners,
+       count(*) as cleaner_count
+from dependency_groups dg
+inner join cleaner_data cd on cd.polluter_data_id = dg.polluter_data_id
+inner join cleaner_group cg on cg.cleaner_data_id = cd.id
+inner join cleaner_test ct on ct.cleaner_group_id = cg.id
+group by cg.id, dg.polluter_data_id, dg.subject_name, dg.test_name;
+
 insert into confirmation_runs
 select p.test_name,
        p.round_type,

@@ -1,4 +1,4 @@
-select ft.test_name
+select distinct ft.test_name
 from fixable_tests ft
 inner join od_classification odc on ft.test_name = odc.test_name
 left join

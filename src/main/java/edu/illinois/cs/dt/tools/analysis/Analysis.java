@@ -305,7 +305,8 @@ public class Analysis extends StandardMain {
 
     private void insertFixInfo(final String subjectName, final Path patchFile)
             throws IOException, SQLException {
-        final String testName = FilenameUtils.removeExtension(patchFile.getFileName().toString());
+        final String fname = patchFile.getFileName().toString();
+        final String testName = fname.substring(0, fname.lastIndexOf(".patch"));
 
         if (!Files.exists(patchFile)) {
             System.out.println("[WARNING] Patch file " + patchFile + " does not exist!");
@@ -359,7 +360,8 @@ public class Analysis extends StandardMain {
                         .param(polluter)
                         .param(modified)
                         .param(status)
-                        .param(1)
+                        .param(status.contains("INLINE") ||
+                               status.contains("PRIOR PATCH FIXED") ? 1 : 0)
                         // 6 because there's a line ========= that separates metadata from patch and
                         // there's a line from the diff showing the patch location
                         .param(lines.subList(Math.min(lines.size() - 1, 6), lines.size()).size())
