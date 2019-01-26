@@ -221,24 +221,16 @@ left join tests_with_setter s on s.test_name = odc.test_name
 where c.test_name is not null or s.test_name is not null;
 
 create view diagnosis_info as
-select t.subject_name, t.test_name, t.diagnosed, t.fields,
-       group_concat(d.test_name) as dependencies,
-       count(d.test_name) as dep_count
-from
-(
-  select odc.subject_name, odc.test_name,
-         case when dr.test_name is null then 0 else 1 end as diagnosed,
-         ifnull(pdi.polluter_data_id, -1) as polluter_data_id,
-         count(*) as fields
-  from od_classification odc
-  left join diagnosis_result dr on odc.test_name = dr.test_name
-  inner join polluter_diagnosis pdi on pdi.diagnosis_result_id = dr.id
-  inner join rewrite_result rr on rr.polluter_diagnosis_id = pdi.id
-  where rr.actual_result <> rr.expected_result
-  group by odc.subject_name, odc.test_name, pdi.polluter_data_id
-) t
-left join dependency d on d.polluter_data_id = t.polluter_data_id
-group by t.subject_name, t.test_name, t.diagnosed, t.fields, t.polluter_data_id;
+select odc.subject_name, odc.test_name,
+       pdi.polluter_data_id as polluter_data_id,
+       count(distinct rt.field_name) as fields
+from od_classification odc
+inner join diagnosis_result dr on odc.test_name = dr.test_name
+inner join polluter_diagnosis pdi on pdi.diagnosis_result_id = dr.id
+inner join rewrite_result rr on rr.polluter_diagnosis_id = pdi.id
+inner join rewrite_target rt on rt.rewrite_result_id = rr.id
+where rr.actual_result <> rr.expected_result
+group by odc.subject_name, odc.test_name, pdi.polluter_data_id;
 
 create view dependency_groups as
 select pd.id as polluter_data_id,

@@ -103,6 +103,7 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE)
+                .print("avgNonSingletonCleanerGroupSize", 2)
                 .print("avgCleanerGroupSize", 1)
                 .print("avgCleanerGroupSizeWithZero", 0)
                 .finishGroup();
@@ -119,6 +120,7 @@ public class CommandGenerator extends StandardMain {
                 .print("avgNumPollutersWithZero", 0)
                 .finishGroup();
 
+        // TODO: Add averages (for any, more than zero, more than one) for all of these
         factory.create(SQLStatements.COUNT_DEPENDENCY_GROUP)
                 .count("numODSingleDepGroup", "%", 0, Integer.MAX_VALUE, 1, 1)
                 .count("numODAnyDepGroup", "%", 0, Integer.MAX_VALUE, 1, Integer.MAX_VALUE)
@@ -143,6 +145,12 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup()
                 .count("numBrittleSingletonSetterGroup", "brittle", 1, 1, 0, Integer.MAX_VALUE)
                 .count("numBrittleNonSingletonSetterGroup", "brittle", 2, Integer.MAX_VALUE, 0, Integer.MAX_VALUE)
+                .finishGroup();
+
+        factory.create(SQLStatements.AVERAGE_DEP_GROUP_SIZE)
+                .print("avgNumDepInNonSingletonGroup", "%", 2, Integer.MAX_VALUE)
+                .print("avgNumPolluterInNonSingletonGroup", "victim", 2, Integer.MAX_VALUE)
+                .print("avgNumSetterInNonSingletonGroup", "brittle", 2, Integer.MAX_VALUE)
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_CLEANER_BY_POLLUTER)
@@ -186,15 +194,9 @@ public class CommandGenerator extends StandardMain {
         showCounters("numPolluter", count(dependencies, t -> odTests.get(t).equals("victim")));
         showCounters("numSetter", count(dependencies, t -> odTests.get(t).equals("brittle")));
 
-        final Map<String, List<String>> cleanersByDependency = queryCleanerByDependency("any");
+        final Map<String, List<String>> cleanersByDependency = queryCleanerByDependency("%");
         final Map<String, List<String>> cleanersByPolluter = queryCleanerByDependency("victim");
         final Map<String, List<String>> cleanersBySetter = queryCleanerByDependency("brittle");
-
-        factory.create(null)
-            .printAndWrite("numDependencyWithCleaner", "", new ArrayList<>(cleanersByDependency.keySet()))
-            .printAndWrite("numPolluterWithCleaner", cleanersByPolluter.keySet())
-            .printAndWrite("numSetterWithCleaner", cleanersBySetter.keySet())
-            .finishGroup();
 
         // Note that these numbers may seem weird, but are correct (a single test may be the same dependency for many cleaners)
         showCounters("numCleanerDependency", count(cleanersByDependency, t -> true));
@@ -268,21 +270,31 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_DIAGNOSED_FIELDS)
-                .count("numWithSingleField", "%", 1, 1)
-                .count("numWithSingleFieldVictim", "victim", 1, 1)
-                .count("numWithSingleFieldBrittle", "brittle", 1, 1)
+                .count("numODRequireSingleField", "%", 1, 1)
+                .count("numODRequireAnyField", "%", 1, Integer.MAX_VALUE)
+                .count("numODRequireMoreThanOneField", "%", 2, Integer.MAX_VALUE)
+                .count("numODNoField", "%", 0, 0)
                 .finishGroup()
-                .count("numWithAnyField", "%", 1, Integer.MAX_VALUE)
-                .count("numWithAnyFieldVictim", "victim", 1, Integer.MAX_VALUE)
-                .count("numWithAnyFieldBrittle", "brittle", 1, Integer.MAX_VALUE)
+                .count("numVictimRequireSingleField", "victim", 1, 1)
+                .count("numVictimRequireAnyField", "victim", 1, Integer.MAX_VALUE)
+                .count("numVictimRequireMoreThanOneField", "victim", 2, Integer.MAX_VALUE)
+                .count("numVictimNoField", "victim", 0, 0)
                 .finishGroup()
-                .count("numWithMoreThanOneField", "%", 2, Integer.MAX_VALUE)
-                .count("numWithMoreThanOneFieldVictim", "victim", 2, Integer.MAX_VALUE)
-                .count("numWithMoreThanOneFieldBrittle", "brittle", 2, Integer.MAX_VALUE)
+                .count("numBrittleRequireSingleField", "brittle", 1, 1)
+                .count("numBrittleRequireAnyField", "brittle", 1, Integer.MAX_VALUE)
+                .count("numBrittleRequireMoreThanOneField", "brittle", 2, Integer.MAX_VALUE)
+                .count("numBrittleNoField", "brittle", 0, 0)
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_DIAGNOSED_FIELDS_NUM)
+                .count("numODSingleField", "%", 1, 1)
+                .count("numODMultipleField", "%", 2, Integer.MAX_VALUE)
                 .finishGroup()
-                .count("numWithNoField", "%", 0, 0)
-                .count("numWithNoFieldVictim", "victim", 0, 0)
-                .count("numWithNoFieldBrittle", "brittle", 0, 0)
+                .count("numVictimSingleField", "victim", 1, 1)
+                .count("numVictimMultipleField", "victim", 2, Integer.MAX_VALUE)
+                .finishGroup()
+                .count("numBrittleSingleField", "brittle", 1, 1)
+                .count("numBrittleMultipleField", "brittle", 2, Integer.MAX_VALUE)
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_DIAGNOSED_FIELDS)
@@ -297,9 +309,9 @@ public class CommandGenerator extends StandardMain {
     }
 
     private Map<String, List<String>> queryCleanerByDependency(final String type) throws SQLException {
-        return mapQuery(sqlite.statement(SQLStatements.CLEANERS_BY_DEPENDENCY, type, type), // pass twice, not a typo
-                r -> r.get("test_name"),
-                r -> Arrays.asList(r.get("tests").split(",")));
+        return mapQuery(sqlite.statement(SQLStatements.CLEANERS_BY_DEPENDENCY, type), // pass twice, not a typo
+                r -> r.get("cleaners"),
+                r -> Arrays.asList(r.get("deps").split(",")));
     }
 
     private void showCounters(final String commandNamePrefix, final Map<String, SameClassPackageCounter> counters)
