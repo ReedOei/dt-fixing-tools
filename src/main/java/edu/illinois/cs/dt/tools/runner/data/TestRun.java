@@ -64,7 +64,9 @@ public class TestRun {
                 Files.createDirectories(outputPath.getParent());
                 Files.write(outputPath, results.toString().getBytes());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         if (minimizer != null) {
             System.out.printf(", got %s, minimizer got %s\n", result, minimizer.expected());

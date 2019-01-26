@@ -306,6 +306,8 @@ public class CommandGenerator extends StandardMain {
                 .print("avgNumFieldsWithZeroVictim", "victim", 0, Integer.MAX_VALUE)
                 .print("avgNumFieldsWithZeroBrittle", "brittle", 0, Integer.MAX_VALUE)
                 .finishGroup();
+
+        // TODO: How many tests that we didn't fix or didn't have a cleaner/setter have any fields
     }
 
     private Map<String, List<String>> queryCleanerByDependency(final String type) throws SQLException {
