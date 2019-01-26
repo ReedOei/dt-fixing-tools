@@ -1,5 +1,5 @@
 -- Count how many of the tests that have cleaners or setters succeeded
-select ft.test_name
+select distinct ft.test_name
 from fixable_tests ft
 inner join test_patch tp on tp.test_name = ft.test_name
 inner join od_classification odc on tp.test_name = odc.test_name
