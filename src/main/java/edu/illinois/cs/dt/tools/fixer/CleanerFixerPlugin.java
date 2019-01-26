@@ -161,6 +161,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // TODO: Handle the case where there are multiple polluting/cleaning groups
         List<PolluterData> polluterDataOrder = new ArrayList<PolluterData>();
+        boolean prepend;
 
         // If in a passing order and there are multiple potential setters, then prioritize the one in the same test class as dependent test
         if (minimized.expected().equals(Result.PASS)) {
@@ -181,6 +182,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             // Add first in same test class ones, then the remaining ones
             polluterDataOrder.addAll(pdWithSameTestClass);
             polluterDataOrder.addAll(pdWithDiffTestClass);
+            prepend = true;
         } else {
             // If case of failing order with polluters, best bet is one that has a cleaner, and in same test class as victim
             List<PolluterData> pdWithCleaner = new ArrayList<>();
@@ -219,6 +221,13 @@ public class CleanerFixerPlugin extends TestPlugin {
             polluterDataOrder.addAll(pdWithSingleCleanerSameTestClassVictim);
             polluterDataOrder.addAll(pdWithSingleCleaner);
             polluterDataOrder.addAll(pdWithCleaner);
+
+            // If more than one polluter for dependent test, then favor fixing the dependent test
+            if (polluterDataOrder.size() > 1) {
+                prepend = true;
+            } else {
+                prepend = false;
+            }
         }
 
         // Even if could not find way to fix, if there are patches from before, try them to see if they make this one pass
@@ -232,12 +241,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                     TestPluginPlugin.info("Dependent test " + victimMethod.methodName() + " can pass with patches from before.");
                 }
             }
-        }
-
-        // If more than one polluter for dependent test, then favor fixing the dependent test
-        boolean prepend = false;
-        if (polluterDataOrder.size() > 1) {
-            prepend = true;
         }
 
         for (PolluterData polluterData : polluterDataOrder) {
@@ -556,7 +559,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
         }*/
         JavaMethod methodToModify = victimMethod;
-        if (!prepend) {
+        if (!prepend && polluterMethod != null) {
             methodToModify = polluterMethod;
         }
 
