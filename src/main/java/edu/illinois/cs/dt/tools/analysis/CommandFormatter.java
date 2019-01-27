@@ -10,15 +10,21 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 
 public class CommandFormatter {
     private static final Path COMMAND_LISTS = Paths.get("command-lists");
 
+    private final Map<String, Double> commandValues;
+    private final String commandPrefix;
     private final LatexTools tools;
     private final SQLite sqlite;
     private final @Nullable Path path;
 
-    public CommandFormatter(final LatexTools tools, final SQLite sqlite, final @Nullable Path path) {
+    public CommandFormatter(final Map<String, Double> commandValues, final String commandPrefix,
+                            final LatexTools tools, final SQLite sqlite, final @Nullable Path path) {
+        this.commandValues = commandValues;
+        this.commandPrefix = commandPrefix;
         this.tools = tools;
         this.sqlite = sqlite;
         this.path = path;
@@ -46,7 +52,8 @@ public class CommandFormatter {
 
     public CommandFormatter printAndWrite(final String name, final String suffix, final Collection<String> collection)
             throws IOException {
-        System.out.println(tools.command(name + suffix, String.valueOf(collection.size())));
+        commandValues.put(commandPrefix + name + suffix, (double) collection.size());
+        System.out.println(tools.command(commandPrefix + name + suffix, String.valueOf(collection.size())));
 
         Files.createDirectories(COMMAND_LISTS);
         Files.write(COMMAND_LISTS.resolve(name + suffix), collection);
@@ -59,7 +66,9 @@ public class CommandFormatter {
             throw new IllegalStateException("Tried to create a command using a null path for the procedure!");
         }
 
-        System.out.println(tools.commandQuery(name, sqlite.statement(path, params)));
+        final int n = tools.query(sqlite.statement(path, params));
+        commandValues.put(commandPrefix + name, (double) n);
+        System.out.println(tools.command(commandPrefix + name, String.valueOf(n)));
 
         return this;
     }
