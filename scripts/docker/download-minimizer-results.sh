@@ -16,6 +16,7 @@ for pom_path in $(find -name "pom.xml"); do
     (
         cd "$dir/.dtfixingtools/"
         unzip "minimized.zip"
+        mv "$module_key" "minimized"
     )
 done
 

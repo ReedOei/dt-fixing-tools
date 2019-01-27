@@ -69,8 +69,8 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_DEPENDENCIES)
-                .print("avgNumDep", 1)
-                .print("avgNumDepZero", 0)
+                .printDouble("avgNumDep", 1)
+                .printDouble("avgNumDepZero", 0)
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_CLEANERS)
@@ -81,8 +81,8 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_CLEANERS)
-                .print("avgNumCleaners", 1)
-                .print("avgNumCleanersWithZero", 0)
+                .printDouble("avgNumCleaners", 1)
+                .printDouble("avgNumCleanersWithZero", 0)
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_CLEANER_GROUP_SIZE)
@@ -106,9 +106,9 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE)
-                .print("avgNonSingletonCleanerGroupSize", 2)
-                .print("avgCleanerGroupSize", 1)
-                .print("avgCleanerGroupSizeWithZero", 0)
+                .printDouble("avgNonSingletonCleanerGroupSize", 2)
+                .printDouble("avgCleanerGroupSize", 1)
+                .printDouble("avgCleanerGroupSizeWithZero", 0)
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_POLLUTERS)
@@ -119,8 +119,8 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_POLLUTERS)
-                .print("avgNumPolluters", 1)
-                .print("avgNumPollutersWithZero", 0)
+                .printDouble("avgNumPolluters", 1)
+                .printDouble("avgNumPollutersWithZero", 0)
                 .finishGroup();
 
         // TODO: Add averages (for any, more than zero, more than one) for all of these
@@ -151,9 +151,9 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_DEP_GROUP_SIZE)
-                .print("avgNumDepInNonSingletonGroup", "%", 2, Integer.MAX_VALUE)
-                .print("avgNumPolluterInNonSingletonGroup", "victim", 2, Integer.MAX_VALUE)
-                .print("avgNumSetterInNonSingletonGroup", "brittle", 2, Integer.MAX_VALUE)
+                .printDouble("avgNumDepInNonSingletonGroup", "%", 2, Integer.MAX_VALUE)
+                .printDouble("avgNumPolluterInNonSingletonGroup", "victim", 2, Integer.MAX_VALUE)
+                .printDouble("avgNumSetterInNonSingletonGroup", "brittle", 2, Integer.MAX_VALUE)
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_CLEANER_BY_POLLUTER)
@@ -184,8 +184,8 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_SETTERS)
-                .print("avgNumSetters", 1)
-                .print("avgNumSettersWithZero", 0)
+                .printDouble("avgNumSetters", 1)
+                .printDouble("avgNumSettersWithZero", 0)
                 .finishGroup();
 
         final Map<String, String> odTests = queryOdTests();
@@ -255,11 +255,11 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_FIX_SIZE)
-                .print("avgFixSize", "%", "%")
-                .print("avgVictimFixSize", "victim", "%")
-                .print("avgVictimNoCleanerFixSize", "victim", "no_cleaner")
-                .print("avgVictimCleanerFixSize", "victim", "has_cleaner")
-                .print("avgBrittleFixSize", "brittle", "%")
+                .printDouble("avgFixSize", "%", "%")
+                .printDouble("avgVictimFixSize", "victim", "%")
+                .printDouble("avgVictimNoCleanerFixSize", "victim", "no_cleaner")
+                .printDouble("avgVictimCleanerFixSize", "victim", "has_cleaner")
+                .printDouble("avgBrittleFixSize", "brittle", "%")
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_FIX_STATUS)
@@ -301,16 +301,27 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_DIAGNOSED_FIELDS)
-                .print("avgNumFields", "%", 1, Integer.MAX_VALUE)
-                .print("avgNumFieldsVictim", "victim", 1, Integer.MAX_VALUE)
-                .print("avgNumFieldsBrittle", "brittle", 1, Integer.MAX_VALUE)
+                .printDouble("avgNumFields", "%", 1, Integer.MAX_VALUE)
+                .printDouble("avgNumFieldsVictim", "victim", 1, Integer.MAX_VALUE)
+                .printDouble("avgNumFieldsBrittle", "brittle", 1, Integer.MAX_VALUE)
                 .finishGroup()
-                .print("avgNumFieldsWithZero", "%", 0, Integer.MAX_VALUE)
-                .print("avgNumFieldsWithZeroVictim", "victim", 0, Integer.MAX_VALUE)
-                .print("avgNumFieldsWithZeroBrittle", "brittle", 0, Integer.MAX_VALUE)
+                .printDouble("avgNumFieldsWithZero", "%", 0, Integer.MAX_VALUE)
+                .printDouble("avgNumFieldsWithZeroVictim", "victim", 0, Integer.MAX_VALUE)
+                .printDouble("avgNumFieldsWithZeroBrittle", "brittle", 0, Integer.MAX_VALUE)
                 .finishGroup();
 
         // TODO: How many tests that we didn't fix or didn't have a cleaner/setter have any fields
+        factory.create(SQLStatements.COUNT_DIAGNOSED_NON_FIXABLE)
+                .count("numDiagnosedNonFixable", "%")
+                .count("numDiagnosedVictimNonFixable", "victim")
+                .count("numDiagnosedBrittleNonFixable", "brittle")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_DIAGNOSED_UNFIXED)
+                .count("numDiagnosedUnfixed", "%")
+                .count("numDiagnosedVictimUnfixed", "victim")
+                .count("nuMDiagnosedBrittleUnfixed", "brittle")
+                .finishGroup();
     }
 
     private void printRatio(final String name, final String n, final String d) {

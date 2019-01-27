@@ -66,8 +66,20 @@ public class CommandFormatter {
             throw new IllegalStateException("Tried to create a command using a null path for the procedure!");
         }
 
-        final int n = tools.query(sqlite.statement(path, params));
+        final int n = (int) tools.query(sqlite.statement(path, params));
         commandValues.put(commandPrefix + name, (double) n);
+        System.out.println(tools.command(commandPrefix + name, String.valueOf(n)));
+
+        return this;
+    }
+
+    public CommandFormatter printDouble(final String name, final Object... params) throws SQLException {
+        if (path == null) {
+            throw new IllegalStateException("Tried to create a command using a null path for the procedure!");
+        }
+
+        final double n = tools.query(sqlite.statement(path, params));
+        commandValues.put(commandPrefix + name, n);
         System.out.println(tools.command(commandPrefix + name, String.valueOf(n)));
 
         return this;

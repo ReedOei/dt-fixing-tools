@@ -120,6 +120,8 @@ public class SQLStatements {
     public static final Path COUNT_DEPENDENCY_GROUP_SIZE = Paths.get("src/main/sql/figures/count_dependency_group_size.sql");
     public static final Path AVERAGE_DEP_GROUP_SIZE = Paths.get("src/main/sql/figures/average_dep_group_size.sql");
     public static final Path COUNT_DIAGNOSED_FIELDS_NUM = Paths.get("src/main/sql/figures/count_diagnosed_fields_num.sql");
+    public static final Path COUNT_DIAGNOSED_NON_FIXABLE = Paths.get("src/main/sql/figures/count_diagnosed_non_fixable.sql");
+    public static final Path COUNT_DIAGNOSED_UNFIXED = Paths.get("src/main/sql/figures/count_diagnosed_unfixed.sql");
 
     static {
         ensureExists(COUNT_OD_TYPE);
@@ -160,6 +162,8 @@ public class SQLStatements {
         ensureExists(COUNT_DEPENDENCY_GROUP_SIZE);
         ensureExists(AVERAGE_DEP_GROUP_SIZE);
         ensureExists(COUNT_DIAGNOSED_FIELDS_NUM);
+        ensureExists(COUNT_DIAGNOSED_NON_FIXABLE);
+        ensureExists(COUNT_DIAGNOSED_UNFIXED);
 
         ensureExists(INSERT_RAW_SUBJECT);
 

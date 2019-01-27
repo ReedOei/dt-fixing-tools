@@ -232,6 +232,17 @@ inner join rewrite_target rt on rt.rewrite_result_id = rr.id
 where rr.actual_result <> rr.expected_result
 group by odc.subject_name, odc.test_name, pdi.polluter_data_id;
 
+create view diagnosed_tests as
+select distinct odc.test_name
+from od_classification odc
+left join
+(
+  select test_name, min(fields) as fields
+  from diagnosis_info
+  group by test_name
+) di on di.test_name = odc.test_name
+where ifnull(fields, 0) > 0;
+
 create view dependency_groups as
 select pd.id as polluter_data_id,
        mtr.subject_name,

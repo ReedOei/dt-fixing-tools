@@ -12,12 +12,12 @@ public class LatexTools {
         this.commandPrefix = commandPrefix;
     }
 
-    public int query(final Path path) throws SQLException {
+    public double query(final Path path) throws SQLException {
         return query(sqlite.statement(path));
     }
 
-    public int query(final Procedure procedure) throws SQLException {
-        return Integer.parseInt(procedure.tableQuery().table().get(0).get(0));
+    public double query(final Procedure procedure) throws SQLException {
+        return Double.parseDouble(procedure.tableQuery().table().get(0).get(0));
     }
 
     public String commandQuery(final String commandName, final Path path) throws SQLException {
