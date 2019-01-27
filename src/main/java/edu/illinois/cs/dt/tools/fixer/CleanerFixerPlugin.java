@@ -272,7 +272,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                     TestPluginPlugin.info("Dependent test " + victimTestName + " can pass with patches from before.");
                 } else {
                     TestPluginPlugin.info("Prior patches do not allow " + victimTestName + " to pass.");
-                    writePatch(victimMethodOpt.get(), 0, null, null, null, polluterMethodOpt.orElse(null), "NO CLEANERS");
+                    writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), "NO CLEANERS");
                 }
                 return;
             }
@@ -323,7 +323,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
         if (testOrderPasses(failingOrder)) {
             TestPluginPlugin.error("Failing order doesn't fail.");
-            writePatch(victimMethodOpt.get(), 0, null, null, null, polluterMethodOpt.orElse(null), "NOT FAILING ORDER");
+            writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), "NOT FAILING ORDER");
             return;
         }
 
@@ -351,7 +351,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
         // If reached here, then no cleaner helped fix this dependent test, so report as such
         TestPluginPlugin.info("No cleaner could help make " + victimMethodOpt.get().methodName() + " pass!");
-        writePatch(victimMethodOpt.get(), 0, null, null, null, polluterMethodOpt.orElse(null), "NO CLEANER FIXES");
+        writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), "NO CLEANER FIXES");
     }
 
     private List<Path> testSources() throws IOException {
@@ -498,7 +498,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 TestPluginPlugin.info("Failing order no longer fails after patches.");
                 // If this is a new dependent test and the patches fix it, then save a file for it
                 // just to help indicate that the test has been fixed
-                writePatch(victimMethod, 0, null, null, null, polluterMethod, "PRIOR PATCH FIXED (DEPENDENT=" + patch.victimMethod().methodName() + ",CLEANER=" + patch.cleanerMethod().methodName() + ", MODIFIED=" + patch.methodToPatch().methodName() + ")");
+                writePatch(victimMethod, 0, null, 0, null, null, polluterMethod, "PRIOR PATCH FIXED (DEPENDENT=" + patch.victimMethod().methodName() + ",CLEANER=" + patch.cleanerMethod().methodName() + ", MODIFIED=" + patch.methodToPatch().methodName() + ")");
                 return true;
             }
         }
@@ -648,7 +648,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
         BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
         String status = inlineSuccessful ? "INLINE SUCCESSFUL" : "INLINE FAIL";
-        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, methodToModify, cleanerMethod, polluterMethod, status);
+        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, status);
 
         patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
 
@@ -666,7 +666,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
     // Helper method to create a patch file adding in the passed in block
     // Includes a bunch of extra information that may be useful
-    private Path writePatch(JavaMethod victimMethod, int begin, BlockStmt blockStmt,
+    private Path writePatch(JavaMethod victimMethod, int begin, BlockStmt blockStmt, int originalsize,
                             JavaMethod modifiedMethod, JavaMethod cleanerMethod,
                             JavaMethod polluterMethod, String status) throws IOException {
         List<String> patchLines = new ArrayList<>();
@@ -674,6 +674,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         patchLines.add("MODIFIED: " + (modifiedMethod == null ? "N/A" : modifiedMethod.methodName()));
         patchLines.add("CLEANER: " + (cleanerMethod == null ? "N/A" : cleanerMethod.methodName()));
         patchLines.add("POLLUTER: " + (polluterMethod == null ? "N/A" : polluterMethod.methodName()));
+        patchLines.add("ORIGINAL CLEANER SIZE: " + (originalsize == 0 ? "N/A" : String.valueOf(originalsize)));
+        patchLines.add("NEW CLEANER SIZE: " + (blockStmt != null ? String.valueOf(blockStmt.getStatements().size()) : "N/A"));
 
         // If there is a block to add (where it might not be if in error state and need to just output empty)
         if (blockStmt != null) {
