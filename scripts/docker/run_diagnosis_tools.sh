@@ -20,7 +20,7 @@ fi
 slug=$1
 rounds=$2
 timeout=$3
-tesName=$4
+testName=$4
 
 # Setup prolog stuff
 cd /home/awshi2/dt-fixing-tools/scripts/
