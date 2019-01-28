@@ -9,7 +9,7 @@ date
 # This script is run inside the Docker image, for single experiment (one project)
 # Should only be invoked by the run_experiment.sh script
 
-if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]] || [[ $4 == ""]]; then
+if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]] || [[ $4 == ""]] ; then
     echo "arg1 - GitHub SLUG"
     echo "arg2 - Number of rounds"
     echo "arg3 - Timeout in seconds"

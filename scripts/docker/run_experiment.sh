@@ -3,7 +3,7 @@
 # This script is the entry point script that is run inside of the Docker image
 # for running the experiment for a single project
 
-if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]] || [[ $4 == ""]]; then
+if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]] || [[ $4 == ""]] ; then
     echo "arg1 - GitHub SLUG"
     echo "arg2 - Number of rounds"
     echo "arg3 - Timeout in seconds"
