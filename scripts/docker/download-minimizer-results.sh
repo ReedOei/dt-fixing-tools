@@ -17,13 +17,20 @@ for pom_path in $(find -name "pom.xml"); do
     mkdir -p "$dir/.dtfixingtools/detection-results/"
     echo "[DOWNLOAD] Downloading $module_key to $dir/.dtfixingtools/detection-results/flaky-lists.json"
 
-    wget "http://reedoei.com/files/${module_key}-flaky-lists.json" -O "$dir/.dtfixingtools/detection-results/flaky-lists.json"
-    wget "http://reedoei.com/files/${module_key}-minimized.zip" -O "$dir/.dtfixingtools/minimized.zip"
+    # wget "http://reedoei.com/files/${module_key}-flaky-lists.json" -O "$dir/.dtfixingtools/detection-results/flaky-lists.json"
+    # wget "http://reedoei.com/files/${module_key}-minimized.zip" -O "$dir/.dtfixingtools/minimized.zip"
 
+    # (
+    #     cd "$dir/.dtfixingtools/"
+    #     unzip "minimized.zip"
+    #     mv "$module_key" "minimized"
+    # )
+
+    wget "http://reedoei.com/files/$testName-data/minimized.zip" -O "$dir/.dtfixingtools/minimized.zip"
     (
         cd "$dir/.dtfixingtools/"
         unzip "minimized.zip"
-        mv "$module_key" "minimized"
+        rm "minimized.zip"
     )
 done
 
