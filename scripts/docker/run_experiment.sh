@@ -3,28 +3,30 @@
 # This script is the entry point script that is run inside of the Docker image
 # for running the experiment for a single project
 
-if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]]; then
+if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]] [[ $4 == ""]]; then
     echo "arg1 - GitHub SLUG"
     echo "arg2 - Number of rounds"
     echo "arg3 - Timeout in seconds"
-    echo "arg4 - Script to run (Optional)"
+    echo "arg4 - Test name (Optional)"
+    echo "arg5 - Script to run (Optional)"
     exit
 fi
 
 # If it's an absolute path, just use it
-if [[ "$4" =~ "$/" ]]; then
+if [[ "$5" =~ "$/" ]]; then
     script_to_run="$4"
-elif [[ -z "$4" ]]; then
+elif [[ -z "$5" ]]; then
     # The default is run_project.sh
     script_to_run="/home/awshi2/dt-fixing-tools/scripts/docker/run_project.sh"
 else
     # otherwise, assume it's relative to the docker directory
-    script_to_run="/home/awshi2/dt-fixing-tools/scripts/docker/$4"
+    script_to_run="/home/awshi2/dt-fixing-tools/scripts/docker/$5"
 fi
 
 slug=$1
 rounds=$2
 timeout=$3
+testName=$4
 
 git rev-parse HEAD
 date
@@ -46,7 +48,7 @@ if [[ -e "/home/awshi2/mvn-test-time.log" ]] && [[ ! -e "/home/awshi2/$slug/mvn-
 fi
 
 # Start the script using the awshi2 user
-su - awshi2 -c "$script_to_run ${slug} ${rounds} ${timeout}"
+su - awshi2 -c "$script_to_run ${slug} ${rounds} ${timeout} ${testName}"
 
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)
 modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')

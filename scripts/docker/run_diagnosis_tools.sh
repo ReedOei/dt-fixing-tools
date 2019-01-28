@@ -9,16 +9,18 @@ date
 # This script is run inside the Docker image, for single experiment (one project)
 # Should only be invoked by the run_experiment.sh script
 
-if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]]; then
+if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]] [[ $4 == ""]]; then
     echo "arg1 - GitHub SLUG"
     echo "arg2 - Number of rounds"
     echo "arg3 - Timeout in seconds"
+    echo "arg4 - Test name"
     exit
 fi
 
 slug=$1
 rounds=$2
 timeout=$3
+tesName=$4
 
 # Setup prolog stuff
 cd /home/awshi2/dt-fixing-tools/scripts/
@@ -34,7 +36,7 @@ cd /home/awshi2/${slug}
 
 echo "*******************REED************************"
 echo "Downloading known flaky-lists.json for ${slug}"
-bash /home/awshi2/dt-fixing-tools/scripts/docker/download-minimizer-results.sh
+bash /home/awshi2/dt-fixing-tools/scripts/docker/download-minimizer-results.sh ${testName}
 
 # Run the plugin, get module test times
 echo "*******************REED************************"

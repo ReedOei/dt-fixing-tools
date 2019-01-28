@@ -43,6 +43,7 @@ for line in $(cat ${projfile}); do
     # Create the corresponding Dockerfile
     slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
     sha=$(echo ${line} | cut -d',' -f2)
+    testName=$(echo ${line} | cut -d',' -f3)
     ./create_dockerfile.sh ${slug} ${sha}
 
     # Build the Docker image if does not exist
@@ -61,7 +62,7 @@ for line in $(cat ${projfile}); do
     if [ $? == 1 ]; then
         echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
     else
-        docker run -t --rm -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash -x /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout} "${script}"
+        docker run -t --rm -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash -x /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout} ${testName} "${script}"
      fi
 done
 
