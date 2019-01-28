@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -23,8 +22,7 @@ public class CommandGenerator extends StandardMain {
     private final LatexTools tools;
     private final CommandFormatterFactory factory;
     private final Map<String, Double> commandValues = new HashMap<>();
-    private final NumberFormat percentInstance;
-    private final NumberFormat ratioInstance;
+    private final CommandCalculator calculator;
 
     private CommandGenerator(final String[] args) throws SQLException {
         super(args);
@@ -33,11 +31,7 @@ public class CommandGenerator extends StandardMain {
         this.commandPrefix = getArg("prefix").orElse("");
         this.tools = new LatexTools(sqlite, commandPrefix);
         this.factory = new CommandFormatterFactory(commandValues, commandPrefix, tools, sqlite);
-
-        this.percentInstance = NumberFormat.getPercentInstance();
-        percentInstance.setMaximumFractionDigits(1);
-        this.ratioInstance = NumberFormat.getNumberInstance();
-        ratioInstance.setMaximumFractionDigits(1);
+        this.calculator = new CommandCalculator(commandValues, tools);
     }
 
     public static void main(final String[] args) {
@@ -310,7 +304,6 @@ public class CommandGenerator extends StandardMain {
                 .printDouble("avgNumFieldsWithZeroBrittle", "brittle", 0, Integer.MAX_VALUE)
                 .finishGroup();
 
-        // TODO: How many tests that we didn't fix or didn't have a cleaner/setter have any fields
         factory.create(SQLStatements.COUNT_DIAGNOSED_NON_FIXABLE)
                 .count("numDiagnosedNonFixable", "%")
                 .count("numDiagnosedVictimNonFixable", "victim")
@@ -322,21 +315,9 @@ public class CommandGenerator extends StandardMain {
                 .count("numDiagnosedVictimUnfixed", "victim")
                 .count("nuMDiagnosedBrittleUnfixed", "brittle")
                 .finishGroup();
-    }
 
-    private void printRatio(final String name, final String n, final String d) {
-        printDerived(name, n, d, ratioInstance);
-    }
-
-    private void printPercentage(final String name, final String n, final String d) {
-        printDerived(name, n, d, percentInstance);
-    }
-
-    private void printDerived(final String name, final String n, final String d, final NumberFormat percentInstance) {
-        final double nVal = commandValues.get(n);
-        final double dVal = commandValues.get(d);
-
-        System.out.println(tools.command(name, percentInstance.format(nVal / dVal)));
+        // TODO: automated sanity checks
+        // TODO: Union of any polluter OR cleaner in the same test class as the victim
     }
 
     private Map<String, List<String>> queryCleanerByDependency(final String type) throws SQLException {
