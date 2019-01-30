@@ -92,7 +92,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
                 if (result(order) != expected) {
                     info("Remaining tests no longer match expected: " + order);
                     break;
-                }
+                i}
 
                 final List<String> deps = run(new ArrayList<>(order));
                 if (deps.isEmpty()) {

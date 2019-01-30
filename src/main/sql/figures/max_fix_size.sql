@@ -1,4 +1,4 @@
-select round(ifnull(avg(patch_line_count - 2), 0), 1)
+select ifnull(max(patch_line_count - 2), 0)
 from test_patch tp
 inner join od_classification odc on tp.test_name = odc.test_name
 left join

@@ -54,6 +54,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CleanerFixerPlugin extends TestPlugin {
+    public static final String PATCH_LINE_SEP = "==========================";
+
     private String classpath;
     private MavenProject project;
     private InstrumentingSmartRunner runner;
@@ -679,7 +681,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // If there is a block to add (where it might not be if in error state and need to just output empty)
         if (blockStmt != null) {
-            patchLines.add("==========================");
+            patchLines.add(PATCH_LINE_SEP);
             String[] lines = blockStmt.toString().split("\n");
             patchLines.add("@@ -" + begin +",0 +" + begin + "," + lines.length + " @@");
             for (String line : lines) {

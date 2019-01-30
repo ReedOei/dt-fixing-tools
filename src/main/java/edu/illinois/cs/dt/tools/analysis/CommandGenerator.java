@@ -22,7 +22,7 @@ public class CommandGenerator extends StandardMain {
     private final LatexTools tools;
     private final CommandFormatterFactory factory;
     private final Map<String, Double> commandValues = new HashMap<>();
-    private final CommandCalculator calculator;
+    private final CommandCalculator calc;
 
     private CommandGenerator(final String[] args) throws SQLException {
         super(args);
@@ -31,7 +31,7 @@ public class CommandGenerator extends StandardMain {
         this.commandPrefix = getArg("prefix").orElse("");
         this.tools = new LatexTools(sqlite, commandPrefix);
         this.factory = new CommandFormatterFactory(commandValues, commandPrefix, tools, sqlite);
-        this.calculator = new CommandCalculator(commandValues, tools);
+        this.calc = new CommandCalculator(commandValues, tools);
     }
 
     public static void main(final String[] args) {
@@ -48,6 +48,18 @@ public class CommandGenerator extends StandardMain {
 
     @Override
     protected void run() throws Exception {
+        factory.create(SQLStatements.COUNT_NO_TEST)
+                .count("numNOTest")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_MODULE_WITH_OD)
+                .count("numModulesWithOD")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_PROJECT_WITH_OD)
+                .count("numProjectsWithOD")
+                .finishGroup();
+
         factory.create(SQLStatements.COUNT_OD_TYPE)
                 .count("numBrittleTests", "brittle", "brittle")
                 .count("numVictimTests", "victim", "victim")
@@ -256,6 +268,22 @@ public class CommandGenerator extends StandardMain {
                 .printDouble("avgBrittleFixSize", "brittle", "%")
                 .finishGroup();
 
+        factory.create(SQLStatements.MIN_FIX_SIZE)
+                .print("minFixSize", "%", "%")
+                .print("minVictimFixSize", "victim", "%")
+                .print("minVictimNoCleanerFixSize", "victim", "no_cleaner")
+                .print("minVictimCleanerFixSize", "victim", "has_cleaner")
+                .print("minBrittleFixSize", "brittle", "%")
+                .finishGroup();
+
+        factory.create(SQLStatements.MAX_FIX_SIZE)
+                .print("maxFixSize", "%", "%")
+                .print("maxVictimFixSize", "victim", "%")
+                .print("maxVictimNoCleanerFixSize", "victim", "no_cleaner")
+                .print("maxVictimCleanerFixSize", "victim", "has_cleaner")
+                .print("maxBrittleFixSize", "brittle", "%")
+                .finishGroup();
+
         factory.create(SQLStatements.COUNT_FIX_STATUS)
                 .count("numFixNA", "N/A")
                 .count("numFixUnknownError", "UNKNOWN ERROR")
@@ -313,8 +341,15 @@ public class CommandGenerator extends StandardMain {
         factory.create(SQLStatements.COUNT_DIAGNOSED_UNFIXED)
                 .count("numDiagnosedUnfixed", "%")
                 .count("numDiagnosedVictimUnfixed", "victim")
-                .count("nuMDiagnosedBrittleUnfixed", "brittle")
+                .count("numDiagnosedBrittleUnfixed", "brittle")
                 .finishGroup();
+
+        final int numNonFixable = (int) calc.sub("numDepTests", "numFixable");
+        System.out.println(tools.command("numNonFixable", String.valueOf(numNonFixable)));
+        calc.printPercentage("percFixed", "numFixed", "numFixable");
+        calc.printPercentage("percNotFixed", "numNotFixed", "numFixable");
+        calc.printPercentage("percFixedAll", "numSuccessFix", "numDepTests");
+        calc.printPercentage("percNotFixedAll", "numFailFix", "numDepTests");
 
         // TODO: automated sanity checks
         // TODO: Union of any polluter OR cleaner in the same test class as the victim

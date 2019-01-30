@@ -119,17 +119,21 @@ select mt.subject_name,
 from minimized_tests mt
 left join
 (
-    select mtr.test_name, mtr.expected_result, count(pd.id) as num
+    select mtr.test_name, mtr.expected_result, count(d.test_name) as num
     from minimize_test_result mtr
     left join polluter_data pd on mtr.id = pd.minimized_id
+    left join dependency d on d.polluter_data_id = pd.id
     group by mtr.test_name, mtr.expected_result
+    having num > 0
 ) passing on passing.test_name = mt.test_name and passing.expected_result = 'PASS'
 left join
 (
-    select mtr.test_name, mtr.expected_result, count(pd.id) as num
+    select mtr.test_name, mtr.expected_result, count(d.test_name) as num
     from minimize_test_result mtr
     left join polluter_data pd on mtr.id = pd.minimized_id
+    left join dependency d on d.polluter_data_id = pd.id
     group by mtr.test_name, mtr.expected_result
+    having num > 0
 ) failing on failing.test_name = mt.test_name and failing.expected_result <> 'PASS'
 group by mt.subject_name, mt.test_name;
 
@@ -139,10 +143,25 @@ select pdc.test_name,
        case
         when passing_count > 0 then 'brittle'
         when failing_count > 0 then 'victim'
-        else 'both'
       end as od_type
-from polluter_data_count pdc;
+from polluter_data_count pdc
+left join no_test n on n.test_name = pdc.test_name
+where n.test_name is null and (passing_count > 0 or failing_count > 0);
 
+create view all_no_test as
+select distinct test_name
+from
+(
+  select mtr.test_name
+  from minimize_test_result mtr
+  left join od_classification odc on mtr.test_name = odc.test_name
+  where odc.test_name is null
+
+  union
+
+  select test_name
+  from no_test
+) t;
 
 insert into test_patch
 (
@@ -167,16 +186,22 @@ from od_classification odc
 left join test_patch tp on tp.test_name = odc.test_name
 where tp.test_name is null;
 
+create view subject_with_od as
+select distinct subject_name
+from od_classification;
+
 create view dependency_info as
 select mtr.subject_name,
        mtr.test_name,
        mtr.expected_result,
        pd.id,
        count(d.test_name) as dep_count
-from minimize_test_result mtr
+from od_classification odc
+inner join minimize_test_result mtr on mtr.test_name = odc.test_name
 left join polluter_data pd on mtr.id = pd.minimized_id
 left join dependency d on pd.id = d.polluter_data_id
-group by mtr.subject_name, mtr.test_name, mtr.expected_result, pd.id;
+group by mtr.subject_name, mtr.test_name, mtr.expected_result, pd.id
+having dep_count > 0;
 
 create view cleaner_info as
 select mtr.subject_name,
@@ -184,7 +209,8 @@ select mtr.subject_name,
        mtr.expected_result,
        cg.id,
        count(ct.test_name) as cleaner_count
-from minimize_test_result mtr
+from od_classification odc
+inner join minimize_test_result mtr on mtr.test_name = odc.test_name
 left join polluter_data pd on mtr.id = pd.minimized_id
 left join cleaner_data cd on cd.polluter_data_id = pd.id
 left join cleaner_group cg on cg.cleaner_data_id = cd.id
@@ -249,7 +275,8 @@ select pd.id as polluter_data_id,
        mtr.test_name,
        group_concat(d.test_name) as deps,
        count(*) as dep_count
-from minimize_test_result mtr
+from od_classification odc
+inner join minimize_test_result mtr on mtr.test_name = odc.test_name
 inner join polluter_data pd on mtr.id = pd.minimized_id
 inner join dependency d on d.polluter_data_id = pd.id
 group by pd.id, mtr.subject_name, mtr.test_name;
@@ -266,6 +293,12 @@ inner join cleaner_data cd on cd.polluter_data_id = dg.polluter_data_id
 inner join cleaner_group cg on cg.cleaner_data_id = cd.id
 inner join cleaner_test ct on ct.cleaner_group_id = cg.id
 group by cg.id, dg.polluter_data_id, dg.subject_name, dg.test_name;
+
+create view fixed_tests as
+select distinct ft.test_name
+from fixable_tests ft
+inner join test_patch tp on tp.test_name = ft.test_name
+where tp.succeeded = 1;
 
 insert into confirmation_runs
 select p.test_name,

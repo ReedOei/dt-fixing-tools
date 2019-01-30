@@ -24,6 +24,12 @@ create table test_run_result
   foreign key(subject_name) references subject(name)
 );
 
+create table no_test
+(
+  id integer primary key,
+  test_name text not null
+);
+
 create table flaky_test
 (
   id integer primary key,
@@ -127,6 +133,8 @@ create table original_order
   id integer primary key,
   subject_name text not null,
   test_name text not null,
+  test_class text not null,
+  test_package text not null,
   order_index integer not null,
   fix_method_order integer not null default 0,
 

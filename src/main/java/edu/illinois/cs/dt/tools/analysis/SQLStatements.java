@@ -122,6 +122,12 @@ public class SQLStatements {
     public static final Path COUNT_DIAGNOSED_FIELDS_NUM = Paths.get("src/main/sql/figures/count_diagnosed_fields_num.sql");
     public static final Path COUNT_DIAGNOSED_NON_FIXABLE = Paths.get("src/main/sql/figures/count_diagnosed_non_fixable.sql");
     public static final Path COUNT_DIAGNOSED_UNFIXED = Paths.get("src/main/sql/figures/count_diagnosed_unfixed.sql");
+    public static final Path INSERT_NO_TEST = Paths.get("src/main/sql/build/insert_no_test.sql");
+    public static final Path COUNT_NO_TEST = Paths.get("src/main/sql/figures/count_no_test.sql");
+    public static final Path COUNT_MODULE_WITH_OD = Paths.get("src/main/sql/figures/count_module_with_od.sql");
+    public static final Path COUNT_PROJECT_WITH_OD = Paths.get("src/main/sql/figures/count_project_with_od.sql");
+    public static final Path MIN_FIX_SIZE = Paths.get("src/main/sql/figures/min_fix_size.sql");
+    public static final Path MAX_FIX_SIZE = Paths.get("src/main/sql/figures/max_fix_size.sql");
 
     static {
         ensureExists(COUNT_OD_TYPE);
@@ -161,9 +167,13 @@ public class SQLStatements {
         ensureExists(COUNT_CLEANER_BY_VICTIM);
         ensureExists(COUNT_DEPENDENCY_GROUP_SIZE);
         ensureExists(AVERAGE_DEP_GROUP_SIZE);
+        ensureExists(INSERT_NO_TEST);
         ensureExists(COUNT_DIAGNOSED_FIELDS_NUM);
         ensureExists(COUNT_DIAGNOSED_NON_FIXABLE);
         ensureExists(COUNT_DIAGNOSED_UNFIXED);
+        ensureExists(COUNT_NO_TEST);
+        ensureExists(COUNT_MODULE_WITH_OD);
+        ensureExists(COUNT_PROJECT_WITH_OD);
 
         ensureExists(INSERT_RAW_SUBJECT);
 

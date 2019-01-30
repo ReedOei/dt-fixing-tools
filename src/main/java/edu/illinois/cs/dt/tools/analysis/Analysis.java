@@ -7,6 +7,7 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
+import edu.illinois.cs.dt.tools.analysis.data.SameClassPackageCounter;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
@@ -22,6 +23,7 @@ import edu.illinois.cs.dt.tools.diagnosis.pollution.PollutionPathManager;
 import edu.illinois.cs.dt.tools.diagnosis.rewrite.FieldDiff;
 import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewriteTarget;
 import edu.illinois.cs.dt.tools.diagnosis.rewrite.RewritingResult;
+import edu.illinois.cs.dt.tools.fixer.CleanerFixerPlugin;
 import edu.illinois.cs.dt.tools.fixer.CleanerPathManager;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.minimizer.MinimizerPathManager;
@@ -58,8 +60,6 @@ import java.util.stream.Stream;
 // TODO: would probably be better to have these insert methods in their respective classes with some
 //       interface or something...
 public class Analysis extends StandardMain {
-    public static final Pattern FIX_SUCCESSFUL_PATTERN = Pattern.compile("\\[INFO\\] Patching successful, patch file for (\\S+) found at: (\\S+)");
-    public static final Pattern FIX_FAIL_PATTERN = Pattern.compile("\\[ERROR\\] Applying all of (\\S+) (\\S+) to (\\S+) does not fix!");
     public static final Pattern PRIOR_PATCH_PATTERN = Pattern.compile("PRIOR PATCH FIXED \\(DEPENDENT=([^,]+),CLEANER=([^,]+),MODIFIED=([^,]+)\\)");
 
     public static int roundNumber(final String filename) {
@@ -120,6 +120,8 @@ public class Analysis extends StandardMain {
     protected void run() throws Exception {
         createTables();
 
+        insertNOTests(results.resolve("no-tests"));
+
         insertFullSubjectList(subjectList);
         insertSubjectLOC(subjectListLOC);
 
@@ -141,6 +143,14 @@ public class Analysis extends StandardMain {
         runPostSetup();
 
         sqlite.save();
+    }
+
+    private void insertNOTests(final Path path) throws SQLException, IOException {
+        for (final String testName : Files.readAllLines(path)) {
+            sqlite.statement(SQLStatements.INSERT_NO_TEST)
+                    .param(testName)
+                    .insertSingleRow();
+        }
     }
 
     private void insertSubjectLOC(final Path path) throws IOException, SQLException {
@@ -271,6 +281,8 @@ public class Analysis extends StandardMain {
                     statement
                             .param(subjectName)
                             .param(originalOrder.get(i))
+                            .param(testClass(originalOrder.get(i)))
+                            .param(testClass(testClass(originalOrder.get(i))))
                             .param(i).addBatch();
                 }
 
@@ -280,6 +292,16 @@ public class Analysis extends StandardMain {
             }
         } else {
             System.out.println("[WARNING] No original order found at " + originalOrderPath);
+        }
+    }
+
+    private String testClass(final String testName) {
+        final int i = testName.lastIndexOf(".");
+
+        if (i >= 0) {
+            return testName.substring(0, i);
+        } else {
+            return "";
         }
     }
 
@@ -315,85 +337,62 @@ public class Analysis extends StandardMain {
 
         final List<String> lines = Files.readAllLines(patchFile);
 
-        // TODO: Simplify this once all results are in the newer format
-        if (!lines.isEmpty()) {
-            // New format
-            if (lines.get(0).startsWith("STATUS: ")) {
-                if (lines.size() < 4) {
-                    System.out.println("[WARNING] Patch file " + patchFile + " has too few lines");
-                    return;
-                }
-
-                final String status = lines.get(0).substring("STATUS: ".length());
-
-                final Matcher matcher = PRIOR_PATCH_PATTERN.matcher(status);
-
-                final String modified;
-                final String cleaner;
-                final String polluter;
-                if (matcher.matches()) {
-                    cleaner = matcher.group(2);
-                    modified = matcher.group(3);
-
-                    final String priorFixTestName = matcher.group(1);
-                    final ListEx<ListEx<String>> queryRes =
-                            sqlite.makeProc("select polluter_name from test_patch where test_name = ?;")
-                            .param(priorFixTestName)
-                            .tableQuery().table();
-
-                    if (!queryRes.isEmpty() && !queryRes.get(0).isEmpty()) {
-                        polluter = queryRes.get(0).get(0);
-                    } else {
-                        // TODO: We can handle this case by inserting this after the other test, or maybe updating it afterwards
-                        polluter = "N/A";
-                    }
-                } else {
-                    modified = lines.get(1).substring("MODIFIED: ".length());
-                    cleaner = lines.get(2).substring("CLEANER: ".length());
-                    polluter = lines.get(3).substring("POLLUTER: ".length());
-                }
-
-                sqlite.statement(SQLStatements.INSERT_TEST_PATCH)
-                        .param(subjectName)
-                        .param(testName)
-                        .param(cleaner)
-                        .param(polluter)
-                        .param(modified)
-                        .param(status)
-                        .param(status.contains("INLINE") ||
-                               status.contains("PRIOR PATCH FIXED") ? 1 : 0)
-                        // 6 because there's a line ========= that separates metadata from patch and
-                        // there's a line from the diff showing the patch location
-                        .param(lines.subList(Math.min(lines.size() - 1, 6), lines.size()).size())
-                        .insertSingleRow();
-            } else {
-                System.out.println("[WARNING] " + patchFile + " is still in the old format!");
-
-                //Old format
-                sqlite.statement(SQLStatements.INSERT_TEST_PATCH)
-                        .param(subjectName)
-                        .param(testName)
-                        .param("N/A")
-                        .param("N/A")
-                        .param("N/A")
-                        .param("N/A")
-                        .param(1)
-                        .param(lines.size() - 1) // Subtract one for the first line which isn't code
-                        .insertSingleRow();
+        if (lines.get(0).startsWith("STATUS: ")) {
+            if (lines.size() < 4) {
+                System.out.println("[WARNING] Patch file " + patchFile + " has too few lines");
+                return;
             }
-        } else {
-            System.out.println("[WARNING] Empty file " + patchFile + " is still in the old format!");
 
-            //Old format
+            final String status = lines.get(0).substring("STATUS: ".length());
+
+            final Matcher matcher = PRIOR_PATCH_PATTERN.matcher(status);
+
+            final String modified;
+            final String cleaner;
+            final String polluter;
+            if (matcher.matches()) {
+                cleaner = matcher.group(2);
+                modified = matcher.group(3);
+
+                final String priorFixTestName = matcher.group(1);
+                final ListEx<ListEx<String>> queryRes =
+                        sqlite.makeProc("select polluter_name from test_patch where test_name = ?;")
+                        .param(priorFixTestName)
+                        .tableQuery().table();
+
+                if (!queryRes.isEmpty() && !queryRes.get(0).isEmpty()) {
+                    polluter = queryRes.get(0).get(0);
+                } else {
+                    // TODO: We can handle this case by inserting this after the other test, or maybe updating it afterwards
+                    polluter = "N/A";
+                }
+            } else {
+                modified = lines.get(1).substring("MODIFIED: ".length());
+                cleaner = lines.get(2).substring("CLEANER: ".length());
+                polluter = lines.get(3).substring("POLLUTER: ".length());
+            }
+
+            final int sepI = lines.indexOf(CleanerFixerPlugin.PATCH_LINE_SEP);
+            final int fixSize;
+//            System.out.println(patchFile + " : " + sepI);
+            if (sepI >= 0) {
+                fixSize = lines.subList(sepI + 2, lines.size()).size();
+            } else {
+                fixSize = 0;
+            }
+
             sqlite.statement(SQLStatements.INSERT_TEST_PATCH)
                     .param(subjectName)
                     .param(testName)
-                    .param("N/A")
-                    .param("N/A")
-                    .param("N/A")
-                    .param("N/A")
-                    .param(1)
-                    .param(0)
+                    .param(cleaner)
+                    .param(polluter)
+                    .param(modified)
+                    .param(status)
+                    .param(status.contains("INLINE") ||
+                           status.contains("PRIOR PATCH FIXED") ? 1 : 0)
+                    // 6 because there's a line ========= that separates metadata from patch and
+                    // there's a line from the diff showing the patch location
+                    .param(fixSize)
                     .insertSingleRow();
         }
     }

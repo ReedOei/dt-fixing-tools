@@ -3,14 +3,13 @@
 # Usage: bash generate-commands.sh DATABASE
 database="$1"
 
-scripts_folder=$(cd "$(dirname $BASH_SOURCE)"; pwd)
+echo "==============================================="
+echo "TABLE: MODULE COUNTS (SUBJECT INFO)"
+echo "==============================================="
+cat module-od-counts-table.sql | sqlite3 "$database" | sed -E "s/\|/ \& /g" | sed -E '$s/([A-Za-z0-9.]+)/\\textbf{\1}/g' | sed -e 's/$/ \\\\/'
 
-if [[ ! "$database" =~ "$/" ]]; then
-    database="$(cd "$(dirname $database)"; pwd)/$(basename $database)"
-fi
-
-# Go to where the pom is
-cd "$scripts_folder/.."
-
-mvn install -DskipTests exec:java -Dexec.mainClass="edu.illinois.cs.dt.tools.detection.analysis.TableGenerator" -Dexec.args="--db '$database'"
+echo "==============================================="
+echo "TABLE: MINIMIZER TIME"
+echo "==============================================="
+cat timing-table.sql | sqlite3 "$database" | sed -E "s/\|/ \& /g" | sed -E '$s/([A-Za-z0-9.]+)/\\textbf{\1}/g' | sed -e 's/$/ \\\\/'
 

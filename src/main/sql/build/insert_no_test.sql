@@ -1,0 +1,1 @@
+insert into no_test (test_name) values (?)

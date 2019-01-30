@@ -49,6 +49,6 @@ public class CommandCalculator {
     }
 
     public void printDerived(final String name, final String n, final String d, final NumberFormat percentInstance) {
-        System.out.println(tools.command(name, percentInstance.format(div(n, d))));
+        System.out.println(tools.command(name, percentInstance.format(div(n, d)).replace("%", "\\%")));
     }
 }
