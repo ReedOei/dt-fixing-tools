@@ -3,7 +3,7 @@
 The scripts in this directory are used to run the pipeline and subsequently generate the database.
 The main script to run the pipeline is `create_and_run_dockers.sh`, and can be run as follows:
 
-```
+```bash
 bash create_and_run_dockers.sh <path to csv> <round num> <timeout (seconds)>
 ```
 
@@ -11,8 +11,18 @@ where `<path to csv>` is a csv file containing lines of `github url,sha`.
 
 To generate the database, you can run:
 
-```
+```bash
 bash build-database.sh <output dir> <database path> <path to subject csv>
+```
+
+To generate the commands given an already built database, run:
+```bash
+bash generate-commands.sh <database>
+```
+
+To generate the tables given an already built database, run:
+```bash
+bash generate-tables.sh <database>
 ```
 
 The `<path to subject csv>` should be the path to the `csv` file used above.
@@ -34,17 +44,55 @@ The following tables and views contain information about the subjects in our exp
 - `subject`: Subjects for which we have results, containing the name (base project name + hyphenated module path) and slug. The subject *name* is a unique identifier for each module.
 - `subject_info`: The name and number of test methods for each subject.
 - `module_test_time`: Contains how long each module's tests took to run (not including time from Maven).
-- `original_order`: The order that Surefire ran the tests in. Has a column to indicate order, with each record representing a single test.
+- `original_order`: The order that Surefire ran the tests in. Has a column to indicate order, with each record representing a single test, as well as the name of the class name and package containing the test method.
+- `num_rounds`: The number of rounds of each type ran for each subject.
+- `subject_with_od`: A unique list of subjects (modules) that have at least one dependent tests.
 
-The following tables contain data that has been gathered and processed to be easier to query. These tables will be the most frequently used.
+The following tables contain data from the detector that has been gathered and processed to be easier to query. These tables will be the most frequently used.
 - `flaky_test_classification`: The full list of flaky tests found, including which subject they come from and what type of flaky test they are.
 - `flaky_test_failures`: The number of failures for each flaky test for each detector. Also has the number of rounds that test ran in for that detector.
 - `flaky_test_counts`: The number of flaky tests of each kind for each subject.
 - `detection_round_failures`: The number of failures for each flaky test type.
-- `num_rounds`: The number of rounds of each type ran for each subject.
 - `confirmation_effectiveness`: How often each confirmation round type confirmed the flaky test as the flaky type we found at the end of the experiment. For example, if a test was found to be order dependent (that is, to pass in the passing order and fail in the failing order) in 1 run, but was found to be non-order-dependent in 2 other runs, it would be recorded as being confirmed twice, out of a total of 3 runs (because it was found to be non-order-dependent).
 - `confirmation_by_test`: The number of times each test both passed in the passing order and failed in the failing order over all confirmation steps.
 - `confirmation_runs`: The results of confirming each test. Contains the test name, as well the expected and revealed results for both the passing and failing order.
+
+The followng tables contain miscellaneous information:
+- `operation_time`: Represents the amount of time that a computation takes. Has start time/end time (in milliseconds by `System.currentTimeMillis()`), and elapsed time (in seconds)
+
+The following tables and views contain data related to the minimization of dependencies:
+- `od_classification`: The master table containing the classification of dependent tests. The tests are this list are dependent tests (as far we can tell), so use this whenever you want to refer to **all** dependent tests to protect against duplicates/non-order dependent tests having results.
+- `all_no_test`: A list of all tests found to be non-order dependent.
+- `polluter_data`: Each minimized dependency has polluter data. **This also refers to setters**. Exists to allow matching minimize test results to dependencies. Represents a single dependency group.
+- `dependency`: The actual test names in the polluter or setter group, with the order indicated by `order_index`.
+- `minimize_test_result`: Represents a minimization of an entire test order for a specific dependent test (`test_name`). Includes the time, the expected run's id, and the subject.
+- `cleaner_data`: Represents a collection of all cleaner groups for a given dependency group. Contains the amount of time that **minimization** took, but **NOT** the whole time to find cleaners.
+- `cleaner_group`: A single cleaner group for a given dependency group/dependent test.
+- `cleaner_test`: The actual method names in the cleaner group, with the order given by the `order_index`.
+- `minimized_tests`: A unique list of subject names/test names that were minimized.
+- `polluter_data_count`: The number of dependencies found that cause the test to pass, and cause the test to fail. Exactly one of these numbers should be greater than 0, anything else most likely indicates a non-order dependent test.
+- `dependency_info`: Information about dependencies, how many dependent tests per dependency group for a given test/subject/test order that was minimized.
+- `cleaner_info`: Information about cleaners, how many cleaner tests per cleaner group for a given test/subject/test order that was minimized.
+- `tests_with_cleaner`: The tests that have a cleaner, and the maximum number of tests in a cleaner group.
+- `tests_with_setter`: The tests that have a setter, and the maximum number of tests in a setter group.
+- `tests_with_polluter`: The tests that have a polluter, and the maximum number of tests in a polluter group.
+- `dependency_groups`: The dependency groups, by subject/test name, containing each test combined into a single field, separated by commas, as well as the number of dependencies.
+- `cleaner_Groups`: Same as above (`dependency_groups`), but for cleaners.
+
+The following tables and views contain data related to debugging/automatically fixing dependent tests:
+- `static_field_info`: Information about which test/test order/mode the static field info is for.
+- `static_field_info_field`: The field the information is about.
+- `polluted_field`: A field whose value was different between the two runs: the field/test name and the values with and without the dependencies.
+- `rewrite_target`: A field that was attempted to be rewritten, as well as the id of the result.
+- `rewrite_result`: The result of rewriting a field (`actual_result` is the result after rewriting, `expected_result` is the result without rewriting).
+- `polluter_diagnosis`: Represents the diagnosis of a single polluter group.
+- `diagnosis_result`: The diagnosis for a dependent test in some order (every polluter/setter group).
+- `field_diff`: A part of some field whose xml representation differents with/without dependencies: includes the xpath to the field and the differing values at that location.
+- `test_patch`: Information about a patch generated, including whether it was successful. **NOTE**: There may be more than one patch per test, not all of which succeeded.
+- `fixed_tests`: A complete list of tests that had at least one successful patch. Ues this when you want to refer to fixed tests, don't generate one yourself. If you want **not** fixed tests, left join this table and filter for null.
+- `fixable_tests`: The tests that *could* be fixed (not necessarily *have been* fixed). That is, all tests with a cleaner or a setter.
+- `diagnosis_info`: A summary of the diagnosis for a given subject/test/polluter, containing the number of fields found to change the result.
+- `diagnosed_tests`: Unique list of test names number of tests where we found more than one field.
 
 The following tables and views contain mostly unprocessed information about the flaky tests found and the detection rounds themselves, and generally don't need to be used.
 - `flaky_test`: Each row represents a failure in some detection round. Contains identifiers for the intended (passing) and revealed (failing) test runs, as well as the test name.
