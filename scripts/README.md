@@ -133,6 +133,15 @@ Missing files are caused by errors in the module, modules timing out, or incompa
 
 - `original-order`: The original order, as run by surefire. One test method per line.
 - `error`: The error that caused the run to stop, if any. Generally a stack trace + an exception message.
+- `minimized/<TEST_NAME>-<ORDER_HASH>-<TEST_RESULT>-dependencies.json`: Each file represents the minimization of a single test order for a single tests, containing dependnecies as well as cleaners.
+- `fixer/<TEST_NAME>.patch[.<N>]`: There is one file for each polluter or setter tried, representing the results of trying to fix this polluter/setter.
+- `diagnosis/<TEST_NAME>-<ORDER_HASH>-<TEST_RESULT>.json`: Each field represents trying to diagnose (find fields that, when reset, cause the test to pass/fail) a single order for a single test.
+- `static-field-info-<TYPE>/<TEST_NAME>-<ORDER_HASH>`: The fields accessed by a test when run with the static field tracer in some mode.
+- `pollution-diffs/<FIELD_NAME>-<ORDER_HASH>`: For each field found to be polluter for the victim/brittle test in some order, the in-depth diff (that is, deeper than just the static root) for that field.
+- `pollution-data/`: The raw pollution data, that is, values for each field with and without dependncies, and a summary for each test showing the diff:
+    - `<TEST_NAME>-<ORDER_HASH>-<TEST_RESULT>-with-deps`: The values of the fields for the depnednet test when run **with** dependencies.
+    - `<TEST_NAME>-<ORDER_HASH>-<TEST_RESULT>-without-deps`: The values of the fields for the depnednet test when run **with** dependencies.
+    - `<TEST_NAME>-<TEST_RESULT>.xml`: The diffs in the values found above (inlcudes when a field appears in one file but is missing in the other).
 - `test-runs/output`: The actual output, to stdout and stderr, of each test run. The filename is a unique identifier that occurs in many places through the dataset.
 - `test-runs/results`: The results of running the tests, including the order of tests, as well as the result, time, and stack trace (if applicable) for each test in the order.
 - `detection-results/flaky-lists.json`: The list of dependent test methods as found by the detector run last in our experiment. Includes two orders+results for each tests, an intended (passing) order, and a revealed (failing) order. This is only a convenient summary, and may be generated from the `round<N>.json` files.
