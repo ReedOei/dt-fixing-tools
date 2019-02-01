@@ -45,6 +45,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -68,6 +71,8 @@ public class CleanerFixerPlugin extends TestPlugin {
     private InstrumentingSmartRunner runner;
 
     private List<Patch> patches;
+
+    private URLClassLoader projectClassLoader;
 
     // Don't delete. Need a default constructor for TestPlugin
     public CleanerFixerPlugin() {
@@ -93,6 +98,18 @@ public class CleanerFixerPlugin extends TestPlugin {
         final ErrorLogger logger = new ErrorLogger(project);
 
         this.patches = new ArrayList<>();
+
+        // Get the project classpath, it will be useful for many things
+        List<URL> urlList = new ArrayList();
+        for (String cp : this.classpath.split(":")) {
+            try {
+                urlList.add(new File(cp).toURL());
+            } catch (MalformedURLException mue) {
+                TestPluginPlugin.error("Classpath element " + cp + " is malformed!");
+            }
+        }
+        URL[] urls = urlList.toArray(new URL[urlList.size()]);
+        this.projectClassLoader = URLClassLoader.newInstance(urls);
 
         System.out.println("DIAGNOSER_MODULE_COORDINATES: " + logger.coordinates());
 
