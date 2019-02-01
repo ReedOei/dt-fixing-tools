@@ -99,23 +99,23 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         this.patches = new ArrayList<>();
 
-        // Get the project classpath, it will be useful for many things
-        List<URL> urlList = new ArrayList();
-        for (String cp : this.classpath.split(":")) {
-            try {
-                urlList.add(new File(cp).toURL());
-            } catch (MalformedURLException mue) {
-                TestPluginPlugin.error("Classpath element " + cp + " is malformed!");
-            }
-        }
-        URL[] urls = urlList.toArray(new URL[urlList.size()]);
-        this.projectClassLoader = URLClassLoader.newInstance(urls);
-
         System.out.println("DIAGNOSER_MODULE_COORDINATES: " + logger.coordinates());
 
         logger.runAndLogError(() -> {
             logger.writeSubjectProperties();
             this.classpath = classpath();
+
+            // Get the project classpath, it will be useful for many things
+            List<URL> urlList = new ArrayList();
+            for (String cp : this.classpath.split(":")) {
+                try {
+                    urlList.add(new File(cp).toURL());
+                } catch (MalformedURLException mue) {
+                    TestPluginPlugin.error("Classpath element " + cp + " is malformed!");
+                }
+            }
+            URL[] urls = urlList.toArray(new URL[urlList.size()]);
+            this.projectClassLoader = URLClassLoader.newInstance(urls);
 
             if (runnerOption.isDefined()) {
                 this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
