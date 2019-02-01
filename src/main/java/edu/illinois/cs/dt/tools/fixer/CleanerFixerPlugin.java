@@ -261,10 +261,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
 
         for (PolluterData polluterData : polluterDataOrder) {
-            System.out.println(polluterData.deps());
-        }
-
-        for (PolluterData polluterData : polluterDataOrder) {
             // Apply fix using specific passed in polluter data
             setupAndApplyFix(minimized, polluterData, testFiles, prepend);
         }
@@ -496,14 +492,34 @@ public class CleanerFixerPlugin extends TestPlugin {
         return deltaDebug(failingOrder, methodToModify, cleanerStmts, n * 2, prepend);
     }
 
-    private NodeList<Statement> getCodeFromAnnotatedMethod(final JavaFile javaFile, final String annotation) {
+    private NodeList<Statement> getCodeFromAnnotatedMethod(final String testClassName, final JavaFile javaFile, final String annotation) throws Exception {
         NodeList<Statement> stmts = NodeList.nodeList();
+
+        // If the test class is a subclass of JUnit 3's TestCase, then there is no annotation, just handle setUp and tearDown
+        Class testClass = this.projectClassLoader.loadClass(testClassName);
+        List<String> superClassNames = new ArrayList<>();
+        Class currClass = testClass.getSuperclass();
+        while (currClass != null) {
+            superClassNames.add(currClass.toString());
+            currClass = currClass.getSuperclass();
+        }
+        if (superClassNames.contains("class junit.framework.TestCase")) {
+            if (annotation.equals("@org.junit.Before")) {
+                stmts.add(new ExpressionStmt(new MethodCallExpr(null, "setUp")));
+            } else if (annotation.equals("@org.junit.After")) {
+                stmts.add(new ExpressionStmt(new MethodCallExpr(null, "tearDown")));
+            }
+            return stmts;
+        }
+
         for (MethodDeclaration method : javaFile.findMethodsWithAnnotation(annotation)) {
             Optional<BlockStmt> body = method.getBody();
             if (body.isPresent()) {
                 stmts.addAll(body.get().getStatements());
             }
         }
+        */
+
         return stmts;
     }
 
