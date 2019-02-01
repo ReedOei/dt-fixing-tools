@@ -2,12 +2,19 @@ package edu.illinois.cs.dt.tools.fixer;
 
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.CatchClause;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
@@ -577,6 +584,20 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         boolean isSameTestClass = cleanerMethod.getClassName().equals(methodToModify.getClassName());
 
+        // If the cleaner method is annotated such that it is expected to fail, then wrap in try catch
+        boolean expected = false;
+        for (AnnotationExpr annotExpr : cleanerMethod.method().getAnnotations()) {
+            if (annotExpr instanceof NormalAnnotationExpr) {
+                NormalAnnotationExpr normalAnnotExpr = (NormalAnnotationExpr) annotExpr;
+                for (MemberValuePair memberValuePair : normalAnnotExpr.getPairs()) {
+                    if (memberValuePair.getName().equals("expected")) {
+                        expected = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         // Do our fix using all cleaner code, which includes setup and teardown
         TestPluginPlugin.info("Applying code from cleaner and recompiling.");
         final NodeList<Statement> cleanerStmts = NodeList.nodeList();
@@ -587,8 +608,14 @@ public class CleanerFixerPlugin extends TestPlugin {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
+        if (expected) {
+            cleanerStmts.addAll(cleanerMethod.body().getStatements());
+        } else {
+            // Wrap the body inside a big try statement to suppress any exceptions
+            ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
+            CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
+            cleanerStmts.add(new TryStmt(new BlockStmt(cleanerMethod.body().getStatements()), NodeList.nodeList(), new BlockStmt()));
         }
-        cleanerStmts.addAll(cleanerMethod.body().getStatements());
         // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
         if (!isSameTestClass) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
