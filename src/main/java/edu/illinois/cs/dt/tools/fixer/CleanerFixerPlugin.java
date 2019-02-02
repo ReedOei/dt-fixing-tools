@@ -45,6 +45,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -495,15 +497,17 @@ public class CleanerFixerPlugin extends TestPlugin {
     private NodeList<Statement> getCodeFromAnnotatedMethod(final String testClassName, final JavaFile javaFile, final String annotation) throws Exception {
         NodeList<Statement> stmts = NodeList.nodeList();
 
-        // If the test class is a subclass of JUnit 3's TestCase, then there is no annotation, just handle setUp and tearDown
+        // Determine super classes, to be used for later looking up helper methods
         Class testClass = this.projectClassLoader.loadClass(testClassName);
-        List<String> superClassNames = new ArrayList<>();
-        Class currClass = testClass.getSuperclass();
+        List<Class> superClasses = new ArrayList<>();
+        Class currClass = testClass;
         while (currClass != null) {
-            superClassNames.add(currClass.toString());
+            superClasses.add(currClass);
             currClass = currClass.getSuperclass();
         }
-        if (superClassNames.contains("class junit.framework.TestCase")) {
+
+        // If the test class is a subclass of JUnit 3's TestCase, then there is no annotation, just handle setUp and tearDown
+        if (superClasses.contains(junit.framework.TestCase.class)) {
             if (annotation.equals("@org.junit.Before")) {
                 stmts.add(new ExpressionStmt(new MethodCallExpr(null, "setUp")));
             } else if (annotation.equals("@org.junit.After")) {
@@ -512,13 +516,51 @@ public class CleanerFixerPlugin extends TestPlugin {
             return stmts;
         }
 
-        for (MethodDeclaration method : javaFile.findMethodsWithAnnotation(annotation)) {
-            Optional<BlockStmt> body = method.getBody();
-            if (body.isPresent()) {
-                stmts.addAll(body.get().getStatements());
+        // Iterate through super classes going "upwards", starting with this test class, to get annotated methods
+        // If already seen a method of the same name, then it is overriden, so do not include
+        List<String> annotatedMethods = new ArrayList<>();
+        List<String> annotatedMethodsLocal = new ArrayList<>();
+        for (Class clazz : superClasses) {
+            for (Method meth : clazz.getDeclaredMethods()) {
+                for (Annotation anno : meth.getDeclaredAnnotations()) {
+                    if (anno.toString().equals(annotation + "()")) {
+                        if (!annotatedMethods.contains(meth.getName())) {
+                            annotatedMethods.add(meth.getName());
+                        }
+                        if (clazz.equals(testClass)) {
+                            annotatedMethodsLocal.add(meth.getName());
+                        }
+                    }
+                }
             }
         }
-        */
+        annotatedMethods.removeAll(annotatedMethodsLocal);
+
+        // For Before, go last super class first, then inline the statements in test class
+        if (annotation.equals("@org.junit.Before")) {
+            for (int i = annotatedMethods.size() - 1; i >= 0; i--) {
+                stmts.add(new ExpressionStmt(new MethodCallExpr(null, annotatedMethods.get(i))));
+            }
+            for (String methName : annotatedMethodsLocal) {
+                MethodDeclaration method = javaFile.findMethodDeclaration(testClassName + "." + methName);
+                Optional<BlockStmt> body = method.getBody();
+                if (body.isPresent()) {
+                    stmts.addAll(body.get().getStatements());
+                }
+            }
+        } else {
+            // For After, inline the statements in test class, then go first super class first
+            for (String methName : annotatedMethodsLocal) {
+                MethodDeclaration method = javaFile.findMethodDeclaration(testClassName + "." + methName);
+                Optional<BlockStmt> body = method.getBody();
+                if (body.isPresent()) {
+                    stmts.addAll(body.get().getStatements());
+                }
+            }
+            for (int i = 0; i < annotatedMethods.size() ; i++) {
+                stmts.add(new ExpressionStmt(new MethodCallExpr(null, annotatedMethods.get(i))));
+            }
+        }
 
         return stmts;
     }
@@ -568,13 +610,10 @@ public class CleanerFixerPlugin extends TestPlugin {
         methodToModify.javaFile().writeAndReloadCompilationUnit();
 
         String helperName = cleanerMethod.getClassName() + ".cleanerHelper";
-        //MethodDeclaration helperMethodDecl = cleanerMethod.javaFile().addMethod(helperName);
         cleanerMethod = JavaMethod.find(cleanerMethod.methodName(), testSources(), classpath).get();    // Reload, just in case
         cleanerMethod.javaFile().addMethod(helperName);
         cleanerMethod.javaFile().writeAndReloadCompilationUnit();
         JavaMethod helperMethod = JavaMethod.find(helperName, testSources(), classpath).get();
-        //JavaMethod helperMethod = new JavaMethod(helperName, cleanerMethod.javaFile(), helperMethodDecl);
-        //helperMethodDecl.setBody(new BlockStmt());
         helperMethod.javaFile().writeAndReloadCompilationUnit();
 
         methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
@@ -637,24 +676,21 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
         // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
         if (!isSameTestClass) {
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@BeforeClass"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@Before"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.Before"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.Before"));
+        }
         if (expected) {
             cleanerStmts.addAll(cleanerMethod.body().getStatements());
         } else {
             // Wrap the body inside a big try statement to suppress any exceptions
             ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
             CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
-            cleanerStmts.add(new TryStmt(new BlockStmt(cleanerMethod.body().getStatements()), NodeList.nodeList(), new BlockStmt()));
+            cleanerStmts.add(new TryStmt(new BlockStmt(cleanerMethod.body().getStatements()), NodeList.nodeList(catchClause), new BlockStmt()));
         }
         // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
         if (!isSameTestClass) {
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@After"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.After"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@AfterClass"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.javaFile(), "@org.junit.AfterClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.After"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.AfterClass"));
         }
 
         // Get the helper method reference
