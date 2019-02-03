@@ -1,0 +1,7 @@
+io.elasticjob.lite.event.rdb.JobEventRdbSearchTest.assertFindJobStatusTraceEventsWithTime
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testGetTrashRoot
+org.apache.hadoop.lib.service.hadoop.TestFileSystemAccessService.createFileSystem
+org.apache.hadoop.lib.servlet.TestServerWebApp.getHomeDir
+org.apache.hadoop.test.TestHFSTestCase.testHadoopFileSystem
+org.apache.hadoop.yarn.server.timeline.TestLogInfo.testMatchesGroupId
+org.apache.hadoop.yarn.server.timeline.TestLogInfo.testParseDomain
