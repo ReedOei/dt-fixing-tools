@@ -703,7 +703,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.Before"));
         }
-        if (expected) {
+        if (!expected) {
             cleanerStmts.addAll(cleanerMethod.body().getStatements());
         } else {
             // Wrap the body inside a big try statement to suppress any exceptions
