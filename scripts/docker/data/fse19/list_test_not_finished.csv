@@ -10,5 +10,4 @@ apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testOpenOffsetLe
 apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testPerms
 apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testRenameSnapshot
 apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testXAttrs
-apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServerNoACLs.testWithNoAcls
 apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServerNoXAttrs.testWithXAttrs
