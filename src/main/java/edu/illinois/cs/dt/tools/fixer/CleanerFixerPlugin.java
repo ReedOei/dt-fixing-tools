@@ -195,7 +195,6 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         TestPluginPlugin.info("Beginning to fix dependent test " + minimized.dependentTest());
 
-        // TODO: Handle the case where there are multiple polluting/cleaning groups
         List<PolluterData> polluterDataOrder = new ArrayList<PolluterData>();
         boolean prepend;
 
@@ -383,8 +382,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                 TestPluginPlugin.error("Tried looking in: " + testFiles);
                 continue;
             }
-            // TODO: applyFix should take in a location for where to output the Java file that contains the
-            //       "fixed" code or an option to directly replace the existing test source file.
             TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " to make " + victimMethodOpt.get().methodName() + " pass.");
             boolean fixSuccess = applyFix(failingOrder, fullFailingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
             // A successful patch means we do not need to try all the remaining cleaners for this ordering
@@ -445,7 +442,6 @@ public class CleanerFixerPlugin extends TestPlugin {
             }
             return false;
         }
-        // TODO: Output to result files rather than stdout
         boolean passInFailingOrder = testOrderPasses(failingOrder);
 
         // Reset the change
@@ -872,7 +868,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.getProperties().setProperty("dependency-check.skip", "true");
         request.getProperties().setProperty("enforcer.skip", "true");
 
-        // TODO: Log the output from the maven process somewhere
         ByteArrayOutputStream baosOutput = new ByteArrayOutputStream();
         PrintStream outputStream = new PrintStream(baosOutput);
         request.setOutputHandler(new PrintStreamHandler(outputStream, true));
