@@ -757,6 +757,17 @@ public class CleanerFixerPlugin extends TestPlugin {
             return finalCleanerStmts;
         });
 
+        BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
+
+        // Check that the results are valid
+        if (!checkCleanerStmts(failingOrder, finalHelperMethod, minimalCleanerStmts, prepend, false)) {
+            TestPluginPlugin.info("Final minimal is not actually working!");
+            restore(methodToModify.javaFile());
+            restore(finalHelperMethod.javaFile());
+            runMvnInstall(false);
+            writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL");
+        }
+
         // Try to inline these statements into the method
         restore(methodToModify.javaFile());
         methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
@@ -772,7 +783,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         } else {
             startingLine = methodToModify.endLine() - 1;    // Shift one, patch starts before end of method
         }
-        BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
         String status = inlineSuccessful ? "INLINE SUCCESSFUL" : "INLINE FAIL";
         Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), status);
 
