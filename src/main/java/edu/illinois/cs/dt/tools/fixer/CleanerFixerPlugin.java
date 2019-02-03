@@ -525,13 +525,15 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
 
         // If the test class is a subclass of JUnit 3's TestCase, then there is no annotation, just handle setUp and tearDown
-        if (superClasses.contains(junit.framework.TestCase.class)) {
-            if (annotation.equals("@org.junit.Before")) {
-                stmts.add(new ExpressionStmt(new MethodCallExpr(null, "setUp")));
-            } else if (annotation.equals("@org.junit.After")) {
-                stmts.add(new ExpressionStmt(new MethodCallExpr(null, "tearDown")));
+        for (Class clz : superClasses) {
+            if (clz.toString().equals("class junit.framework.TestCase")) {
+                if (annotation.equals("@org.junit.Before")) {
+                    stmts.add(new ExpressionStmt(new MethodCallExpr(null, "setUp")));
+                } else if (annotation.equals("@org.junit.After")) {
+                    stmts.add(new ExpressionStmt(new MethodCallExpr(null, "tearDown")));
+                }
+                return stmts;
             }
-            return stmts;
         }
 
         // Iterate through super classes going "upwards", starting with this test class, to get annotated methods
