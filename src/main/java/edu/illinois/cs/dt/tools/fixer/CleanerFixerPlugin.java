@@ -646,6 +646,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
     // Returns if applying the fix was successful or not
     private boolean applyFix(final List<String> failingOrder,
+                          final List<String> fullFailingOrder,
                           final JavaMethod polluterMethod,
                           final JavaMethod cleanerMethod,
                           final JavaMethod victimMethod,
