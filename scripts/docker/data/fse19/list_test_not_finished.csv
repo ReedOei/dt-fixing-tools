@@ -1,0 +1,14 @@
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.instrumentation
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testCreateFileWithUnmaskedPermissions
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testCreateSnapshotNoSnapshotName
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testDelegationTokenOperations
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testDeleteSnapshot
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testFileAcls
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testGetSnapshotDiff
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testMkdirWithUnmaskedPermissions
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testOpenOffsetLength
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testPerms
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testRenameSnapshot
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServer.testXAttrs
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServerNoACLs.testWithNoAcls
+apache.hadoop=org.apache.hadoop.fs.http.server.TestHttpFSServerNoXAttrs.testWithXAttrs
