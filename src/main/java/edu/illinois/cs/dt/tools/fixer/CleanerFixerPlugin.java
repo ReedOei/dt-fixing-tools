@@ -24,6 +24,7 @@ import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.DetectorPlugin;
+import edu.illinois.cs.dt.tools.minimizer.FlakyClass;
 import edu.illinois.cs.dt.tools.minimizer.MinimizeTestsResult;
 import edu.illinois.cs.dt.tools.minimizer.MinimizerPlugin;
 import edu.illinois.cs.dt.tools.minimizer.PolluterData;
@@ -177,6 +178,12 @@ public class CleanerFixerPlugin extends TestPlugin {
     }
 
     private void setupAndApplyFix(final MinimizeTestsResult minimized) throws Exception {
+        // Check that the minimized is not some NOD, in which case we do not proceed
+        if (minimized.flakyClass() == FlakyClass.NOD) {
+            TestPluginPlugin.info("Will not patch discovered NOD test " + minimized.dependentTest());
+            return;
+        }
+
         // Get all test source files
         final List<Path> testFiles = testSources();
 

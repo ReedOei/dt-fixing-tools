@@ -26,6 +26,7 @@ public class MinimizeTestsResult {
     private final String dependentTest;
     private final List<PolluterData> polluters;
     private final String hash;
+    private final FlakyClass flakyClass;    // The classification of this one's dependent test can be "OD" or "NOD" (if reruns found it to be not order-dependent)
 
     public static MinimizeTestsResult fromPath(final Path path) throws IOException {
         return fromString(FileUtil.readFile(path));
@@ -36,21 +37,26 @@ public class MinimizeTestsResult {
     }
 
     public MinimizeTestsResult(final OperationTime time, final TestRunResult expectedRun, final Result expected,
-                               final String dependentTest, final List<PolluterData> polluters) {
+                               final String dependentTest, final List<PolluterData> polluters, final FlakyClass flakyClass) {
         this.time = time;
         this.expectedRun = expectedRun;
         this.expected = expected;
         this.dependentTest = dependentTest;
         this.polluters = polluters;
-        hash = MD5.hashOrder(expectedRun.testOrder());
+        this.hash = MD5.hashOrder(expectedRun.testOrder());
+        this.flakyClass = flakyClass;
     }
 
     public OperationTime time() {
-        return time;
+        return this.time;
     }
 
     public String hash() {
-        return hash;
+        return this.hash;
+    }
+
+    public FlakyClass flakyClass() {
+        return this.flakyClass;
     }
 
     private boolean isExpected(final Runner runner, final List<String> deps) {
@@ -100,6 +106,9 @@ public class MinimizeTestsResult {
             }
         }
         polluters.removeAll(pollutersToRemove);
+        if (pollutersToRemove.size() > 0) { // Extreme measures, if there are polluters that were found to not work, then say whole test is NOD
+            return false;
+        }
 
         return true;
     }

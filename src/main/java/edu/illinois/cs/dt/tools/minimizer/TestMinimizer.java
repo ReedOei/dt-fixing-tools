@@ -25,15 +25,15 @@ import java.util.Collections;
 import java.util.List;
 
 public class TestMinimizer extends FileCache<MinimizeTestsResult> {
-    private final List<String> testOrder;
-    private final String dependentTest;
-    private final Result expected;
-    private final Result isolationResult;
-    private final InstrumentingSmartRunner runner;
+    protected final List<String> testOrder;
+    protected final String dependentTest;
+    protected final Result expected;
+    protected final Result isolationResult;
+    protected final InstrumentingSmartRunner runner;
 
-    private final Path path;
+    protected final Path path;
 
-    private TestRunResult expectedRun;
+    protected TestRunResult expectedRun;
 
     private void debug(final String str) {
         TestPluginPlugin.mojo().getLog().debug(str);
@@ -118,11 +118,15 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             return polluters;
         }, (polluters, time) -> {
             final MinimizeTestsResult minimizedResult =
-                    new MinimizeTestsResult(time, expectedRun, expected, dependentTest, polluters);
+                    new MinimizeTestsResult(time, expectedRun, expected, dependentTest, polluters, FlakyClass.OD);
 
-            minimizedResult.verify(runner);
-
-            return minimizedResult;
+            // If the verifying does not work, then mark this test as NOD
+            boolean verifyStatus = minimizedResult.verify(runner);
+            if (verifyStatus) {
+                return minimizedResult;
+            } else {
+                return new MinimizeTestsResult(time, expectedRun, expected, dependentTest, polluters, FlakyClass.NOD);
+            }
         });
     }
 

@@ -25,18 +25,22 @@ public class TestMinimizerBuilder {
     }
 
     public TestMinimizerBuilder testOrder(final List<String> testOrder) {
-        return new TestMinimizerBuilder(testOrder, dependentTest, runner);
+        return new TestMinimizerBuilder(testOrder, this.dependentTest, this.runner);
     }
 
     public TestMinimizerBuilder dependentTest(final String dependentTest) {
-        return new TestMinimizerBuilder(testOrder, dependentTest, runner);
+        return new TestMinimizerBuilder(this.testOrder, dependentTest, this.runner);
     }
 
     public TestMinimizerBuilder runner(final InstrumentingSmartRunner runner) {
-        return new TestMinimizerBuilder(testOrder, dependentTest, runner);
+        return new TestMinimizerBuilder(this.testOrder, this.dependentTest, runner);
     }
 
     public TestMinimizer build() {
-        return new TestMinimizer(testOrder, runner, dependentTest);
+        return new TestMinimizer(this.testOrder, this.runner, this.dependentTest);
+    }
+
+    public TestMinimizer buildNOD() {
+        return new NODTestMinimizer(this.testOrder, this.runner, this.dependentTest);
     }
 }

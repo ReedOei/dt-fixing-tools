@@ -48,7 +48,7 @@ public class DependentTest {
 
         if (VERIFY_DTS) {
             if (!intended.verify(name, runner, null) || !revealed.verify(name, runner, null)) {
-                return Stream.empty();
+            return Stream.of(minimizerBuilder.buildNOD());
             }
         }
 
@@ -60,7 +60,7 @@ public class DependentTest {
             // If ever get different result, then not confident in result, return
             if (!rerunIsolationResult.equals(isolationResult)) {
                 System.out.println("Test " + name + " does not have consistent result in isolation, not order-dependent!");
-                return Stream.empty();
+                return Stream.of(minimizerBuilder.buildNOD());
             }
         }
 
