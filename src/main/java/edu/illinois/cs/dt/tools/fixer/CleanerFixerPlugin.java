@@ -283,6 +283,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         String polluterTestName;
         Optional<JavaMethod> polluterMethodOpt;
         List<String> failingOrder;
+        List<String> fullFailingOrder;
 
         List<String> cleanerTestNames = new ArrayList<>();  // Can potentially work with many cleaners, try them all
 
@@ -315,6 +316,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                     cleanerTestNames.add(cleanerGroup.cleanerTests().get(0));   // TODO: Handle cleaner group with more than one test
                 }
             }
+            fullFailingOrder = minimized.expectedRun().testOrder(); // Also grab the full failing order from the expected run's test order
 
 
         } else {
@@ -329,8 +331,9 @@ public class CleanerFixerPlugin extends TestPlugin {
 
             cleanerTestNames.add(polluterData.deps().get(0));   // Assume only one, get first...
 
-            // Failing order should be just the dependent test by itself
+            // Failing order should be just the dependent test by itself (as is the full failing order (for now))
             failingOrder = Collections.singletonList(minimized.dependentTest());
+            fullFailingOrder = failingOrder;
         }
 
         if (polluterTestName != null && !polluterMethodOpt.isPresent()) {
@@ -383,7 +386,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             // TODO: applyFix should take in a location for where to output the Java file that contains the
             //       "fixed" code or an option to directly replace the existing test source file.
             TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " to make " + victimMethodOpt.get().methodName() + " pass.");
-            boolean fixSuccess = applyFix(failingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
+            boolean fixSuccess = applyFix(failingOrder, fullFailingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
             // A successful patch means we do not need to try all the remaining cleaners for this ordering
             if (fixSuccess) {
                 return;
@@ -768,6 +771,16 @@ public class CleanerFixerPlugin extends TestPlugin {
             restore(finalHelperMethod.javaFile());
             runMvnInstall(false);
             writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL");
+            return false;
+        }
+        // Also check against the full failing order
+        if (!checkCleanerStmts(fullFailingOrder, finalHelperMethod, minimalCleanerStmts, prepend, false)) {
+            TestPluginPlugin.info("Final minimal is not actually working for the full failing order!");
+            restore(methodToModify.javaFile());
+            restore(finalHelperMethod.javaFile());
+            runMvnInstall(false);
+            writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL FOR FULL");
+            return false;
         }
 
         // Try to inline these statements into the method
