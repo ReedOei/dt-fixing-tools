@@ -7,6 +7,7 @@ import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
+import edu.illinois.cs.dt.tools.utility.TimeManager;
 
 public class CleanerGroup {
     private static final int VERIFY_COUNT = Configuration.config().getProperty("dt.diagnosis.cleaners.verify_count", 1);
@@ -15,7 +16,7 @@ public class CleanerGroup {
     private final int originalSize;
     private final ListEx<String> cleanerTests;
     private final int orderFound; // order # this cleaner group was found; used to identify the first cleaner group found
-    private OperationTime time;
+    private TimeManager time;
 
 
     public CleanerGroup(final String dependentTest, final int originalSize, final ListEx<String> cleanerTests,
@@ -32,7 +33,7 @@ public class CleanerGroup {
 
     public boolean confirm(final InstrumentingSmartRunner runner,
                            final ListEx<String> deps,
-                           final Result expected, final Result isolationResult, final OperationTime findFilterCandidateTime) throws Exception {
+                           final Result expected, final Result isolationResult, final TimeManager findFilterCandidateTime) throws Exception {
 
         return OperationTime.runOperation(() -> {
 
@@ -63,8 +64,7 @@ public class CleanerGroup {
 
             return true;
         }, (confirmResult, confirmTime) -> {
-            this.time = confirmTime.addTime(this.time);
-            this.time = findFilterCandidateTime.addTime(this.time);
+            this.time = findFilterCandidateTime.manageTime(confirmTime);
             return confirmResult;
         });
     }
@@ -81,7 +81,7 @@ public class CleanerGroup {
         return !res.equals(desiredRes);
     }
 
-    public OperationTime time() {
+    public TimeManager time() {
         return time;
     }
 

@@ -34,6 +34,7 @@ import edu.illinois.cs.dt.tools.runner.data.DependentTest;
 import edu.illinois.cs.dt.tools.runner.data.DependentTestList;
 import edu.illinois.cs.dt.tools.runner.data.TestResult;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
+import edu.illinois.cs.dt.tools.utility.TimeManager;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.FileInputStream;
@@ -678,7 +679,7 @@ public class Analysis extends StandardMain {
                     .param(polluterDataId)
                     .param(cleanerData.isolationResult().toString())
                     .param(cleanerData.expected().toString())
-                    .param(insertOperationTime(cleanerData.time()))
+                    .param(insertTimeManager(cleanerData.time()))
                     .insertSingleRow();
 
         for (final CleanerGroup cleanerGroup : cleanerData.cleaners()) {
@@ -707,6 +708,13 @@ public class Analysis extends StandardMain {
         }
 
         return id;
+    }
+
+    private int insertTimeManager(final TimeManager time) throws SQLException {
+        return sqlite.statement(SQLStatements.INSERT_TIME_MANAGER)
+                .param(insertOperationTime(time.addTime()))
+                .param(insertOperationTime(time.totalTime()))
+                .insertSingleRow();
     }
 
     private int insertOperationTime(final OperationTime time) throws SQLException {

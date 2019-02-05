@@ -35,6 +35,7 @@ public class SQLStatements {
     public static final Path INSERT_POLLUTER_DATA = Paths.get("src/main/sql/build/polluter_data_insert.sql");
 
     public static final Path INSERT_OPERATION_TIME = Paths.get("src/main/sql/build/operation_time_insert.sql");
+    public static final Path INSERT_TIME_MANAGER = Paths.get("src/main/sql/build/time_manager_insert.sql");
 
     public static final Path INSERT_STATIC_FIELD_INFO = Paths.get("src/main/sql/build/static_field_info_insert.sql");
     public static final Path INSERT_STATIC_FIELD_INFO_FIELD = Paths.get("src/main/sql/build/static_field_info_field_insert.sql");

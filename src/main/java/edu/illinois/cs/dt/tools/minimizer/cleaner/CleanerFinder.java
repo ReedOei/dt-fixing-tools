@@ -10,6 +10,7 @@ import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 import edu.illinois.cs.dt.tools.utility.TestRunParser;
+import edu.illinois.cs.dt.tools.utility.TimeManager;
 import org.codehaus.plexus.util.StringUtils;
 import scala.util.Try;
 
@@ -69,7 +70,7 @@ public class CleanerFinder {
         }
     }
 
-    private CleanerData makeCleanerData(final Map<ListEx<String>,OperationTime> cleanerGroupsMap) throws Exception {
+    private CleanerData makeCleanerData(final Map<ListEx<String>, TimeManager> cleanerGroupsMap) throws Exception {
         ListEx<ListEx<String>> cleanerGroups = new ListEx<>();
         cleanerGroups.addAll(cleanerGroupsMap.keySet());
         ListEx<CleanerGroup> minimizedCleanerGroups = cleanerGroups
@@ -82,19 +83,19 @@ public class CleanerFinder {
         return cleanerData;
     }
 
-    private Map<ListEx<String>, OperationTime> findCleanerGroups(final ListEx<String> originalOrder) throws Exception {
-        final OperationTime[] timeToFindCandidates = new OperationTime[1];
+    private Map<ListEx<String>, TimeManager> findCleanerGroups(final ListEx<String> originalOrder) throws Exception {
+        final TimeManager[] timeToFindCandidates = new TimeManager[1];
 
         final ListEx<ListEx<String>> candidates =
                 OperationTime.runOperation(() ->
                    new ListEx<>(cleanerCandidates(originalOrder)).distinct(),
                        (candidateList, time) -> {
-                        timeToFindCandidates[0] = time;
+                        timeToFindCandidates[0] = new TimeManager(time, time);
                         return candidateList;
                 });
         TestPluginPlugin.info("Found " + candidates.size() + " cleaner group candidates.");
 
-        final Map<ListEx<String>, OperationTime> cleanerGroups = filterCleanerGroups(candidates, timeToFindCandidates[0]);
+        final Map<ListEx<String>, TimeManager> cleanerGroups = filterCleanerGroups(candidates, timeToFindCandidates[0]);
         TestPluginPlugin.info("Found " + cleanerGroups.size() + " cleaner groups.");
 
         return cleanerGroups;
@@ -114,18 +115,18 @@ public class CleanerFinder {
         return cleanerData;
     }
 
-    private Map<ListEx<String>, OperationTime> filterCleanerGroups(final ListEx<ListEx<String>> candidates,
-                                                                   final OperationTime findCandidateTime) throws Exception {
-        final Map<ListEx<String>, OperationTime> result = new LinkedHashMap<>();
+    private Map<ListEx<String>, TimeManager> filterCleanerGroups(final ListEx<ListEx<String>> candidates,
+                                                                   final TimeManager findCandidateTime) throws Exception {
+        final Map<ListEx<String>, TimeManager> result = new LinkedHashMap<>();
 
         for (int i = 0; i < candidates.size(); i++) {
             final ListEx<String> candidate = candidates.get(i);
             System.out.printf("\rTrying group %d of %d (found %d so far)", i, candidates.size(), result.size());
 
-            OperationTime[] time = new OperationTime[1];
+            TimeManager[] time = new TimeManager[1];
             boolean isCleanerGroup =
                     OperationTime.runOperation(() -> isCleanerGroup(candidate), (cleanGroupResult, checkTime) -> {
-                        time[0] = findCandidateTime.addTime(checkTime);
+                        time[0] = findCandidateTime.manageTime(checkTime);
                         return cleanGroupResult;
                     }
             );
