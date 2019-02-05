@@ -32,7 +32,7 @@ public class CleanerGroup {
 
     public boolean confirm(final InstrumentingSmartRunner runner,
                            final ListEx<String> deps,
-                           final Result expected, final Result isolationResult, final OperationTime time) throws Exception {
+                           final Result expected, final Result isolationResult, final OperationTime findFilterCandidateTime) throws Exception {
 
         return OperationTime.runOperation(() -> {
 
@@ -63,8 +63,8 @@ public class CleanerGroup {
 
             return true;
         }, (confirmResult, confirmTime) -> {
-            this.time = confirmTime.mergeTime(this.time);
-            this.time = time.mergeTime(this.time);
+            this.time = confirmTime.addTime(this.time);
+            this.time = findFilterCandidateTime.addTime(this.time);
             return confirmResult;
         });
     }

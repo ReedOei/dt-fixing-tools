@@ -123,15 +123,14 @@ public class CleanerFinder {
             System.out.printf("\rTrying group %d of %d (found %d so far)", i, candidates.size(), result.size());
 
             OperationTime[] time = new OperationTime[1];
-            boolean isCleanerGroup = OperationTime.runOperation(() -> {
-                                                                    return isCleanerGroup(candidate);
-                                                                }, (cleanGroupResult, checkTime) -> {
-                                                                    time[0] = findCandidateTime.mergeTime(checkTime);
-                                                                    return cleanGroupResult;
-                                                                }
+            boolean isCleanerGroup =
+                    OperationTime.runOperation(() -> isCleanerGroup(candidate), (cleanGroupResult, checkTime) -> {
+                        time[0] = findCandidateTime.addTime(checkTime);
+                        return cleanGroupResult;
+                    }
             );
 
-            if (isCleanerGroup(candidate)) {
+            if (isCleanerGroup) {
                 result.put(candidate, time[0]);
             }
         }

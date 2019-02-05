@@ -4,8 +4,6 @@ import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.testrunner.data.results.Result;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 
-import java.util.List;
-
 public class CleanerData {
     private final String dependentTest;
     private final OperationTime time;
@@ -25,7 +23,7 @@ public class CleanerData {
             this.time = new OperationTime(0,0);
         } else {
             this.time = cleaners.first().get().time();
-            cleaners.stream().map(cleaner -> this.time.mergeTime(cleaner.time()));
+            cleaners.stream().map(cleaner -> this.time.addTime(cleaner.time()));
         }
     }
 
