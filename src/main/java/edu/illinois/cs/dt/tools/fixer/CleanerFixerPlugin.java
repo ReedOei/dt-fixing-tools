@@ -903,6 +903,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.getProperties().setProperty("dependency-check.skip", "true");
         request.getProperties().setProperty("enforcer.skip", "true");
         request.getProperties().setProperty("checkstyle.skip", "true");
+        request.getProperties().setProperty("maven.javadoc.skip", "true");
 
         ByteArrayOutputStream baosOutput = new ByteArrayOutputStream();
         PrintStream outputStream = new PrintStream(baosOutput);
