@@ -22,6 +22,10 @@ public class CleanerPathManager extends PathManager {
         return path(FIXER.resolve(relative));
     }
 
+    public static Path fixer(final String dependentTest) {
+        return fixer(Paths.get(dependentTest));
+    }
+
     public static Path backupPath(final Path path) {
         if (path.getParent() == null) {
             return Paths.get(path.getFileName().toString() + BACKUP_EXTENSION);

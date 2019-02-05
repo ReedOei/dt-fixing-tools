@@ -131,10 +131,21 @@ public class CleanerFixerPlugin extends TestPlugin {
                 // First apply the results from passing orders, fix brittles first
                 detect()
                         .filter(minimized -> minimized.expected().equals(Result.PASS))
-                        .collect(Collectors.toList())
                         .forEach(minimized -> {
                             try {
-                                setupAndApplyFix(minimized);
+                                FixerResult fixerResult = OperationTime.runOperation(() -> {
+                                    return setupAndApplyFix(minimized);
+                                }, (patchResults, time) -> {
+                                    // Determine overall status by looking through result of each patch result
+                                    FixStatus overallStatus = FixStatus.NOD;    // Start with "lowest" enum, gets overriden by better fixes
+                                    for (PatchResult res : patchResults) {
+                                        if (res.status().ordinal() > overallStatus.ordinal()) {
+                                            overallStatus = res.status();
+                                        }
+                                    }
+                                    return new FixerResult(time, overallStatus, minimized.dependentTest(), patchResults);
+                                });
+                                fixerResult.save();
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 throw new RuntimeException(e);
@@ -145,7 +156,19 @@ public class CleanerFixerPlugin extends TestPlugin {
                         .filter(minimized -> !minimized.expected().equals(Result.PASS))
                         .forEach(minimized -> {
                             try {
-                                setupAndApplyFix(minimized);
+                                FixerResult fixerResult = OperationTime.runOperation(() -> {
+                                    return setupAndApplyFix(minimized);
+                                }, (patchResults, time) -> {
+                                    // Determine overall status by looking through result of each patch result
+                                    FixStatus overallStatus = FixStatus.NOD;    // Start with "lowest" enum, gets overriden by better fixes
+                                    for (PatchResult res : patchResults) {
+                                        if (res.status().ordinal() > overallStatus.ordinal()) {
+                                            overallStatus = res.status();
+                                        }
+                                    }
+                                    return new FixerResult(time, overallStatus, minimized.dependentTest(), patchResults);
+                                });
+                                fixerResult.save();
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 throw new RuntimeException(e);
@@ -177,11 +200,14 @@ public class CleanerFixerPlugin extends TestPlugin {
         return test1.substring(0, test1.lastIndexOf('.')).equals(test2.substring(0, test2.lastIndexOf('.')));
     }
 
-    private void setupAndApplyFix(final MinimizeTestsResult minimized) throws Exception {
+    private List<PatchResult> setupAndApplyFix(final MinimizeTestsResult minimized) throws Exception {
+        List<PatchResult> patchResults = new ArrayList<>();
+
         // Check that the minimized is not some NOD, in which case we do not proceed
         if (minimized.flakyClass() == FlakyClass.NOD) {
             TestPluginPlugin.info("Will not patch discovered NOD test " + minimized.dependentTest());
-            return;
+            patchResults.add(new PatchResult(FixStatus.NOD, minimized.dependentTest(), null));
+            return patchResults;
         }
 
         // Get all test source files
@@ -190,7 +216,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         // All minimized orders passed in should have some polluters before (or setters in the case of the order passing)
         if (minimized.polluters().isEmpty()) {
             TestPluginPlugin.error("No polluters for: " + minimized.dependentTest());
-            return;
+            patchResults.add(new PatchResult(FixStatus.NODEPS, minimized.dependentTest(), null));
+            return patchResults;
         }
 
         TestPluginPlugin.info("Beginning to fix dependent test " + minimized.dependentTest());
@@ -271,14 +298,17 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         for (PolluterData polluterData : polluterDataOrder) {
             // Apply fix using specific passed in polluter data
-            setupAndApplyFix(minimized, polluterData, testFiles, prepend);
+            patchResults.addAll(setupAndApplyFix(minimized, polluterData, testFiles, prepend));
         }
+        return patchResults;
     }
 
-    private void setupAndApplyFix(final MinimizeTestsResult minimized,
-                                  final PolluterData polluterData,
-                                  final List<Path> testFiles,
-                                  boolean prepend) throws Exception {
+    private List<PatchResult> setupAndApplyFix(final MinimizeTestsResult minimized,
+                                               final PolluterData polluterData,
+                                               final List<Path> testFiles,
+                                               boolean prepend) throws Exception {
+        List<PatchResult> patchResults = new ArrayList<>();
+
         String polluterTestName;
         Optional<JavaMethod> polluterMethodOpt;
         List<String> failingOrder;
@@ -299,14 +329,16 @@ public class CleanerFixerPlugin extends TestPlugin {
 
             if (polluterData.cleanerData().cleaners().isEmpty()) {
                 TestPluginPlugin.info("Found polluters for " + victimTestName + " but no cleaners.");
-                TestPluginPlugin.info("Trying prior patches to see if now is fixed.");
+                /*TestPluginPlugin.info("Trying prior patches to see if now is fixed.");
                 if (applyPatchesAndRun(failingOrder, victimMethodOpt.get(), polluterMethodOpt.get())) {
                     TestPluginPlugin.info("Dependent test " + victimTestName + " can pass with patches from before.");
                 } else {
                     TestPluginPlugin.info("Prior patches do not allow " + victimTestName + " to pass.");
                     writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), 0, "NO CLEANERS");
-                }
-                return;
+                }*/
+                Path patch = writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), 0, "NO CLEANERS");
+                patchResults.add(new PatchResult(FixStatus.NOCLEANER, victimTestName, patch.toString()));
+                return patchResults;
             }
 
             for (CleanerGroup cleanerGroup : polluterData.cleanerData().cleaners()) {
@@ -320,10 +352,11 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         } else {
             // "Cleaner" when result is passing is the "polluting" test(s)
-            // TODO: Handler group of setters with more than one test
+            // TODO: Handle group of setters with more than one test
             if (polluterData.deps().size() > 1) {
                 TestPluginPlugin.error("There is more than one setter test (currently unsupported)");
-                return;
+                patchResults.add(new PatchResult(FixStatus.UNSUPPORTED, victimTestName, null));
+                return patchResults;
             }
             polluterTestName = null;    // No polluter if minimized order is passing
             polluterMethodOpt = Optional.ofNullable(null);
@@ -338,36 +371,32 @@ public class CleanerFixerPlugin extends TestPlugin {
         if (polluterTestName != null && !polluterMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find polluter method " + polluterTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
-            return;
+            patchResults.add(new PatchResult(FixStatus.MISSINGMETHOD, victimTestName, null));
+            return patchResults;
         }
 
         if (!victimMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find victim method " + victimTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
-            return;
+            patchResults.add(new PatchResult(FixStatus.MISSINGMETHOD, victimTestName, null));
+            return patchResults;
         }
 
         // Give up if cannot find valid cleaner (single test that makes the order pass)
         if (cleanerTestNames.isEmpty()) {
             TestPluginPlugin.error("Could not get a valid cleaner for " + victimTestName);
-            return;
+            patchResults.add(new PatchResult(FixStatus.NOCLEANER, victimTestName, null));
+            return patchResults;
         }
 
         // Check if we pass in isolation before fix
         TestPluginPlugin.info("Running victim test with polluter before adding code from cleaner.");
-        final List<Double> elapsedTime = new ArrayList<>();
-        boolean failingOrderPasses = OperationTime.runOperation(() -> {
-            return testOrderPasses(failingOrder);
-        }, (passes, time) -> {
-            elapsedTime.add(time.elapsedSeconds());
-            return passes;
-        });
-        if (failingOrderPasses) {
+        if (testOrderPasses(failingOrder)) {
             TestPluginPlugin.error("Failing order doesn't fail.");
-            writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), elapsedTime.get(0), "NOT FAILING ORDER");
-            return;
+            Path patch = writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), 0, "NOT FAILING ORDER");
+            patchResults.add(new PatchResult(FixStatus.NOTFAILING, victimTestName, patch.toString()));
+            return patchResults;
         }
-        elapsedTime.clear();
 
         // Try to apply fix with all cleaners, but if one of them works, then we are good
         for (String cleanerTestName : cleanerTestNames) {
@@ -383,17 +412,19 @@ public class CleanerFixerPlugin extends TestPlugin {
                 continue;
             }
             TestPluginPlugin.info("Applying code from " + cleanerMethodOpt.get().methodName() + " to make " + victimMethodOpt.get().methodName() + " pass.");
-            boolean fixSuccess = applyFix(failingOrder, fullFailingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
+            PatchResult patchResult = applyFix(failingOrder, fullFailingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
+            patchResults.add(patchResult);
             // A successful patch means we do not need to try all the remaining cleaners for this ordering
-            if (fixSuccess) {
-                return;
-            } else {
+            if (patchResult.status() == FixStatus.FIXINLINE || patchResult.status() == FixStatus.FIXNOINLINE) {
+                return patchResults;
+            }/*else {
                 // Otherwise, report that this cleaner somehow did not work with the test
                 writePatch(victimMethodOpt.get(), 0, null, 0, null, cleanerMethodOpt.get(), polluterMethodOpt.orElse(null), 0, "CLEANER DOES NOT WORK");
-            }
+            }*/
         }
         // If reached here, then no cleaner helped fix this dependent test, so report as such
         TestPluginPlugin.info("No cleaner could help make " + victimMethodOpt.get().methodName() + " pass!");
+        return patchResults;
     }
 
     private List<Path> testSources() throws IOException {
@@ -440,6 +471,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             } else {
                 methodToModify.removeLastBlock();
             }
+            methodToModify.javaFile().writeAndReloadCompilationUnit();
             return false;
         }
         boolean passInFailingOrder = testOrderPasses(failingOrder);
@@ -450,6 +482,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         } else {
             methodToModify.removeLastBlock();
         }
+        methodToModify.javaFile().writeAndReloadCompilationUnit();
 
         return passInFailingOrder;
 
@@ -641,19 +674,19 @@ public class CleanerFixerPlugin extends TestPlugin {
     }
 
     // Returns if applying the fix was successful or not
-    private boolean applyFix(final List<String> failingOrder,
-                          final List<String> fullFailingOrder,
-                          final JavaMethod polluterMethod,
-                          final JavaMethod cleanerMethod,
-                          final JavaMethod victimMethod,
-                          boolean prepend) throws Exception {
+    private PatchResult applyFix(final List<String> failingOrder,
+                                 final List<String> fullFailingOrder,
+                                 final JavaMethod polluterMethod,
+                                 final JavaMethod cleanerMethod,
+                                 final JavaMethod victimMethod,
+                                 boolean prepend) throws Exception {
         // If failing order still failing, apply all the patches from before first to see if already fixed
-        if (!patches.isEmpty()) {
+        /*if (!patches.isEmpty()) {
             boolean passWithPatch = applyPatchesAndRun(failingOrder, victimMethod, polluterMethod);
             if (passWithPatch) {
                 return true;
             }
-        }
+        }*/
 
         // If polluter/victim case, check if cleaner is same test class as polluter, so append to polluter
         // Method to modify is based on this decision
@@ -737,13 +770,13 @@ public class CleanerFixerPlugin extends TestPlugin {
                 helperMethod = addHelperMethod(cleanerMethod, methodToModify, sameTestClass(cleanerMethod.methodName(), methodToModify.methodName()), prepend);
                 if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
                     TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
-                    writePatch(victimMethod, 0, null, 0, null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
+                    Path patch = writePatch(victimMethod, 0, null, 0, null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
                     restore(methodToModify.javaFile());
                     restore(helperMethod.javaFile());
-                    return false;
+                    return new PatchResult(FixStatus.CLEANERFAIL, victimMethod.methodName(), patch.toString());
                 }
             } else {
-                return false;
+                return new PatchResult(FixStatus.CLEANERFAIL, victimMethod.methodName(), null);
             }
         }
 
@@ -767,18 +800,19 @@ public class CleanerFixerPlugin extends TestPlugin {
             restore(methodToModify.javaFile());
             restore(finalHelperMethod.javaFile());
             runMvnInstall(false);
-            writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL");
-            return false;
+            Path patch = writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL");
+            return new PatchResult(FixStatus.FIXINVALID, victimMethod.methodName(), patch.toString());
         }
         // Also check against the full failing order
-        if (!checkCleanerStmts(fullFailingOrder, finalHelperMethod, minimalCleanerStmts, prepend, false)) {
+        // TODO: Commenting out for now since other tests may be failing in this full failing order that we do not care about yet
+        /*if (!checkCleanerStmts(fullFailingOrder, finalHelperMethod, minimalCleanerStmts, prepend, false)) {
             TestPluginPlugin.info("Final minimal is not actually working for the full failing order!");
             restore(methodToModify.javaFile());
             restore(finalHelperMethod.javaFile());
             runMvnInstall(false);
-            writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL FOR FULL");
-            return false;
-        }
+            Path patch = writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL FOR FULL");
+            return new PatchResult(FixStatus.FIXINVALID, victimMethod.methodName(), patch.toString());
+        }*/
 
         // Try to inline these statements into the method
         restore(methodToModify.javaFile());
@@ -809,7 +843,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Final compile to get state to right place
         runMvnInstall(false);
 
-        return true;
+        FixStatus fixStatus = inlineSuccessful ? FixStatus.FIXINLINE : FixStatus.FIXNOINLINE;
+        return new PatchResult(fixStatus, victimMethod.methodName(), patchFile.toString());
     }
 
     // Helper method to create a patch file adding in the passed in block
