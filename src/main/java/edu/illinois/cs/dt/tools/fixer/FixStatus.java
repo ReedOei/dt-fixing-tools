@@ -2,13 +2,15 @@ package edu.illinois.cs.dt.tools.fixer;
 
 public enum FixStatus {
     NOD,
-    NODEPS,
+    NO_DEPS,
     UNSUPPORTED,
-    MISSINGMETHOD,
-    NOTFAILING,
-    NOCLEANER,
-    CLEANERFAIL,
-    FIXINVALID,
-    FIXINLINE,
-    FIXNOINLINE
+    MISSING_METHOD,
+    NOT_FAILING,
+    NO_CLEANER,
+    CLEANER_FAIL,
+    FIX_INVALID,
+    FIX_INLINE,
+    FIX_INLINE_CANREMOVE,
+    FIX_NO_INLINE,
+    FIX_NO_INLINE_CANREMOVE
 }
