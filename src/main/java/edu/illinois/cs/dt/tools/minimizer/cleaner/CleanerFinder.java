@@ -16,10 +16,10 @@ import scala.util.Try;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.stream.Stream;
 
 public class CleanerFinder {
@@ -116,7 +116,7 @@ public class CleanerFinder {
 
     private Map<ListEx<String>, OperationTime> filterCleanerGroups(final ListEx<ListEx<String>> candidates,
                                                                    final OperationTime findCandidateTime) throws Exception {
-        final Map<ListEx<String>, OperationTime> result = new TreeMap<>();
+        final Map<ListEx<String>, OperationTime> result = new LinkedHashMap<>();
 
         for (int i = 0; i < candidates.size(); i++) {
             final ListEx<String> candidate = candidates.get(i);
