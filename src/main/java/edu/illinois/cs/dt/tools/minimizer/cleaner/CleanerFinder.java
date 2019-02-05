@@ -77,7 +77,7 @@ public class CleanerFinder {
                 .mapWithIndex(this::minimalCleanerGroup)
                 .distinct()
                 .filter(cleanerGroup -> cleanerGroup.confirm(runner, new ListEx<>(deps), expected, isolationResult,
-                                                             cleanerGroupsMap.get(cleanerGroup)));
+                                                             cleanerGroupsMap.get(cleanerGroup.cleanerTests())));
         final CleanerData cleanerData = new CleanerData(dependentTest, expected, isolationResult, minimizedCleanerGroups);
         TestPluginPlugin.info(dependentTest + " has " + cleanerData.cleaners().size() + " cleaners: " + cleanerData.cleaners());
         return cleanerData;
