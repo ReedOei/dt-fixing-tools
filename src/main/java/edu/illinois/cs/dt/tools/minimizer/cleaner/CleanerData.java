@@ -13,14 +13,20 @@ public class CleanerData {
     private final Result isolationResult;
     private final ListEx<CleanerGroup> cleaners;
 
-    public CleanerData(final String dependentTest, final OperationTime time,
+    public CleanerData(final String dependentTest,
                        final Result expected, final Result isolationResult,
                        final ListEx<CleanerGroup> cleaners) {
         this.dependentTest = dependentTest;
-        this.time = time;
         this.expected = expected;
         this.isolationResult = isolationResult;
         this.cleaners = cleaners;
+
+        if (this.cleaners.isEmpty()) {
+            this.time = new OperationTime(0,0);
+        } else {
+            this.time = cleaners.first().get().time();
+            cleaners.stream().map(cleaner -> this.time.mergeTime(cleaner.time()));
+        }
     }
 
     public OperationTime time() {

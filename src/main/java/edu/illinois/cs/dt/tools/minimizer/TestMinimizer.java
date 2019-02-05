@@ -107,7 +107,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
                 if (!expected.equals(Result.PASS)) {
                     cleanerData = new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find();
                 } else {
-                    cleanerData = new CleanerData(dependentTest, new OperationTime(0, 0), expected, isolationResult, new ListEx<CleanerGroup>());
+                    cleanerData = new CleanerData(dependentTest, expected, isolationResult, new ListEx<CleanerGroup>());
                 }
 
                 polluters.add(new PolluterData(deps, cleanerData));

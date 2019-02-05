@@ -40,4 +40,12 @@ public class OperationTime {
     public double elapsedSeconds() {
         return elapsedSeconds;
     }
+
+    public OperationTime mergeTime(OperationTime otherTime) {
+        if (otherTime == null)
+            return this;
+        long earliestStart = (startTime < otherTime.startTime) ? startTime : otherTime.startTime;
+        long latestEnd = (endTime < otherTime.endTime) ? otherTime.endTime: endTime;
+        return new OperationTime(earliestStart, latestEnd);
+    }
 }
