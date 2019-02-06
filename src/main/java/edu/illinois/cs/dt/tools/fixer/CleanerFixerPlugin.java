@@ -63,6 +63,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -227,8 +228,8 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // If in a passing order and there are multiple potential setters, then prioritize the one in the same test class as dependent test
         if (minimized.expected().equals(Result.PASS)) {
-            List<PolluterData> pdWithSameTestClass = new ArrayList<>();
-            List<PolluterData> pdWithDiffTestClass = new ArrayList<>();
+            Set<PolluterData> pdWithSameTestClass = new HashSet<>();
+            Set<PolluterData> pdWithDiffTestClass = new HashSet<>();
             for (PolluterData pd : minimized.polluters()) {
                 // Only care about case of one polluter
                 if (pd.deps().size() == 1) {
@@ -247,11 +248,11 @@ public class CleanerFixerPlugin extends TestPlugin {
             prepend = true;
         } else {
             // If case of failing order with polluters, best bet is one that has a cleaner, and in same test class as victim
-            List<PolluterData> pdNoCleaner = new ArrayList<>();
-            List<PolluterData> pdWithCleaner = new ArrayList<>();
-            List<PolluterData> pdWithSingleCleaner = new ArrayList<>();
-            List<PolluterData> pdWithSingleCleanerSameTestClassVictim = new ArrayList<>();
-            List<PolluterData> pdWithSingleCleanerSameTestClassPolluter = new ArrayList<>();
+            Set<PolluterData> pdNoCleaner = new HashSet<>();
+            Set<PolluterData> pdWithCleaner = new HashSet<>();
+            Set<PolluterData> pdWithSingleCleaner = new HashSet<>();
+            Set<PolluterData> pdWithSingleCleanerSameTestClassVictim = new HashSet<>();
+            Set<PolluterData> pdWithSingleCleanerSameTestClassPolluter = new HashSet<>();
             for (PolluterData pd : minimized.polluters()) {
                 // Consider if has a cleaner
                 if (!pd.cleanerData().cleaners().isEmpty()) {
