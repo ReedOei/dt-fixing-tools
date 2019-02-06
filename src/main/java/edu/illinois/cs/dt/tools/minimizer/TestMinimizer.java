@@ -159,13 +159,13 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             otherChunk.addAll(deps.subList(0, i));
             otherChunk.addAll(deps.subList(endpoint, deps.size()));
 
+            // Try to other, complement chunk first, with theory that polluter is close to victim
+            if (this.expected == result(otherChunk)) {
+                return deltaDebug(otherChunk, 2);   // If works, then delta debug some more the complement chunk
+            }
             // Check if running this chunk works
             if (this.expected == result(chunk)) {
                 return deltaDebug(chunk, 2); // If works, then delta debug some more this chunk
-            }
-            // Otherwise, check if applying complement chunk works
-            if (this.expected == result(otherChunk)) {
-                return deltaDebug(otherChunk, 2);   // If works, then delta debug some more the complement chunk
             }
         }
         // If not chunk/complement work, increase granularity and try again
