@@ -87,6 +87,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
             // Keep going as long as there are tests besides dependent test to run
             List<PolluterData> polluters = new ArrayList<>();
+            int index = 0;
             while (!order.isEmpty()) {
                 // First need to check if remaining tests in order still lead to expected value
                 if (result(order) != expected) {
@@ -94,7 +95,14 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
                     break;
                 }
 
-                final List<String> deps = run(new ArrayList<>(order));
+                final OperationTime[] operationTime = new OperationTime[1];
+                final List<String> deps = OperationTime.runOperation(() -> {
+                    return run(new ArrayList<>(order));
+                }, (foundDeps, time) -> {
+                    operationTime[0] = time;
+                    return foundDeps;
+                });
+
                 if (deps.isEmpty()) {
                     info("Did not find any deps");
                     break;
@@ -110,9 +118,10 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
                     cleanerData = new CleanerData(dependentTest, expected, isolationResult, new ListEx<CleanerGroup>());
                 }
 
-                polluters.add(new PolluterData(deps, cleanerData));
+                polluters.add(new PolluterData(operationTime[0], index, deps, cleanerData));
 
                 order.removeAll(deps);  // Look for other deps besides the ones already found
+                index++;
             }
 
             return polluters;
