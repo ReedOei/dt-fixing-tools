@@ -111,6 +111,9 @@ public class SQLStatements {
     public static final Path COUNT_FIXER_RESULTS = Paths.get("src/main/sql/figures/count_fixer_results.sql");
     public static final Path AVERAGE_FIX_SIZE = Paths.get("src/main/sql/figures/average_fix_size.sql");
     public static final Path COUNT_FIXED = Paths.get("src/main/sql/figures/count_fixed.sql");
+    public static final Path COUNT_FIXED_ONLY_PATCHER = Paths.get("src/main/sql/figures/count_tests_fixed_only_patcher.sql");
+    public static final Path COUNT_FIXED_ONLY_PRS = Paths.get("src/main/sql/figures/count_tests_fixed_only_prs.sql");
+    public static final Path COUNT_FIXED_BOTH = Paths.get("src/main/sql/figures/count_tests_fixed_patcher_pr.sql");
     public static final Path COUNT_FIXABLE = Paths.get("src/main/sql/figures/count_fixable.sql");
     public static final Path COUNT_DIAGNOSED_FIELDS = Paths.get("src/main/sql/figures/count_diagnosed_fields.sql");
     public static final Path AVERAGE_DIAGNOSED_FIELDS = Paths.get("src/main/sql/figures/average_diagnosed_fields.sql");
@@ -124,7 +127,15 @@ public class SQLStatements {
     public static final Path COUNT_DIAGNOSED_NON_FIXABLE = Paths.get("src/main/sql/figures/count_diagnosed_non_fixable.sql");
     public static final Path COUNT_DIAGNOSED_UNFIXED = Paths.get("src/main/sql/figures/count_diagnosed_unfixed.sql");
     public static final Path INSERT_NO_TEST = Paths.get("src/main/sql/build/insert_no_test.sql");
+    public static final Path INSERT_INCOMPATIBLE_TESTS = Paths.get("src/main/sql/build/insert_incompatible_tests.sql");
+    public static final Path INSERT_SEPARATE_JVM_TESTS = Paths.get("src/main/sql/build/insert_separate_jvm_tests.sql");
+    public static final Path INSERT_UNFINISHED_TESTS = Paths.get("src/main/sql/build/insert_unfinished_tests.sql");
+    public static final Path INSERT_PR_TESTS = Paths.get("src/main/sql/build/insert_pr_tests.sql");
+    public static final Path COUNT_INCOMPATIBLE_TESTS = Paths.get("src/main/sql/figures/count_incompatible_tests.sql");
+    public static final Path COUNT_SEPARATE_JVM_TESTS = Paths.get("src/main/sql/figures/count_separate_jvm_tests.sql");
+    public static final Path COUNT_UNFINISHED_TESTS = Paths.get("src/main/sql/figures/count_unfinished_tests.sql");
     public static final Path COUNT_NO_TEST = Paths.get("src/main/sql/figures/count_no_test.sql");
+    public static final Path COUNT_PR_TESTS = Paths.get("src/main/sql/figures/count_pr_tests.sql");
     public static final Path COUNT_MODULE_WITH_OD = Paths.get("src/main/sql/figures/count_module_with_od.sql");
     public static final Path COUNT_PROJECT_WITH_OD = Paths.get("src/main/sql/figures/count_project_with_od.sql");
     public static final Path MIN_FIX_SIZE = Paths.get("src/main/sql/figures/min_fix_size.sql");
@@ -169,12 +180,25 @@ public class SQLStatements {
         ensureExists(COUNT_DEPENDENCY_GROUP_SIZE);
         ensureExists(AVERAGE_DEP_GROUP_SIZE);
         ensureExists(INSERT_NO_TEST);
+        ensureExists(INSERT_PR_TESTS);
+        ensureExists(INSERT_INCOMPATIBLE_TESTS);
+        ensureExists(INSERT_SEPARATE_JVM_TESTS);
+        ensureExists(INSERT_UNFINISHED_TESTS);
         ensureExists(COUNT_DIAGNOSED_FIELDS_NUM);
         ensureExists(COUNT_DIAGNOSED_NON_FIXABLE);
         ensureExists(COUNT_DIAGNOSED_UNFIXED);
         ensureExists(COUNT_NO_TEST);
+        ensureExists(COUNT_PR_TESTS);
+        ensureExists(COUNT_INCOMPATIBLE_TESTS);
+        ensureExists(COUNT_SEPARATE_JVM_TESTS);
+        ensureExists(COUNT_UNFINISHED_TESTS);
         ensureExists(COUNT_MODULE_WITH_OD);
         ensureExists(COUNT_PROJECT_WITH_OD);
+
+        ensureExists(COUNT_FIXED);
+        ensureExists(COUNT_FIXED_ONLY_PATCHER);
+        ensureExists(COUNT_FIXED_ONLY_PRS);
+        ensureExists(COUNT_FIXED_BOTH);
 
         ensureExists(INSERT_RAW_SUBJECT);
 

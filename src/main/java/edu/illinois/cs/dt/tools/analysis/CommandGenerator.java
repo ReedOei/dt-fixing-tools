@@ -52,6 +52,34 @@ public class CommandGenerator extends StandardMain {
                 .count("numNOTest")
                 .finishGroup();
 
+        factory.create(SQLStatements.COUNT_PR_TESTS)
+                .count("numPRTests")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_UNFINISHED_TESTS)
+                .count("numUnfinishedTests")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_INCOMPATIBLE_TESTS)
+                .count("numIncompatibleTests")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_SEPARATE_JVM_TESTS)
+                .count("numSeparateJVMTests")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_FIXED_ONLY_PATCHER)
+                .count("numFixedOnlyPatcher")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_FIXED_ONLY_PRS)
+                .count("numFixedOnlyPRs")
+                .finishGroup();
+
+        factory.create(SQLStatements.COUNT_FIXED_BOTH)
+                .count("numFixedBoth")
+                .finishGroup();
+
         factory.create(SQLStatements.COUNT_MODULE_WITH_OD)
                 .count("numModulesWithOD")
                 .finishGroup();
