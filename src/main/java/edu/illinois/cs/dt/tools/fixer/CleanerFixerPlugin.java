@@ -764,7 +764,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             if (annotExpr instanceof NormalAnnotationExpr) {
                 NormalAnnotationExpr normalAnnotExpr = (NormalAnnotationExpr) annotExpr;
                 for (MemberValuePair memberValuePair : normalAnnotExpr.getPairs()) {
-                    if (memberValuePair.getName().equals("expected")) {
+                    if (memberValuePair.getName().toString().equals("expected")) {
                         expected = true;
                         break;
                     }
