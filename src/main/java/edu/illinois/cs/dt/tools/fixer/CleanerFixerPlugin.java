@@ -79,6 +79,10 @@ public class CleanerFixerPlugin extends TestPlugin {
 
     private URLClassLoader projectClassLoader;
 
+    // Some fields to help with computing time to first cleaner and outputing in log
+    private long startTime;
+    private boolean foundFirst;
+
     // Don't delete. Need a default constructor for TestPlugin
     public CleanerFixerPlugin() {
     }
@@ -129,6 +133,9 @@ public class CleanerFixerPlugin extends TestPlugin {
                     Files.write(DetectorPathManager.originalOrderPath(), DetectorPlugin.getOriginalOrder(project));
                 }
 
+                startTime = System.currentTimeMillis();
+
+                /*
                 // First apply the results from passing orders, fix brittles first
                 detect()
                         .filter(minimized -> minimized.expected().equals(Result.PASS))
@@ -202,6 +209,9 @@ public class CleanerFixerPlugin extends TestPlugin {
     }
 
     private List<PatchResult> setupAndApplyFix(final MinimizeTestsResult minimized) throws Exception {
+        startTime = System.currentTimeMillis();
+        foundFirst = false;
+
         List<PatchResult> patchResults = new ArrayList<>();
 
         // Check that the minimized is not some NOD, in which case we do not proceed
@@ -416,10 +426,13 @@ public class CleanerFixerPlugin extends TestPlugin {
             PatchResult patchResult = applyFix(failingOrder, fullFailingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
             patchResults.add(patchResult);
             // A successful patch means we do not need to try all the remaining cleaners for this ordering
-            /*if (patchResult.status() == FixStatus.FIX_INLINE || patchResult.status() == FixStatus.FIX_INLINE_CANREMOVE
-                || patchResult.status() == FixStatus.FIX_NO_INLINE || patchResult.status() == FixStatus.FIX_NO_INLINE_CANREMOVE) {
-                return patchResults;
-            }*/
+            if (!foundFirst && (patchResult.status() == FixStatus.FIX_INLINE || patchResult.status() == FixStatus.FIX_INLINE_CANREMOVE
+                || patchResult.status() == FixStatus.FIX_NO_INLINE || patchResult.status() == FixStatus.FIX_NO_INLINE_CANREMOVE)) {
+                //return patchResults;
+                double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
+                TestPluginPlugin.info("FIRST PATCH: Found first patch for dependent test " + victimMethodOpt.get().methodName() + " in " + elapsedSeconds + " seconds.");
+                foundFirst = true;
+            }
         }
         // If reached here, then no cleaner helped fix this dependent test, so report as such
         TestPluginPlugin.info("No cleaner could help make " + victimMethodOpt.get().methodName() + " pass!");
