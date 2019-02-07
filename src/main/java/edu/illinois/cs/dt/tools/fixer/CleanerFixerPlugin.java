@@ -60,8 +60,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Properties;
@@ -182,6 +184,37 @@ public class CleanerFixerPlugin extends TestPlugin {
                                 throw new RuntimeException(e);
                             }
                         });
+                */
+                // Iterate through each minimized, collecing such that unique for dependent test, combine polluters
+                Map<String, MinimizeTestsResult> minimizedResults = new HashMap<>();
+                for (MinimizeTestsResult minimized : detect().collect(Collectors.toList())) {
+                    String dependentTest = minimized.dependentTest();
+                    if (!minimizedResults.containsKey(dependentTest)) {
+                        minimizedResults.put(dependentTest, minimized);
+                    }
+                    // Iterate through all the polluters of the current minimized, add in new ones into the existing one
+                    for (PolluterData pd : minimized.polluters()) {
+                        if (!minimizedResults.get(dependentTest).polluters().contains(pd)) {
+                            minimizedResults.get(dependentTest).polluters().add(pd);
+                        }
+                    }
+                }
+                for (String dependentTest : minimizedResults.keySet()) {
+                    MinimizeTestsResult minimized = minimizedResults.get(dependentTest);
+                    FixerResult fixerResult = OperationTime.runOperation(() -> {
+                        return setupAndApplyFix(minimized);
+                    }, (patchResults, time) -> {
+                        // Determine overall status by looking through result of each patch result
+                        FixStatus overallStatus = FixStatus.NOD;    // Start with "lowest" enum, gets overriden by better fixes
+                        for (PatchResult res : patchResults) {
+                            if (res.status().ordinal() > overallStatus.ordinal()) {
+                                overallStatus = res.status();
+                            }
+                        }
+                        return new FixerResult(time, overallStatus, minimized.dependentTest(), patchResults);
+                    });
+                    fixerResult.save();
+                }
             } else {
                 final String errorMsg = "Module is not using a supported test framework (probably not JUnit).";
                 TestPluginPlugin.info(errorMsg);
