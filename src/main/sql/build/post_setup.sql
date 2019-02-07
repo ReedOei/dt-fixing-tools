@@ -146,7 +146,16 @@ select pdc.test_name,
       end as od_type
 from polluter_data_count pdc
 left join no_test n on n.test_name = pdc.test_name
-where n.test_name is null and (passing_count > 0 or failing_count > 0);
+where n.test_name is null and (passing_count > 0 or failing_count > 0)
+and pdc.test_name NOT IN
+    (SELECT test_name
+     FROM incompatible_tests)
+and pdc.test_name NOT IN
+    (SELECT test_name
+     FROM separate_jvm_tests)
+and pdc.test_name NOT IN
+    (SELECT test_name
+     FROM unfinished_tests);
 
 create view all_no_test as
 select distinct test_name

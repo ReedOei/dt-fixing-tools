@@ -30,6 +30,30 @@ create table no_test
   test_name text not null
 );
 
+create table pr_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
+create table unfinished_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
+create table separate_jvm_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
+create table incompatible_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
 create table flaky_test
 (
   id integer primary key,
@@ -222,6 +246,16 @@ create table minimize_test_result
 
   foreign key(operation_time_id) references operation_time(id),
   foreign key(test_name) references original_order(test_name)
+);
+
+create table time_manager
+(
+  id integer primary key,
+  relative_time integer not null,
+  absolute_time integer not null,
+
+  foreign key(absolute_time) references operation_time(id),
+  foreign key(relative_time) references operation_time(id)
 );
 
 create table cleaner_data

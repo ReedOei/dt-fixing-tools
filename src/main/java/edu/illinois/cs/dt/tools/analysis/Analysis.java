@@ -122,6 +122,10 @@ public class Analysis extends StandardMain {
         createTables();
 
         insertNOTests(results.resolve("no-tests"));
+        insertPRTests(results.resolve("pr-tests"));
+        insertIncompatibleTests(results.resolve("incompatible-tests"));
+        insertUnfinishedTests(results.resolve("unfinished-tests"));
+        insertSeparateJVMTests(results.resolve("separate-jvm-tests"));
 
         insertFullSubjectList(subjectList);
         insertSubjectLOC(subjectListLOC);
@@ -149,6 +153,38 @@ public class Analysis extends StandardMain {
     private void insertNOTests(final Path path) throws SQLException, IOException {
         for (final String testName : Files.readAllLines(path)) {
             sqlite.statement(SQLStatements.INSERT_NO_TEST)
+                    .param(testName)
+                    .insertSingleRow();
+        }
+    }
+
+    private void insertPRTests(final Path path) throws SQLException, IOException {
+        for (final String testName : Files.readAllLines(path)) {
+            sqlite.statement(SQLStatements.INSERT_PR_TESTS)
+                    .param(testName)
+                    .insertSingleRow();
+        }
+    }
+
+    private void insertIncompatibleTests(final Path path) throws SQLException, IOException {
+        for (final String testName : Files.readAllLines(path)) {
+            sqlite.statement(SQLStatements.INSERT_INCOMPATIBLE_TESTS)
+                    .param(testName)
+                    .insertSingleRow();
+        }
+    }
+
+    private void insertUnfinishedTests(final Path path) throws SQLException, IOException {
+        for (final String testName : Files.readAllLines(path)) {
+            sqlite.statement(SQLStatements.INSERT_UNFINISHED_TESTS)
+                    .param(testName)
+                    .insertSingleRow();
+        }
+    }
+
+    private void insertSeparateJVMTests(final Path path) throws SQLException, IOException {
+        for (final String testName : Files.readAllLines(path)) {
+            sqlite.statement(SQLStatements.INSERT_SEPARATE_JVM_TESTS)
                     .param(testName)
                     .insertSingleRow();
         }
