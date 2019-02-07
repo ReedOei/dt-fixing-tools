@@ -874,6 +874,14 @@ public class CleanerFixerPlugin extends TestPlugin {
             return new PatchResult(FixStatus.FIX_INVALID, victimMethod.methodName(), patch.toString());
         }*/
 
+        // Try to inline these statements into the method
+        restore(methodToModify.javaFile());
+        methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
+        boolean inlineSuccessful = checkCleanerStmts(failingOrder, methodToModify, minimalCleanerStmts, prepend, false);
+        if (!inlineSuccessful) {
+            TestPluginPlugin.info("Inlining patch into " + methodToModify.methodName() + " still not good enough to run.");
+        }
+
         // Do the check of removing cleaner statements from cleaner itself and see if the cleaner now starts failing
         // TODO: Only applies for polluter+victim scenario for now
         TestPluginPlugin.info("Trying to remove statements from cleaner to see if it becomes order-dependent.");
@@ -882,14 +890,6 @@ public class CleanerFixerPlugin extends TestPlugin {
             TestPluginPlugin.info("Removing cleaner statements does not lead to cleaner becoming order-dependent.");
         } else {
             TestPluginPlugin.info("Removing cleaner statements leads to cleaner becoming order-dependent, these statements might be real reset.");
-        }
-
-        // Try to inline these statements into the method
-        restore(methodToModify.javaFile());
-        methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
-        boolean inlineSuccessful = checkCleanerStmts(failingOrder, methodToModify, minimalCleanerStmts, prepend, false);
-        if (!inlineSuccessful) {
-            TestPluginPlugin.info("Inlining patch into " + methodToModify.methodName() + " still not good enough to run.");
         }
 
         // Write out the changes in the form of a patch
