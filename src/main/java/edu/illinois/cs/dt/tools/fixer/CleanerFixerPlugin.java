@@ -416,12 +416,9 @@ public class CleanerFixerPlugin extends TestPlugin {
             PatchResult patchResult = applyFix(failingOrder, fullFailingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
             patchResults.add(patchResult);
             // A successful patch means we do not need to try all the remaining cleaners for this ordering
-            if (patchResult.status() == FixStatus.FIX_INLINE || patchResult.status() == FixStatus.FIX_INLINE_CANREMOVE
+            /*if (patchResult.status() == FixStatus.FIX_INLINE || patchResult.status() == FixStatus.FIX_INLINE_CANREMOVE
                 || patchResult.status() == FixStatus.FIX_NO_INLINE || patchResult.status() == FixStatus.FIX_NO_INLINE_CANREMOVE) {
                 return patchResults;
-            }/*else {
-                // Otherwise, report that this cleaner somehow did not work with the test
-                writePatch(victimMethodOpt.get(), 0, null, 0, null, cleanerMethodOpt.get(), polluterMethodOpt.orElse(null), 0, "CLEANER DOES NOT WORK");
             }*/
         }
         // If reached here, then no cleaner helped fix this dependent test, so report as such
