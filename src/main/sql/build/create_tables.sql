@@ -30,6 +30,30 @@ create table no_test
   test_name text not null
 );
 
+create table pr_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
+create table unfinished_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
+create table separate_jvm_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
+create table incompatible_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
 create table flaky_test
 (
   id integer primary key,
