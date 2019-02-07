@@ -53,7 +53,7 @@ public class FixerResult {
     }
 
     public void save() {
-        final Path outputPath = CleanerPathManager.fixer(dependentTest());
+        final Path outputPath = CleanerPathManager.fixer(dependentTest() + ".json");
 
         try {
             Files.createDirectories(outputPath.getParent());
