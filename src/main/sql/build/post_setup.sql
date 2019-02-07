@@ -170,7 +170,16 @@ from
 
   select test_name
   from no_test
-) t;
+) t
+and test_name NOT IN
+    (SELECT test_name
+     FROM incompatible_tests)
+and test_name NOT IN
+    (SELECT test_name
+     FROM separate_jvm_tests)
+and test_name NOT IN
+    (SELECT test_name
+     FROM unfinished_tests);
 
 insert into test_patch
 (
