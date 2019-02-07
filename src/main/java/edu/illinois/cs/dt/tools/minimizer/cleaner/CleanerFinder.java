@@ -31,6 +31,9 @@ public class CleanerFinder {
     private final Result isolationResult;
     private final List<String> testOrder;
 
+    // Some fields to help with computing time to first cleaner and outputing in log
+    private long startTime;
+
     public CleanerFinder(final InstrumentingSmartRunner runner,
                          final String dependentTest, final List<String> deps,
                          final Result expected, final Result isolationResult, final List<String> testOrder) {
@@ -66,6 +69,7 @@ public class CleanerFinder {
                     expected, isolationResult, new ListEx<>());
         } else {
             final ListEx<String> originalOrder = new ListEx<>(Files.readAllLines(DetectorPathManager.originalOrderPath()));
+            this.startTime = System.currentTimeMillis();
             return summarizeCleanerGroups(makeCleanerData(findCleanerGroups(originalOrder)));
         }
     }
@@ -133,6 +137,13 @@ public class CleanerFinder {
 
             if (isCleanerGroup) {
                 result.put(candidate, time[0]);
+                double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
+                // If this is the first one, log out the result
+                if (result.size() == 1) {
+                    TestPluginPlugin.info("FIRST CLEANER: Found first cleaner " + candidate + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
+                } else {
+                    TestPluginPlugin.info("CLEANER: Found cleaner " + candidate + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
+                }
             }
         }
 
