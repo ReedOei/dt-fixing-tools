@@ -56,6 +56,10 @@ public class CommandGenerator extends StandardMain {
                 .count("numPRTests")
                 .finishGroup();
 
+        factory.create(SQLStatements.COUNT_FIXED_METHOD_ORDER_TESTS)
+                .count("numFixedMethodOrderTests")
+                .finishGroup();
+
         factory.create(SQLStatements.COUNT_UNFINISHED_TESTS)
                 .count("numUnfinishedTests")
                 .finishGroup();
