@@ -248,6 +248,16 @@ create table minimize_test_result
   foreign key(test_name) references original_order(test_name)
 );
 
+create table time_manager
+(
+  id integer primary key,
+  relative_time integer not null,
+  absolute_time integer not null,
+
+  foreign key(absolute_time) references operation_time(id),
+  foreign key(relative_time) references operation_time(id)
+);
+
 create table cleaner_data
 (
   id integer primary key,

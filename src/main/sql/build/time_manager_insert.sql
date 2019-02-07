@@ -1,7 +1,7 @@
 insert into time_manager
 (
-  elapsed_time,
-  overall_time
+  relative_time,
+  absolute_time
 )
 values
 (
