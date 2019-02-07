@@ -26,6 +26,11 @@ public class TimeManager {
         this.totalTime = totalTime;
     }
 
+    public TimeManager(final TimeManager other) {
+        this.addTime = other.addTime();
+        this.totalTime = other.totalTime();
+    }
+
     public OperationTime addTime() {
         return addTime;
     }

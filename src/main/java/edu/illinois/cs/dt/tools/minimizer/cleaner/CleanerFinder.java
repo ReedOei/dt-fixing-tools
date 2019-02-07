@@ -136,7 +136,7 @@ public class CleanerFinder {
             );
 
             if (isCleanerGroup) {
-                result.put(candidate, time[0]);
+                result.put(candidate, new TimeManager(time[0]));
                 double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
                 // If this is the first one, log out the result
                 if (result.size() == 1) {
