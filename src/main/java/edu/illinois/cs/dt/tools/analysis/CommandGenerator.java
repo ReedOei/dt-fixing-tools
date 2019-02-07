@@ -69,15 +69,15 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_FIXED_ONLY_PATCHER)
-                .count("numFixedOnlyPatcher")
+                .count("numFixedOnlyPatcher", "%", "%")
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_FIXED_ONLY_PRS)
-                .count("numFixedOnlyPRs")
+                .count("numFixedOnlyPRs", "%", "%")
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_FIXED_BOTH)
-                .count("numFixedBoth")
+                .count("numFixedBoth", "%", "%")
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_MODULE_WITH_OD)
