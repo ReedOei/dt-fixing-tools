@@ -7,5 +7,9 @@ left join
   from cleaner_info
   group by test_name
 ) c on c.test_name = ft.test_name
-where odc.od_type like ? and
-      (case when c.id is not null then 'has_cleaner' else 'no_cleaner' end like ?);
+where odc.od_type like ?
+and (case when c.id is not null then 'has_cleaner' else 'no_cleaner' end like ?)
+and ft.test_name NOT IN
+    (SELECT test_name
+     FROM original_order
+     WHERE fix_method_order != 0);

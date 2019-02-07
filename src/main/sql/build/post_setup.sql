@@ -171,7 +171,7 @@ from
   select test_name
   from no_test
 ) t
-and test_name NOT IN
+where test_name NOT IN
     (SELECT test_name
      FROM incompatible_tests)
 and test_name NOT IN
