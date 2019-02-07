@@ -147,13 +147,13 @@ select pdc.test_name,
 from polluter_data_count pdc
 left join no_test n on n.test_name = pdc.test_name
 where n.test_name is null and (passing_count > 0 or failing_count > 0)
-and n.test_name NOT IN
+and pdc.test_name NOT IN
     (SELECT test_name
      FROM incompatible_tests)
-and n.test_name NOT IN
+and pdc.test_name NOT IN
     (SELECT test_name
      FROM separate_jvm_tests)
-and n.test_name NOT IN
+and pdc.test_name NOT IN
     (SELECT test_name
      FROM unfinished_tests);
 
