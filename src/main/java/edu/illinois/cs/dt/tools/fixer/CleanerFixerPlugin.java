@@ -744,11 +744,20 @@ public class CleanerFixerPlugin extends TestPlugin {
         cleanerMethod.method().setBody(new BlockStmt(strippedStatements));
         cleanerMethod.javaFile().writeAndReloadCompilationUnit();
         TestPluginPlugin.info("AWSHI2 STRIPPED: " + strippedStatements);
-        runMvnInstall(false);
+        try {
+            runMvnInstall(false);
+        } catch (Exception ex) {
+            TestPluginPlugin.debug("Error building the code after stripping statements, does not compile");
+            // Restore the state
+            restore(cleanerMethod.javaFile());
+            return false;
+        }
         // First try running in isolation
         List<String> isolationOrder = Collections.singletonList(cleanerMethod.methodName());
         if (!testOrderPasses(isolationOrder)) {
             TestPluginPlugin.info("Running cleaner by itself after removing statements does not pass.");
+            // Restore the state
+            restore(cleanerMethod.javaFile());
             return false;
         }
         // Then try running with the failing order, replacing the last test with this one
@@ -758,6 +767,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         TestPluginPlugin.info("AWSHI2 FAILING ORDER: " + newFailingOrder);
         if (testOrderPasses(newFailingOrder)) {
             TestPluginPlugin.info("Running cleaner in failing order after polluter still passes.");
+            // Restore the state
+            restore(cleanerMethod.javaFile());
             return false;
         }
 
