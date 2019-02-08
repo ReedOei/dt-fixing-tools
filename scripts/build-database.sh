@@ -46,3 +46,4 @@ mvn install -DskipTests exec:java \
 # They should have already all been downloaded above, so we just need to cd and check
 bash "$scripts_folder/update-fix-method-order.sh" "$database" "$subject_list"
 
+cat "$scripts_folder/../src/main/sql/build/update_od_classification.sql" | sqlite3 "$database"

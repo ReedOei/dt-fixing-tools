@@ -137,7 +137,7 @@ left join
 ) failing on failing.test_name = mt.test_name and failing.expected_result <> 'PASS'
 group by mt.subject_name, mt.test_name;
 
-create view od_classification as
+create view od_classification_w_fmo as
 select pdc.test_name,
        pdc.subject_name,
        case
@@ -163,7 +163,7 @@ from
 (
   select mtr.test_name
   from minimize_test_result mtr
-  left join od_classification odc on mtr.test_name = odc.test_name
+  left join od_classification_w_fmo odc on mtr.test_name = odc.test_name
   where odc.test_name is null
 
   union
@@ -200,13 +200,13 @@ select odc.subject_name,
        'UNKNOWN ERROR',
        0,
        -1
-from od_classification odc
+from od_classification_w_fmo odc
 left join test_patch tp on tp.test_name = odc.test_name
 where tp.test_name is null;
 
 create view subject_with_od as
 select distinct subject_name
-from od_classification;
+from od_classification_w_fmo;
 
 create view dependency_info as
 select mtr.subject_name,
@@ -214,7 +214,7 @@ select mtr.subject_name,
        mtr.expected_result,
        pd.id,
        count(d.test_name) as dep_count
-from od_classification odc
+from od_classification_w_fmo odc
 inner join minimize_test_result mtr on mtr.test_name = odc.test_name
 left join polluter_data pd on mtr.id = pd.minimized_id
 left join dependency d on pd.id = d.polluter_data_id
@@ -227,7 +227,7 @@ select mtr.subject_name,
        mtr.expected_result,
        cg.id,
        count(ct.test_name) as cleaner_count
-from od_classification odc
+from od_classification_w_fmo odc
 inner join minimize_test_result mtr on mtr.test_name = odc.test_name
 left join polluter_data pd on mtr.id = pd.minimized_id
 left join cleaner_data cd on cd.polluter_data_id = pd.id
@@ -244,7 +244,7 @@ having total > 0;
 create view tests_with_setter as
 select di.test_name, max(dep_count) as total
 from dependency_info di
-inner join od_classification as odc on di.test_name = odc.test_name
+inner join od_classification_w_fmo as odc on di.test_name = odc.test_name
 where odc.od_type = 'brittle' and di.expected_result = 'PASS'
 group by di.test_name
 having total > 0;
@@ -252,14 +252,14 @@ having total > 0;
 create view tests_with_polluter as
 select di.test_name, max(di.dep_count) as total
 from dependency_info di
-inner join od_classification as odc on di.test_name = odc.test_name
+inner join od_classification_w_fmo as odc on di.test_name = odc.test_name
 where odc.od_type = 'victim' and di.expected_result <> 'PASS'
 group by di.test_name
 having total > 0;
 
 create view fixable_tests as
 select odc.subject_name, odc.test_name, odc.od_type
-from od_classification odc
+from od_classification_w_fmo odc
 left join tests_with_cleaner c on c.test_name = odc.test_name
 left join tests_with_setter s on s.test_name = odc.test_name
 where c.test_name is not null or s.test_name is not null;
@@ -268,7 +268,7 @@ create view diagnosis_info as
 select odc.subject_name, odc.test_name,
        pdi.polluter_data_id as polluter_data_id,
        count(distinct rt.field_name) as fields
-from od_classification odc
+from od_classification_w_fmo odc
 inner join diagnosis_result dr on odc.test_name = dr.test_name
 inner join polluter_diagnosis pdi on pdi.diagnosis_result_id = dr.id
 inner join rewrite_result rr on rr.polluter_diagnosis_id = pdi.id
@@ -278,7 +278,7 @@ group by odc.subject_name, odc.test_name, pdi.polluter_data_id;
 
 create view diagnosed_tests as
 select distinct odc.test_name
-from od_classification odc
+from od_classification_w_fmo odc
 left join
 (
   select test_name, min(fields) as fields
@@ -293,7 +293,7 @@ select pd.id as polluter_data_id,
        mtr.test_name,
        group_concat(d.test_name) as deps,
        count(*) as dep_count
-from od_classification odc
+from od_classification_w_fmo odc
 inner join minimize_test_result mtr on mtr.test_name = odc.test_name
 inner join polluter_data pd on mtr.id = pd.minimized_id
 inner join dependency d on d.polluter_data_id = pd.id
