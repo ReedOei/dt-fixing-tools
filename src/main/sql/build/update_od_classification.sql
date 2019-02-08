@@ -428,5 +428,4 @@ from detection_round dr
 left join flaky_test_list ftl on dr.unfiltered_id = ftl.flaky_test_list_id
 left join flaky_test ft on ftl.flaky_test_id = ft.id
 left join flaky_test_classification ftc on ft.name = ftc.test_name
-group by dr.id, dr.round_type
-
+group by dr.id, dr.round_type;
