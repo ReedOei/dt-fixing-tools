@@ -17,10 +17,12 @@ import scala.util.Try;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class CleanerFinder {
@@ -77,11 +79,19 @@ public class CleanerFinder {
     private CleanerData makeCleanerData(final Map<ListEx<String>, TimeManager> cleanerGroupsMap) throws Exception {
         ListEx<ListEx<String>> cleanerGroups = new ListEx<>();
         cleanerGroups.addAll(cleanerGroupsMap.keySet());
-        ListEx<CleanerGroup> minimizedCleanerGroups = cleanerGroups
-                .mapWithIndex(this::minimalCleanerGroup)
-                .distinct()
-                .filter(cleanerGroup -> cleanerGroup.confirm(runner, new ListEx<>(deps), expected, isolationResult,
-                                                             cleanerGroupsMap.get(cleanerGroup.cleanerTests())));
+        Set<CleanerGroup> seenGroups = new HashSet<>();
+        ListEx<CleanerGroup> minimizedCleanerGroups = new ListEx<>();
+        for (int i = 0; i < cleanerGroups.size(); i++) {
+            ListEx<String> cleanerGroup = cleanerGroups.get(i);
+            CleanerGroup minimizedCleanerGroup = minimalCleanerGroup(i, cleanerGroup);
+            // Skip any group we have already minimized
+            if (seenGroups.contains(minimizedCleanerGroup)) {
+                continue;
+            }
+            if (minimizedCleanerGroup.confirm(runner, new ListEx<>(deps), expected, isolationResult, cleanerGroupsMap.get(cleanerGroup))) {
+                minimizedCleanerGroups.add(minimizedCleanerGroup);
+            }
+        }
         final CleanerData cleanerData = new CleanerData(dependentTest, expected, isolationResult, minimizedCleanerGroups);
         TestPluginPlugin.info(dependentTest + " has " + cleanerData.cleaners().size() + " cleaners: " + cleanerData.cleaners());
         return cleanerData;
