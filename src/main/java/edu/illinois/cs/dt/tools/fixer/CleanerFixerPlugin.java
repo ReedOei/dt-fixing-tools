@@ -362,6 +362,12 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         String victimTestName = minimized.dependentTest();
         Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+        if (!victimMethodOpt.isPresent()) {
+            TestPluginPlugin.error("Could not find victim method " + victimTestName);
+            TestPluginPlugin.error("Tried looking in: " + testFiles);
+            patchResults.add(new PatchResult(FixStatus.MISSING_METHOD, victimTestName, null));
+            return patchResults;
+        }
 
         // If dealing with a case of result with failure, then get standard cleaner logic from it
         if (!minimized.expected().equals(Result.PASS)) {
@@ -414,13 +420,6 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         if (polluterTestName != null && !polluterMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find polluter method " + polluterTestName);
-            TestPluginPlugin.error("Tried looking in: " + testFiles);
-            patchResults.add(new PatchResult(FixStatus.MISSING_METHOD, victimTestName, null));
-            return patchResults;
-        }
-
-        if (!victimMethodOpt.isPresent()) {
-            TestPluginPlugin.error("Could not find victim method " + victimTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
             patchResults.add(new PatchResult(FixStatus.MISSING_METHOD, victimTestName, null));
             return patchResults;
