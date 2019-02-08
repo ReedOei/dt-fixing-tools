@@ -136,6 +136,7 @@ public class SQLStatements {
     public static final Path COUNT_UNFINISHED_TESTS = Paths.get("src/main/sql/figures/count_unfinished_tests.sql");
     public static final Path COUNT_NO_TEST = Paths.get("src/main/sql/figures/count_no_test.sql");
     public static final Path COUNT_PR_TESTS = Paths.get("src/main/sql/figures/count_pr_tests.sql");
+    public static final Path COUNT_FIXED_METHOD_ORDER_TESTS = Paths.get("src/main/sql/figures/count_fixed_method_order.sql");
     public static final Path COUNT_MODULE_WITH_OD = Paths.get("src/main/sql/figures/count_module_with_od.sql");
     public static final Path COUNT_PROJECT_WITH_OD = Paths.get("src/main/sql/figures/count_project_with_od.sql");
     public static final Path MIN_FIX_SIZE = Paths.get("src/main/sql/figures/min_fix_size.sql");
@@ -199,6 +200,7 @@ public class SQLStatements {
         ensureExists(COUNT_FIXED_ONLY_PATCHER);
         ensureExists(COUNT_FIXED_ONLY_PRS);
         ensureExists(COUNT_FIXED_BOTH);
+        ensureExists(COUNT_FIXED_METHOD_ORDER_TESTS);
 
         ensureExists(INSERT_RAW_SUBJECT);
 

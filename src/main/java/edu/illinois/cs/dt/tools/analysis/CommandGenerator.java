@@ -56,6 +56,10 @@ public class CommandGenerator extends StandardMain {
                 .count("numPRTests")
                 .finishGroup();
 
+        factory.create(SQLStatements.COUNT_FIXED_METHOD_ORDER_TESTS)
+                .count("numFixedMethodOrderTests")
+                .finishGroup();
+
         factory.create(SQLStatements.COUNT_UNFINISHED_TESTS)
                 .count("numUnfinishedTests")
                 .finishGroup();
@@ -69,15 +73,15 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_FIXED_ONLY_PATCHER)
-                .count("numFixedOnlyPatcher")
+                .count("numFixedOnlyPatcher", 1, "%", "%")
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_FIXED_ONLY_PRS)
-                .count("numFixedOnlyPRs")
+                .count("numFixedOnlyPRs", 1, "%", "%")
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_FIXED_BOTH)
-                .count("numFixedBoth")
+                .count("numFixedBoth", 1, "%", "%")
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_MODULE_WITH_OD)
