@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CleanerFinder {
@@ -35,6 +36,10 @@ public class CleanerFinder {
 
     // Some fields to help with computing time to first cleaner and outputing in log
     private long startTime;
+
+    // Some fields to help with tracking when it is "desperately" trying all tests
+    private int startingTryingEveryTest = -1;
+    private int startingTryingEveryTestConfirmed = -1;
 
     public CleanerFinder(final InstrumentingSmartRunner runner,
                          final String dependentTest, final List<String> deps,
@@ -91,6 +96,10 @@ public class CleanerFinder {
             seenGroups.add(minimizedCleanerGroup.cleanerTests());
             if (minimizedCleanerGroup.confirm(runner, new ListEx<>(deps), expected, isolationResult, cleanerGroupsMap.get(cleanerGroup))) {
                 minimizedCleanerGroups.add(minimizedCleanerGroup);
+                if (i >= this.startingTryingEveryTestConfirmed) {
+                    double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
+                    TestPluginPlugin.info("DESPERATELY TRYING CLEANERS INDIVIDUALLY: Found such cleaner " + minimizedCleanerGroup + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
+                }
             }
         }
         final CleanerData cleanerData = new CleanerData(dependentTest, expected, isolationResult, minimizedCleanerGroups);
@@ -147,6 +156,10 @@ public class CleanerFinder {
             );
 
             if (isCleanerGroup) {
+                // Recording if in mode trying every test when checking if is cleaner group
+                if (i >= this.startingTryingEveryTest && this.startingTryingEveryTestConfirmed < 0) {
+                    this.startingTryingEveryTestConfirmed = result.size();
+                }
                 result.put(candidate, new TimeManager(time[0]));
                 double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
                 // If this is the first one, log out the result
@@ -284,6 +297,10 @@ public class CleanerFinder {
         if (deps.isEmpty()) {
             return Stream.empty();
         }
+
+        // Get the number of elements done before considering every test as a possible cleaner
+        Stream<ListEx<String>> intermediate = Stream.concat(highLikelihoodCleanerGroups(), Stream.of(possibleCleaners(originalOrder)));
+        this.startingTryingEveryTest = intermediate.collect(Collectors.toList()).size();
 
         return Stream.concat(
                 Stream.concat(highLikelihoodCleanerGroups(), Stream.of(possibleCleaners(originalOrder))),
