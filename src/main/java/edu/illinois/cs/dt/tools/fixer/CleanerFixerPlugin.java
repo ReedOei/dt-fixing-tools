@@ -799,8 +799,8 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
         if (!isSameTestClass) {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.Before"));
         }
+        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.Before"));
         if (!expected) {
             cleanerStmts.addAll(cleanerMethod.body().getStatements());
         } else {
@@ -810,8 +810,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             cleanerStmts.add(new TryStmt(new BlockStmt(cleanerMethod.body().getStatements()), NodeList.nodeList(catchClause), new BlockStmt()));
         }
         // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
+        cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.After"));
         if (!isSameTestClass) {
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.After"));
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.AfterClass"));
         }
 
