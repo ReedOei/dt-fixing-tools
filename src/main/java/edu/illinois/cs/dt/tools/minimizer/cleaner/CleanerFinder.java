@@ -79,15 +79,16 @@ public class CleanerFinder {
     private CleanerData makeCleanerData(final Map<ListEx<String>, TimeManager> cleanerGroupsMap) throws Exception {
         ListEx<ListEx<String>> cleanerGroups = new ListEx<>();
         cleanerGroups.addAll(cleanerGroupsMap.keySet());
-        Set<CleanerGroup> seenGroups = new HashSet<>();
+        Set<ListEx<String>> seenGroups = new HashSet<>();
         ListEx<CleanerGroup> minimizedCleanerGroups = new ListEx<>();
         for (int i = 0; i < cleanerGroups.size(); i++) {
             ListEx<String> cleanerGroup = cleanerGroups.get(i);
             CleanerGroup minimizedCleanerGroup = minimalCleanerGroup(i, cleanerGroup);
             // Skip any group we have already minimized
-            if (seenGroups.contains(minimizedCleanerGroup)) {
+            if (seenGroups.contains(minimizedCleanerGroup.cleanerTests())) {
                 continue;
             }
+            seenGroups.add(minimizedCleanerGroup.cleanerTests());
             if (minimizedCleanerGroup.confirm(runner, new ListEx<>(deps), expected, isolationResult, cleanerGroupsMap.get(cleanerGroup))) {
                 minimizedCleanerGroups.add(minimizedCleanerGroup);
             }
