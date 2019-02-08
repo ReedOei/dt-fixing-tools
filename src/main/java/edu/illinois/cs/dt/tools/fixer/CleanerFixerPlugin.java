@@ -776,6 +776,48 @@ public class CleanerFixerPlugin extends TestPlugin {
         return true;
     }
 
+    // Make the cleaner statements based on the cleaner method and what method needs to be modified in the process
+    private NodeList<Statement> makeCleanerStatements(JavaMethod cleanerMethod, JavaMethod methodToModify) throws Exception {
+        // If the cleaner method is annotated such that it is expected to fail, then wrap in try catch
+        boolean expected = false;
+        for (AnnotationExpr annotExpr : cleanerMethod.method().getAnnotations()) {
+            if (annotExpr instanceof NormalAnnotationExpr) {
+                NormalAnnotationExpr normalAnnotExpr = (NormalAnnotationExpr) annotExpr;
+                for (MemberValuePair memberValuePair : normalAnnotExpr.getPairs()) {
+                    if (memberValuePair.getName().toString().equals("expected")) {
+                        expected = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        boolean isSameTestClass = sameTestClass(cleanerMethod.methodName(), methodToModify.methodName());
+
+        final NodeList<Statement> cleanerStmts = NodeList.nodeList();
+        // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
+        // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
+        if (!isSameTestClass) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.Before"));
+        }
+        if (!expected) {
+            cleanerStmts.addAll(cleanerMethod.body().getStatements());
+        } else {
+            // Wrap the body inside a big try statement to suppress any exceptions
+            ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
+            CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
+            cleanerStmts.add(new TryStmt(new BlockStmt(cleanerMethod.body().getStatements()), NodeList.nodeList(catchClause), new BlockStmt()));
+        }
+        // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
+        if (!isSameTestClass) {
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.After"));
+            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.AfterClass"));
+        }
+
+        return cleanerStmts;
+    }
+
     // Returns if applying the fix was successful or not
     private PatchResult applyFix(final List<String> failingOrder,
                                  final List<String> fullFailingOrder,
@@ -810,44 +852,12 @@ public class CleanerFixerPlugin extends TestPlugin {
         backup(methodToModify.javaFile());
         backup(cleanerMethod.javaFile());
 
-        boolean isSameTestClass = cleanerMethod.getClassName().equals(methodToModify.getClassName());
-
-        // If the cleaner method is annotated such that it is expected to fail, then wrap in try catch
-        boolean expected = false;
-        for (AnnotationExpr annotExpr : cleanerMethod.method().getAnnotations()) {
-            if (annotExpr instanceof NormalAnnotationExpr) {
-                NormalAnnotationExpr normalAnnotExpr = (NormalAnnotationExpr) annotExpr;
-                for (MemberValuePair memberValuePair : normalAnnotExpr.getPairs()) {
-                    if (memberValuePair.getName().toString().equals("expected")) {
-                        expected = true;
-                        break;
-                    }
-                }
-            }
-        }
+        boolean isSameTestClass = sameTestClass(cleanerMethod.methodName(), methodToModify.methodName());
 
         // Do our fix using all cleaner code, which includes setup and teardown
         TestPluginPlugin.info("Applying code from cleaner and recompiling.");
         final NodeList<Statement> cleanerStmts = NodeList.nodeList();
-        // Note: consider both standard imported version (e.g., @Before) and weird non-imported version (e.g., @org.junit.Before)
-        // Only include BeforeClass and Before if in separate classes (for both victim and polluter(s))
-        if (!isSameTestClass) {
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.BeforeClass"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.Before"));
-        }
-        if (!expected) {
-            cleanerStmts.addAll(cleanerMethod.body().getStatements());
-        } else {
-            // Wrap the body inside a big try statement to suppress any exceptions
-            ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
-            CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
-            cleanerStmts.add(new TryStmt(new BlockStmt(cleanerMethod.body().getStatements()), NodeList.nodeList(catchClause), new BlockStmt()));
-        }
-        // Only include AfterClass and After if in separate classes (for both victim and polluter(s))
-        if (!isSameTestClass) {
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.After"));
-            cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.AfterClass"));
-        }
+        cleanerStmts.addAll(makeCleanerStatements(cleanerMethod, methodToModify));
 
         // Get the helper method reference
         JavaMethod helperMethod = addHelperMethod(cleanerMethod, methodToModify, isSameTestClass, prepend);
@@ -870,6 +880,8 @@ public class CleanerFixerPlugin extends TestPlugin {
                 backup(methodToModify.javaFile());
                 backup(helperMethod.javaFile());
                 prepend = !prepend;
+                cleanerStmts.clear();
+                cleanerStmts.addAll(makeCleanerStatements(cleanerMethod, methodToModify));
                 helperMethod = addHelperMethod(cleanerMethod, methodToModify, sameTestClass(cleanerMethod.methodName(), methodToModify.methodName()), prepend);
                 if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
                     TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
