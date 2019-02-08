@@ -48,9 +48,50 @@ and pdc.test_name NOT IN
     (SELECT test_name
      FROM unfinished_tests);
 
+create view cleaner_info_fmo as
+select mtr.subject_name,
+       mtr.test_name,
+       mtr.expected_result,
+       cg.id,
+       count(ct.test_name) as cleaner_count
+from od_classification_w_fmo odc
+inner join minimize_test_result mtr on mtr.test_name = odc.test_name
+left join polluter_data pd on mtr.id = pd.minimized_id
+left join cleaner_data cd on cd.polluter_data_id = pd.id
+left join cleaner_group cg on cg.cleaner_data_id = cd.id
+left join cleaner_test ct on ct.cleaner_group_id = cg.id
+group by mtr.subject_name, mtr.test_name, mtr.expected_result, cg.id;
+
+create view tests_with_cleaner_fmo as
+select test_name, max(cleaner_count) as total
+from cleaner_info_fmo
+group by test_name
+having total > 0;
+
+create view dependency_info_fmo as
+select mtr.subject_name,
+       mtr.test_name,
+       mtr.expected_result,
+       pd.id,
+       count(d.test_name) as dep_count
+from od_classification_w_fmo odc
+inner join minimize_test_result mtr on mtr.test_name = odc.test_name
+left join polluter_data pd on mtr.id = pd.minimized_id
+left join dependency d on pd.id = d.polluter_data_id
+group by mtr.subject_name, mtr.test_name, mtr.expected_result, pd.id
+having dep_count > 0;
+
+create view tests_with_setter_fmo as
+select di.test_name, max(dep_count) as total
+from dependency_info_fmo di
+inner join od_classification_w_fmo as odc on di.test_name = odc.test_name
+where odc.od_type = 'brittle' and di.expected_result = 'PASS'
+group by di.test_name
+having total > 0;
+
 create view fixable_tests_fmo as
 select odc.subject_name, odc.test_name, odc.od_type
 from od_classification_w_fmo odc
-left join tests_with_cleaner c on c.test_name = odc.test_name
-left join tests_with_setter s on s.test_name = odc.test_name
+left join tests_with_cleaner_fmo c on c.test_name = odc.test_name
+left join tests_with_setter_fmo s on s.test_name = odc.test_name
 where c.test_name is not null or s.test_name is not null;
