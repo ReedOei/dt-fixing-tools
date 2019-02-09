@@ -250,7 +250,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Check that the minimized is not some NOD, in which case we do not proceed
         if (minimized.flakyClass() == FlakyClass.NOD) {
             TestPluginPlugin.info("Will not patch discovered NOD test " + minimized.dependentTest());
-            patchResults.add(new PatchResult(FixStatus.NOD, minimized.dependentTest(), null));
+            patchResults.add(new PatchResult(OperationTime.instantaneous(), FixStatus.NOD, minimized.dependentTest(), "N/A", "N/A", null));
             return patchResults;
         }
 
@@ -260,7 +260,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         // All minimized orders passed in should have some polluters before (or setters in the case of the order passing)
         if (minimized.polluters().isEmpty()) {
             TestPluginPlugin.error("No polluters for: " + minimized.dependentTest());
-            patchResults.add(new PatchResult(FixStatus.NO_DEPS, minimized.dependentTest(), null));
+            patchResults.add(new PatchResult(OperationTime.instantaneous(), FixStatus.NO_DEPS, minimized.dependentTest(), "N/A", "N/A", null));
             return patchResults;
         }
 
@@ -365,7 +365,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         if (!victimMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find victim method " + victimTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
-            patchResults.add(new PatchResult(FixStatus.MISSING_METHOD, victimTestName, null));
+            patchResults.add(new PatchResult(OperationTime.instantaneous(), FixStatus.MISSING_METHOD, victimTestName, "N/A", "N/A", null));
             return patchResults;
         }
 
@@ -387,7 +387,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                     writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), 0, "NO CLEANERS");
                 }*/
                 Path patch = writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), 0, "NO CLEANERS");
-                patchResults.add(new PatchResult(FixStatus.NO_CLEANER, victimTestName, patch.toString()));
+                patchResults.add(new PatchResult(OperationTime.instantaneous(), FixStatus.NO_CLEANER, victimTestName, polluterMethodOpt.isPresent() ? polluterMethodOpt.get().methodName() : "N/A", "N/A", patch.toString()));
                 return patchResults;
             }
 
@@ -405,7 +405,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             // TODO: Handle group of setters with more than one test
             if (polluterData.deps().size() > 1) {
                 TestPluginPlugin.error("There is more than one setter test (currently unsupported)");
-                patchResults.add(new PatchResult(FixStatus.UNSUPPORTED, victimTestName, null));
+                patchResults.add(new PatchResult(OperationTime.instantaneous(), FixStatus.UNSUPPORTED, victimTestName, "N/A", "N/A", null));
                 return patchResults;
             }
             polluterTestName = null;    // No polluter if minimized order is passing
@@ -421,14 +421,14 @@ public class CleanerFixerPlugin extends TestPlugin {
         if (polluterTestName != null && !polluterMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find polluter method " + polluterTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
-            patchResults.add(new PatchResult(FixStatus.MISSING_METHOD, victimTestName, null));
+            patchResults.add(new PatchResult(OperationTime.instantaneous(), FixStatus.MISSING_METHOD, victimTestName, polluterTestName, "N/A", null));
             return patchResults;
         }
 
         // Give up if cannot find valid cleaner (single test that makes the order pass)
         if (cleanerTestNames.isEmpty()) {
             TestPluginPlugin.error("Could not get a valid cleaner for " + victimTestName);
-            patchResults.add(new PatchResult(FixStatus.NO_CLEANER, victimTestName, null));
+            patchResults.add(new PatchResult(OperationTime.instantaneous(), FixStatus.NO_CLEANER, victimTestName, polluterTestName, "N/A", null));
             return patchResults;
         }
 
@@ -437,7 +437,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         if (testOrderPasses(failingOrder)) {
             TestPluginPlugin.error("Failing order doesn't fail.");
             Path patch = writePatch(victimMethodOpt.get(), 0, null, 0, null, null, polluterMethodOpt.orElse(null), 0, "NOT FAILING ORDER");
-            patchResults.add(new PatchResult(FixStatus.NOT_FAILING, victimTestName, patch.toString()));
+            patchResults.add(new PatchResult(OperationTime.instantaneous(), FixStatus.NOT_FAILING, victimTestName, polluterTestName, "N/A", patch.toString()));
             return patchResults;
         }
 
@@ -888,22 +888,22 @@ public class CleanerFixerPlugin extends TestPlugin {
                     Path patch = writePatch(victimMethod, 0, null, 0, null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
                     restore(methodToModify.javaFile());
                     restore(helperMethod.javaFile());
-                    return new PatchResult(FixStatus.CLEANER_FAIL, victimMethod.methodName(), patch.toString());
+                    return new PatchResult(OperationTime.instantaneous(), FixStatus.CLEANER_FAIL, victimMethod.methodName(), polluterMethod.methodName(), cleanerMethod.methodName(), patch.toString());
                 }
             } else {
-                return new PatchResult(FixStatus.CLEANER_FAIL, victimMethod.methodName(), null);
+                return new PatchResult(OperationTime.instantaneous(), FixStatus.CLEANER_FAIL, victimMethod.methodName(), "N/A", cleanerMethod.methodName(), null);
             }
         }
 
         final JavaMethod finalHelperMethod = helperMethod;
         final boolean finalPrepend = prepend;
 
-        final List<Double> elapsedTime = new ArrayList<>();
+        final List<OperationTime> elapsedTime = new ArrayList<>();
         final NodeList<Statement> minimalCleanerStmts = OperationTime.runOperation(() -> {
             // Cleaner is good, so now we can start delta debugging
             return deltaDebug(failingOrder, finalHelperMethod, cleanerStmts, 2, finalPrepend);
         }, (finalCleanerStmts, time) -> {
-            elapsedTime.add(time.elapsedSeconds());
+            elapsedTime.add(time);
             return finalCleanerStmts;
         });
 
@@ -915,8 +915,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             restore(methodToModify.javaFile());
             restore(finalHelperMethod.javaFile());
             runMvnInstall(false);
-            Path patch = writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL");
-            return new PatchResult(FixStatus.FIX_INVALID, victimMethod.methodName(), patch.toString());
+            Path patch = writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), "BROKEN MINIMAL");
+            return new PatchResult(elapsedTime.get(0), FixStatus.FIX_INVALID, victimMethod.methodName(), polluterMethod != null ? polluterMethod.methodName() : "N/A", cleanerMethod.methodName(), patch.toString());
         }
         // Also check against the full failing order
         // TODO: Commenting out for now since other tests may be failing in this full failing order that we do not care about yet
@@ -925,8 +925,8 @@ public class CleanerFixerPlugin extends TestPlugin {
             restore(methodToModify.javaFile());
             restore(finalHelperMethod.javaFile());
             runMvnInstall(false);
-            Path patch = writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), "BROKEN MINIMAL FOR FULL");
-            return new PatchResult(FixStatus.FIX_INVALID, victimMethod.methodName(), patch.toString());
+            Path patch = writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), "BROKEN MINIMAL FOR FULL");
+            return new PatchResult(elapsedTime.get(0), FixStatus.FIX_INVALID, victimMethod.methodName(), polluterMethod != null ? polluterMethod.methodName() : "N/A", cleanerMethod.methodName(), patch.toString());
         }*/
 
         // Try to inline these statements into the method
@@ -955,7 +955,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             startingLine = methodToModify.endLine() - 1;    // Shift one, patch starts before end of method
         }
         String status = inlineSuccessful ? "INLINE SUCCESSFUL" : "INLINE FAIL";
-        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0), status);
+        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), status);
 
         patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
 
@@ -982,7 +982,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 fixStatus = FixStatus.FIX_NO_INLINE;
             }
         }
-        return new PatchResult(fixStatus, victimMethod.methodName(), patchFile.toString());
+        return new PatchResult(elapsedTime.get(0), fixStatus, victimMethod.methodName(), polluterMethod != null ? polluterMethod.methodName() : "N/A", cleanerMethod.methodName(), patchFile.toString());
     }
 
     // Helper method to create a patch file adding in the passed in block
