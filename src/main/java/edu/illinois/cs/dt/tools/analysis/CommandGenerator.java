@@ -229,13 +229,13 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
 
-        final Map<String, String> moduleToOpenedPRs = moduleToPRs(SQLStatements.PRS_GET_STATUS, "pCount", "Opened");
-        final Map<String, String> moduleToAcceptedPRs = moduleToPRs(SQLStatements.PRS_GET_STATUS, "pCount", "Accepted");
+        final Map<String, String> moduleToOpenedPRs = moduleToPRs(SQLStatements.PRS_GET_STATUS, "subject_name","pCount", "Opened");
+        final Map<String, String> moduleToAcceptedPRs = moduleToPRs(SQLStatements.PRS_GET_STATUS, "subject_name","pCount", "Accepted");
 
-        final Map<String, String> moduleToOpenedTests = moduleToPRs(SQLStatements.PRS_GET_TESTS, "tCount", "Opened");
-        final Map<String, String> moduleToAcceptedTests = moduleToPRs(SQLStatements.PRS_GET_TESTS, "tCount", "Accepted");
+        final Map<String, String> moduleToOpenedTests = moduleToPRs(SQLStatements.PRS_GET_TESTS, "subject_name","tCount", "Opened");
+        final Map<String, String> moduleToAcceptedTests = moduleToPRs(SQLStatements.PRS_GET_TESTS, "subject_name","tCount", "Accepted");
 
-        final Map<String, String> moduleToPatchedTests = moduleToPRs(SQLStatements.FIXED_TESTS_BY_MOD, "tCount", 1, "%", "%");
+        final Map<String, String> moduleToPatchedTests = moduleToPRs(SQLStatements.FIXED_TESTS_BY_MOD, "ft.subject_name","tCount", 1, "%", "%");
 
         List<String> moduleNames = new ArrayList<>(moduleToOpenedPRs.keySet());
         moduleNames.addAll(moduleToAcceptedPRs.keySet());
@@ -495,8 +495,8 @@ public class CommandGenerator extends StandardMain {
         return mapQuery(SQLStatements.OD_TESTS_GET, r -> r.get("test_name"), r -> r.get("od_type"));
     }
 
-    private Map<String, String> moduleToPRs(Path query, String typeToMapTo, final Object... params) throws SQLException {
-        return mapQuery(query, r -> r.get("subject_name"), r -> r.get(typeToMapTo), params);
+    private Map<String, String> moduleToPRs(Path query, String key, String typeToMapTo, final Object... params) throws SQLException {
+        return mapQuery(query, r -> r.get(key), r -> r.get(typeToMapTo), params);
     }
 
 }
