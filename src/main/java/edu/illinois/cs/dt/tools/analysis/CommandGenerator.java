@@ -241,6 +241,7 @@ public class CommandGenerator extends StandardMain {
         moduleNames.addAll(moduleToAcceptedPRs.keySet());
         Collections.sort(moduleNames);
 
+        System.out.println("% Commands for PR table");
         for (String moduleName : moduleNames) {
             String openedPR = moduleToOpenedPRs.getOrDefault(moduleName, "0");
             String acceptedPR = moduleToAcceptedPRs.getOrDefault(moduleName, "0");
@@ -256,6 +257,7 @@ public class CommandGenerator extends StandardMain {
             System.out.println(tools.command(moduleName + "AcceptedTests", acceptedTests));
             System.out.println(tools.command(moduleName + "PatchedTests", patchedTests));
         }
+        System.out.println("");
 
 
         final Map<String, String> odTests = queryOdTests();
