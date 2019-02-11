@@ -466,8 +466,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                 foundFirst = true;
             }
         }
-        // If reached here, then no cleaner helped fix this dependent test, so report as such
-        TestPluginPlugin.info("No cleaner could help make " + victimMethodOpt.get().methodName() + " pass!");
         return patchResults;
     }
 
