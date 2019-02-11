@@ -146,7 +146,7 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.AVERAGE_CLEANER_GROUP_SIZE)
-                .printDouble("avgNonSingletonCleanerGroupSize", 2)
+//                .printDouble("avgNonSingletonCleanerGroupSize", 2)
                 .printDouble("avgCleanerGroupSize", 1)
                 .printDouble("avgCleanerGroupSizeWithZero", 0)
                 .finishGroup();
