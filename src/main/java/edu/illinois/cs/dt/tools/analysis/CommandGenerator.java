@@ -287,7 +287,7 @@ public class CommandGenerator extends StandardMain {
         System.out.println("% Commands for subject info table");
         for (String subjectName : subjectToRow.keySet()) {
             List<String> results = subjectToRow.get(subjectName);
-            String prettyName = subjectName.replace("-", "").toLowerCase();
+            String prettyName = subjectName.replace("-", "").replace("/","").toLowerCase();
 
             System.out.println(tools.command(prettyName + "TestCount", results.get(0)));
             System.out.println(tools.command(prettyName + "TotalCount", results.get(1)));
