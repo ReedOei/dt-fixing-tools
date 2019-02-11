@@ -159,9 +159,23 @@ public class Analysis extends StandardMain {
     }
 
     private void insertPRTests(final Path path) throws SQLException, IOException {
-        for (final String testName : Files.readAllLines(path)) {
+        for (final String line : Files.readAllLines(path)) {
+            String[] lineArr = line.split(",");
+
+            if (lineArr.length != 4) {
+                continue;
+            }
+
+            String subjName = lineArr[0];
+            String testName = lineArr[1];
+            String pr_status = lineArr[2];
+            String pr_link = lineArr[3];
+
             sqlite.statement(SQLStatements.INSERT_PR_TESTS)
+                    .param(subjName)
                     .param(testName)
+                    .param(pr_status)
+                    .param(pr_link)
                     .insertSingleRow();
         }
     }

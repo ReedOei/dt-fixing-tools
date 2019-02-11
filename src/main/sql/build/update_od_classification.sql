@@ -157,8 +157,8 @@ and pdc.test_name NOT IN
     (SELECT test_name
      FROM unfinished_tests)
 and pdc.test_name NOT IN
-    (SELECT test_name 
-     FROM original_order 
+    (SELECT test_name
+     FROM original_order
      WHERE fix_method_order != 0);
 
 create view all_no_test as
@@ -183,7 +183,11 @@ and test_name NOT IN
      FROM separate_jvm_tests)
 and test_name NOT IN
     (SELECT test_name
-     FROM unfinished_tests);
+     FROM unfinished_tests)
+and test_name NOT IN
+    (SELECT test_name
+     FROM original_order
+     WHERE fix_method_order != 0);
 
 insert into test_patch
 (
@@ -428,5 +432,4 @@ from detection_round dr
 left join flaky_test_list ftl on dr.unfiltered_id = ftl.flaky_test_list_id
 left join flaky_test ft on ftl.flaky_test_id = ft.id
 left join flaky_test_classification ftc on ft.name = ftc.test_name
-group by dr.id, dr.round_type
-
+group by dr.id, dr.round_type;
