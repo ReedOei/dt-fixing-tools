@@ -8,11 +8,11 @@ fi
 debuggingresults=$1
 
 IFS=$'\n'
-for t in $(find ${debuggingresults} -name "*.patch.*" | xargs -n1 basename | sed 's;\.patch.*;;' | sort -u); do
+for t in $(find ${debuggingresults} -name "*.patch*" | xargs -n1 basename | sed 's;\.patch.*;;' | sort -u); do
     rollingorigsum=0
     rollingnewsum=0
     count=0
-    for p in $(find ${debuggingresults} -name "${t}.patch.*"); do
+    for p in $(find ${debuggingresults} -name "${t}.patch*"); do
         if [[ $(grep "INLINE" ${p}) != "" ]]; then
             origsize=$(grep "ORIGINAL CLEANER SIZE: " ${p} | cut -d':' -f2 | xargs)
             newsize=$(grep "NEW CLEANER SIZE: " ${p} | cut -d':' -f2 | xargs)
@@ -21,6 +21,7 @@ for t in $(find ${debuggingresults} -name "*.patch.*" | xargs -n1 basename | sed
             count=$((count + 1))
         fi
     done
+    echo "\\Def{${t}_working_patches}{${count}}"
     if [[ ${count} == 0 ]]; then
         echo "\\Def{${t}_avg_patch_size_percentage}{N/A}"
         echo "\\Def{${t}_avg_patch_size}{N/A}"
