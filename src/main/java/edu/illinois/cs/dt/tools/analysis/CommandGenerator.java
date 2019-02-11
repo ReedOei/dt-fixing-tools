@@ -251,11 +251,12 @@ public class CommandGenerator extends StandardMain {
 
             String patchedTests = moduleToPatchedTests.getOrDefault(moduleName, "0");
 
-            System.out.println(tools.command(moduleName + "OpenedPRs", openedPR));
-            System.out.println(tools.command(moduleName + "AcceptedPRs", acceptedPR));
-            System.out.println(tools.command(moduleName + "OpenedTests", openedTests));
-            System.out.println(tools.command(moduleName + "AcceptedTests", acceptedTests));
-            System.out.println(tools.command(moduleName + "PatchedTests", patchedTests));
+            String prettyName = moduleName.replace("-", "");
+            System.out.println(tools.command(prettyName + "OpenedPRs", openedPR));
+            System.out.println(tools.command(prettyName + "AcceptedPRs", acceptedPR));
+            System.out.println(tools.command(prettyName + "OpenedTests", openedTests));
+            System.out.println(tools.command(prettyName + "AcceptedTests", acceptedTests));
+            System.out.println(tools.command(prettyName + "PatchedTests", patchedTests));
         }
         System.out.println("");
 
