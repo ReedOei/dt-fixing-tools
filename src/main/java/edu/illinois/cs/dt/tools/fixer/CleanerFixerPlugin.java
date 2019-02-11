@@ -698,10 +698,7 @@ public class CleanerFixerPlugin extends TestPlugin {
     }
 
     private ExpressionStmt getHelperCallStmt(JavaMethod cleanerMethod, boolean isSameTestClass) {
-        Expression objectCreation = null;
-        if (!isSameTestClass) { // If in same test class, then no need to create a new object of that instance
-            objectCreation = new ObjectCreationExpr(null, new ClassOrInterfaceType(null, cleanerMethod.getClassName()), NodeList.nodeList());
-        }
+        Expression objectCreation = new ObjectCreationExpr(null, new ClassOrInterfaceType(null, cleanerMethod.getClassName()), NodeList.nodeList());
         Expression helperCall = new MethodCallExpr(objectCreation, "cleanerHelper");
         ExpressionStmt helperCallStmt = new ExpressionStmt(helperCall);
         return helperCallStmt;
