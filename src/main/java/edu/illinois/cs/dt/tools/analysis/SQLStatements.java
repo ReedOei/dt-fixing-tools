@@ -101,6 +101,7 @@ public class SQLStatements {
     public static final Path AVERAGE_SETTERS = Paths.get("src/main/sql/figures/average_setters.sql");
     public static final Path OD_TESTS_GET = Paths.get("src/main/sql/figures/od_tests_get.sql");
     public static final Path PRS_GET_STATUS = Paths.get("src/main/sql/figures/prs_get_pr_status.sql");
+    public static final Path SUBJECT_INFO = Paths.get("src/main/sql/module-od-counts-table.sql");
     public static final Path FIXED_TESTS_BY_MOD = Paths.get("src/main/sql/figures/fixed_tests_by_module.sql");
     public static final Path PRS_GET_TESTS = Paths.get("src/main/sql/figures/prs_get_pr_tests.sql");
     public static final Path CLEANERS_BY_TEST = Paths.get("src/main/sql/figures/cleaners_by_test.sql");
@@ -147,6 +148,7 @@ public class SQLStatements {
 
     static {
         ensureExists(COUNT_OD_TYPE);
+        ensureExists(SUBJECT_INFO);
         ensureExists(COUNT_DEPENDENCIES);
         ensureExists(INSERT_DEPENDENCY);
         ensureExists(INSERT_POLLUTED_FIELD);

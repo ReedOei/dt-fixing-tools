@@ -286,6 +286,28 @@ public class CommandGenerator extends StandardMain {
         System.out.println("");
 
 
+        String[] values = new String[]{"test_count", "totalCount", "victim_count", "brittle_count", "polluter_count",
+                "cleaner_count", "setter_count", "vic_with_clean_count"};
+        final Map<String, List<String>> subjectToRow = subjectRows(SQLStatements.SUBJECT_INFO, "subject_name", values);
+
+        System.out.println("% Commands for subject info table");
+        for (String subjectName : subjectToRow.keySet()) {
+            List<String> results = subjectToRow.get(subjectName);
+            String prettyName = subjectName.replace("-", "").toLowerCase();
+
+            System.out.println(tools.command(prettyName + "TestCount", results.get(0)));
+            System.out.println(tools.command(prettyName + "TotalCount", results.get(1)));
+            System.out.println(tools.command(prettyName + "VictimCount", results.get(2)));
+            System.out.println(tools.command(prettyName + "BrittleCount", results.get(3)));
+            System.out.println(tools.command(prettyName + "PolluterCount", results.get(4)));
+            System.out.println(tools.command(prettyName + "CleanerCount", results.get(5)));
+            System.out.println(tools.command(prettyName + "SetterCount", results.get(6)));
+            System.out.println(tools.command(prettyName + "VicWithCleanCount", results.get(7)));
+        }
+
+        System.out.println("");
+
+
         final Map<String, String> odTests = queryOdTests();
         final Map<String, List<String>> cleaners = queryCleaners();
         final Map<String, List<String>> dependencies = queryDependencies();
@@ -507,6 +529,19 @@ public class CommandGenerator extends StandardMain {
         return result;
     }
 
+    private <U> Map<U, LinkedHashMap<String, String>> mapQuery(final Procedure procedure,
+                                      final Function<LinkedHashMap<String, String>, U> keyMapper)
+            throws SQLException {
+        final Map<U, LinkedHashMap<String, String>> result = new HashMap<>();
+        final QueryResult queryResult = procedure.tableQuery();
+
+        for (final LinkedHashMap<String, String> row : queryResult.rows()) {
+            result.put(keyMapper.apply(row), row);
+        }
+
+        return result;
+    }
+
     private Map<String, List<String>> queryCleaners() throws SQLException {
         return mapQuery(SQLStatements.CLEANERS_BY_TEST,
                 r -> r.get("test_name"),
@@ -525,6 +560,27 @@ public class CommandGenerator extends StandardMain {
 
     private Map<String, String> moduleToPRs(Path query, String key, String typeToMapTo, final Object... params) throws SQLException {
         return mapQuery(query, r -> r.get(key), r -> r.get(typeToMapTo), params);
+    }
+
+    private Map<String, List<String>> subjectRows(Path query, String key, String[] values, final Object... params) throws SQLException {
+        Map<String, List<String>> subjectToResults = new LinkedHashMap<>();
+
+
+        Map<String, LinkedHashMap<String, String>> subjectToRow = mapQuery(sqlite.statement(query, params), r -> r.get(key));
+        List<String> subjects = new ArrayList<>(subjectToRow.keySet());
+        subjects = subjects.stream().map(String::toLowerCase).collect(Collectors.toList());
+        Collections.sort(subjects);
+
+        for (String subject : subjects) {
+            LinkedHashMap<String, String> row = subjectToRow.get(subject);
+            List<String> results = new ArrayList<>();
+            for (String value : values) {
+                results.add(row.getOrDefault(value, ""));
+            }
+            subjectToResults.put(subject, results);
+        }
+
+        return subjectToResults;
     }
 
 }
