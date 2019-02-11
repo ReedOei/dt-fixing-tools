@@ -9,7 +9,7 @@ debuggingresults=$1
 
 IFS=$'\n'
 #for m in $(find ${debuggingresults} -name "*.patch.*" | xargs -n1 basename | sed 's;\.patch.*;;' | sort -u); do
-for proj in $(find ${debuggingresults} -name "fixer.log" | xargs -n1 dirname | xargs -n1 basename | cut -d'=' -f1 | sort -u); do
+for proj in $(find ${debuggingresults} -name "fixer.log" | rev | cut -d'/' -f3 | rev | cut -d'=' -f1 | sort -u); do
     # Make a temporary file but manipulate it through a file descriptor, so it gets deleted regardless when script ends
     tmpfile=$(mktemp /tmp/find_unique_patches.XXXXXX)
     exec 3> "${tmpfile}"
@@ -18,7 +18,7 @@ for proj in $(find ${debuggingresults} -name "fixer.log" | xargs -n1 dirname | x
     testcount=0
     pairscount=0
     count=0
-    for d in $(find ${debuggingresults} -name "${proj}=*_output"); do
+    for d in $(find ${debuggingresults} -name "${proj}=*"); do
         # Count how many dependent tests there are
         if [[ $(grep -r "INLINE" ${d}) != "" ]]; then
             testcount=$((testcount + 1))
