@@ -66,7 +66,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     for t in $(grep ",${module}" ${testsfile} | grep ",victim" | grep -v "#" | cut -d',' -f1); do
         f=$(find $(find $(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}" | xargs -n1 dirname) -name minimized) -name "*.json" | head -1)
         if [[ ${f} != "" ]]; then
-            for time in $(python find_first_cleaner.py ${f}); do
+            for time in $(python find_first_cleaner.py ${f} | head -1); do
                 rollingsum=$(echo ${rollingsum} + ${time} | bc -l)
                 count=$((count + 1))
             done
