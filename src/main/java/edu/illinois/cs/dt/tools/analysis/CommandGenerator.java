@@ -239,7 +239,7 @@ public class CommandGenerator extends StandardMain {
 
         final Map<String, String> moduleToPatchedTests = moduleToPRs(SQLStatements.FIXED_TESTS_BY_MOD, "subject_name","tCount", 1, "%", "%");
 
-        Set keys = new HashSet(moduleToOpenedPRs.keySet());
+        Set<String> keys = new HashSet<String>(moduleToOpenedPRs.keySet());
         keys.addAll(moduleToAcceptedPRs.keySet());
         keys.addAll(moduleToPatchedTests.keySet());
 
