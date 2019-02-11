@@ -33,7 +33,10 @@ create table no_test
 create table pr_tests
 (
   id integer primary key,
-  test_name text not null
+  subject_name text not null,
+  test_name text not null,
+  pr_status text not null,
+  pr_link text not null
 );
 
 create table unfinished_tests

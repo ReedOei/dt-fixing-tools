@@ -100,6 +100,9 @@ public class SQLStatements {
     public static final Path AVERAGE_POLLUTERS = Paths.get("src/main/sql/figures/average_polluters.sql");
     public static final Path AVERAGE_SETTERS = Paths.get("src/main/sql/figures/average_setters.sql");
     public static final Path OD_TESTS_GET = Paths.get("src/main/sql/figures/od_tests_get.sql");
+    public static final Path PRS_GET_STATUS = Paths.get("src/main/sql/figures/prs_get_pr_status.sql");
+    public static final Path FIXED_TESTS_BY_MOD = Paths.get("src/main/sql/figures/fixed_tests_by_module.sql");
+    public static final Path PRS_GET_TESTS = Paths.get("src/main/sql/figures/prs_get_pr_tests.sql");
     public static final Path CLEANERS_BY_TEST = Paths.get("src/main/sql/figures/cleaners_by_test.sql");
     public static final Path DEPENDENCIES_BY_TEST = Paths.get("src/main/sql/figures/dependencies_by_test.sql");
     public static final Path CLEANERS_BY_DEPENDENCY = Paths.get("src/main/sql/figures/cleaner_by_dependency_type.sql");
@@ -161,6 +164,9 @@ public class SQLStatements {
         ensureExists(AVERAGE_POLLUTERS);
         ensureExists(AVERAGE_SETTERS);
         ensureExists(OD_TESTS_GET);
+        ensureExists(PRS_GET_STATUS);
+        ensureExists(FIXED_TESTS_BY_MOD);
+        ensureExists(PRS_GET_TESTS);
         ensureExists(DEPENDENCIES_BY_TEST);
         ensureExists(CLEANERS_BY_TEST);
         ensureExists(CLEANERS_BY_DEPENDENCY);
