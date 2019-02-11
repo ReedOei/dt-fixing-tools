@@ -131,7 +131,7 @@ public class JavaMethod {
     public void prepend(final NodeList<Statement> stmts) {
         final NodeList<Statement> statements = body.getStatements();
         //statements.add(0, new BlockStmt(stmts));
-        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
+        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Throwable"));
         CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
         statements.add(0, new TryStmt(new BlockStmt(stmts), NodeList.nodeList(catchClause), new BlockStmt()));
 
@@ -149,7 +149,7 @@ public class JavaMethod {
     public void append(final NodeList<Statement> stmts) {
         final NodeList<Statement> statements = body.getStatements();
         //statements.add(new BlockStmt(stmts));
-        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
+        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Throwable"));
         CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
         statements.add(new TryStmt(new BlockStmt(stmts), NodeList.nodeList(catchClause), new BlockStmt()));
 

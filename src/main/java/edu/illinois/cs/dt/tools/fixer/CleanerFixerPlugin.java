@@ -639,7 +639,14 @@ public class CleanerFixerPlugin extends TestPlugin {
                 MethodDeclaration method = javaFile.findMethodDeclaration(testClassName + "." + methName);
                 Optional<BlockStmt> body = method.getBody();
                 if (body.isPresent()) {
-                    stmts.addAll(body.get().getStatements());
+                    if (method.getDeclarationAsString(false, true, false).contains("throws ")) {
+                        // Wrap the body inside a big try statement to suppress any exceptions
+                        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Throwable"));
+                        CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
+                        stmts.add(new TryStmt(new BlockStmt(body.get().getStatements()), NodeList.nodeList(catchClause), new BlockStmt()));
+                    } else {
+                        stmts.addAll(body.get().getStatements());
+                    }
                 }
             }
         } else {
@@ -648,7 +655,14 @@ public class CleanerFixerPlugin extends TestPlugin {
                 MethodDeclaration method = javaFile.findMethodDeclaration(testClassName + "." + methName);
                 Optional<BlockStmt> body = method.getBody();
                 if (body.isPresent()) {
-                    stmts.addAll(body.get().getStatements());
+                    if (method.getDeclarationAsString(false, true, false).contains("throws ")) {
+                        // Wrap the body inside a big try statement to suppress any exceptions
+                        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Throwable"));
+                        CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
+                        stmts.add(new TryStmt(new BlockStmt(body.get().getStatements()), NodeList.nodeList(catchClause), new BlockStmt()));
+                    } else {
+                        stmts.addAll(body.get().getStatements());
+                    }
                 }
             }
             for (int i = 0; i < annotatedMethods.size() ; i++) {
@@ -803,7 +817,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             cleanerStmts.addAll(cleanerMethod.body().getStatements());
         } else {
             // Wrap the body inside a big try statement to suppress any exceptions
-            ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Exception"));
+            ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Throwable"));
             CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
             cleanerStmts.add(new TryStmt(new BlockStmt(cleanerMethod.body().getStatements()), NodeList.nodeList(catchClause), new BlockStmt()));
         }
