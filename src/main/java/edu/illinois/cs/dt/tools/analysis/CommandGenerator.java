@@ -242,11 +242,6 @@ public class CommandGenerator extends StandardMain {
         Set keys = new HashSet(moduleToOpenedPRs.keySet());
         keys.addAll(moduleToAcceptedPRs.keySet());
         keys.addAll(moduleToPatchedTests.keySet());
-        List<String> moduleNames = new ArrayList<>(keys);
-        moduleNames = moduleNames.stream()
-                .map(String::toLowerCase)
-                .collect(Collectors.toList());
-        Collections.sort(moduleNames);
 
         int openedPRCount = 0;
         int acceptedPRCount = 0;
@@ -255,7 +250,7 @@ public class CommandGenerator extends StandardMain {
         int patchedTestCount = 0;
 
         System.out.println("% Commands for PR table");
-        for (String moduleName : moduleNames) {
+        for (String moduleName : keys) {
             String openedPR = moduleToOpenedPRs.getOrDefault(moduleName, "0");
             String acceptedPR = moduleToAcceptedPRs.getOrDefault(moduleName, "0");
 
@@ -264,7 +259,7 @@ public class CommandGenerator extends StandardMain {
 
             String patchedTests = moduleToPatchedTests.getOrDefault(moduleName, "0");
 
-            String prettyName = moduleName.replace("-", "");
+            String prettyName = moduleName.replace("-", "").toLowerCase();
             System.out.println(tools.command(prettyName + "OpenedPRs", openedPR));
             System.out.println(tools.command(prettyName + "AcceptedPRs", acceptedPR));
             System.out.println(tools.command(prettyName + "OpenedTests", openedTests));
@@ -283,8 +278,7 @@ public class CommandGenerator extends StandardMain {
         System.out.println(tools.command("totalAcceptedTests", String.valueOf(acceptedTestCount)));
         System.out.println(tools.command("totalPatchedTests", String.valueOf(patchedTestCount)));
 
-        System.out.println("");
-
+        System.out.println("% End for PR table");
 
         String[] values = new String[]{"test_count", "totalCount", "victim_count", "brittle_count", "polluter_count",
                 "cleaner_count", "setter_count", "vic_with_clean_count"};
@@ -305,7 +299,7 @@ public class CommandGenerator extends StandardMain {
             System.out.println(tools.command(prettyName + "VicWithCleanCount", results.get(7)));
         }
 
-        System.out.println("");
+        System.out.println("% End for subject info table");
 
 
         final Map<String, String> odTests = queryOdTests();
@@ -564,14 +558,9 @@ public class CommandGenerator extends StandardMain {
 
     private Map<String, List<String>> subjectRows(Path query, String key, String[] values, final Object... params) throws SQLException {
         Map<String, List<String>> subjectToResults = new LinkedHashMap<>();
-
-
         Map<String, LinkedHashMap<String, String>> subjectToRow = mapQuery(sqlite.statement(query, params), r -> r.get(key));
-        List<String> subjects = new ArrayList<>(subjectToRow.keySet());
-        subjects = subjects.stream().map(String::toLowerCase).collect(Collectors.toList());
-        Collections.sort(subjects);
 
-        for (String subject : subjects) {
+        for (String subject : subjectToRow.keySet()) {
             LinkedHashMap<String, String> row = subjectToRow.get(subject);
             List<String> results = new ArrayList<>();
             for (String value : values) {
