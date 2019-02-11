@@ -371,6 +371,10 @@ public class Analysis extends StandardMain {
         System.out.println("[INFO] Inserting fixing results for " + subjectName + " from " + log + " and " + patchDir);
         if (Files.isDirectory(patchDir)) {
             for (final Path p : FileUtil.listFiles(patchDir)) {
+                // For now, skip the extra metadata json we generate now
+                if (p.toString().endsWith(".json")) {
+                    continue;
+                }
                 insertFixInfo(subjectName, p);
             }
         }
