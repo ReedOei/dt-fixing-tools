@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -226,6 +228,36 @@ public class CommandGenerator extends StandardMain {
                 .printDouble("avgNumSettersWithZero", 0)
                 .finishGroup();
 
+
+        final Map<String, String> moduleToOpenedPRs = moduleToPRs(SQLStatements.PRS_GET_STATUS, "pCount", "Opened");
+        final Map<String, String> moduleToAcceptedPRs = moduleToPRs(SQLStatements.PRS_GET_STATUS, "pCount", "Accepted");
+
+        final Map<String, String> moduleToOpenedTests = moduleToPRs(SQLStatements.PRS_GET_TESTS, "tCount", "Opened");
+        final Map<String, String> moduleToAcceptedTests = moduleToPRs(SQLStatements.PRS_GET_TESTS, "tCount", "Accepted");
+
+        final Map<String, String> moduleToPatchedTests = moduleToPRs(SQLStatements.FIXED_TESTS_BY_MOD, "tCount", 1, "%", "%");
+
+        List<String> moduleNames = new ArrayList<>(moduleToOpenedPRs.keySet());
+        moduleNames.addAll(moduleToAcceptedPRs.keySet());
+        Collections.sort(moduleNames);
+
+        for (String moduleName : moduleNames) {
+            String openedPR = moduleToOpenedPRs.getOrDefault(moduleName, "0");
+            String acceptedPR = moduleToAcceptedPRs.getOrDefault(moduleName, "0");
+
+            String openedTests = moduleToOpenedTests.getOrDefault(moduleName, "0");
+            String acceptedTests = moduleToAcceptedTests.getOrDefault(moduleName, "0");
+
+            String patchedTests = moduleToPatchedTests.getOrDefault(moduleName, "0");
+
+            System.out.println(tools.command(moduleName + "OpenedPRs", openedPR));
+            System.out.println(tools.command(moduleName + "AcceptedPRs", acceptedPR));
+            System.out.println(tools.command(moduleName + "OpenedTests", openedTests));
+            System.out.println(tools.command(moduleName + "AcceptedTests", acceptedTests));
+            System.out.println(tools.command(moduleName + "PatchedTests", patchedTests));
+        }
+
+
         final Map<String, String> odTests = queryOdTests();
         final Map<String, List<String>> cleaners = queryCleaners();
         final Map<String, List<String>> dependencies = queryDependencies();
@@ -427,9 +459,10 @@ public class CommandGenerator extends StandardMain {
 
     private <U, V> Map<U, V> mapQuery(final Path path,
                                       final Function<LinkedHashMap<String, String>, U> keyMapper,
-                                      final Function<LinkedHashMap<String, String>, V> valueMapper)
+                                      final Function<LinkedHashMap<String, String>, V> valueMapper,
+                                      final Object... params)
             throws SQLException {
-        return mapQuery(sqlite.statement(path), keyMapper, valueMapper);
+        return mapQuery(sqlite.statement(path, params), keyMapper, valueMapper);
     }
 
     private <U, V> Map<U, V> mapQuery(final Procedure procedure,
@@ -461,4 +494,9 @@ public class CommandGenerator extends StandardMain {
     private Map<String, String> queryOdTests() throws SQLException {
         return mapQuery(SQLStatements.OD_TESTS_GET, r -> r.get("test_name"), r -> r.get("od_type"));
     }
+
+    private Map<String, String> moduleToPRs(Path query, String typeToMapTo, final Object... params) throws SQLException {
+        return mapQuery(query, r -> r.get("subject_name"), r -> r.get(typeToMapTo), params);
+    }
+
 }
