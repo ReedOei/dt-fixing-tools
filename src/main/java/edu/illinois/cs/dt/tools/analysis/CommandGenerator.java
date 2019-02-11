@@ -11,9 +11,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -237,8 +239,13 @@ public class CommandGenerator extends StandardMain {
 
         final Map<String, String> moduleToPatchedTests = moduleToPRs(SQLStatements.FIXED_TESTS_BY_MOD, "subject_name","tCount", 1, "%", "%");
 
-        List<String> moduleNames = new ArrayList<>(moduleToOpenedPRs.keySet());
-        moduleNames.addAll(moduleToAcceptedPRs.keySet());
+        Set keys = new HashSet(moduleToOpenedPRs.keySet());
+        keys.addAll(moduleToAcceptedPRs.keySet());
+        keys.addAll(moduleToPatchedTests.keySet());
+        List<String> moduleNames = new ArrayList<>(keys);
+        moduleNames = moduleNames.stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.toList());
         Collections.sort(moduleNames);
 
         int openedPRCount = 0;
