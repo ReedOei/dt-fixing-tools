@@ -1,4 +1,4 @@
-select slug as subject_name, test_count, victim_count + brittle_count as totalCount, victim_count, brittle_count,
+select subject_name as subject_name, test_count, victim_count + brittle_count as totalCount, victim_count, brittle_count,
        case when victim_count = 0 then 'N/A' else polluter_count end as polluter_count,
        case when polluter_count = 0 then 'N/A' else cleaner_count end as cleaner_count,
        case when brittle_count = 0 then 'N/A' else setter_count end as setter_count,
