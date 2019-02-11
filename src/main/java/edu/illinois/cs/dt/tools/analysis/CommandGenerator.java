@@ -235,11 +235,17 @@ public class CommandGenerator extends StandardMain {
         final Map<String, String> moduleToOpenedTests = moduleToPRs(SQLStatements.PRS_GET_TESTS, "subject_name","tCount", "Opened");
         final Map<String, String> moduleToAcceptedTests = moduleToPRs(SQLStatements.PRS_GET_TESTS, "subject_name","tCount", "Accepted");
 
-        final Map<String, String> moduleToPatchedTests = moduleToPRs(SQLStatements.FIXED_TESTS_BY_MOD, "ft.subject_name","tCount", 1, "%", "%");
+        final Map<String, String> moduleToPatchedTests = moduleToPRs(SQLStatements.FIXED_TESTS_BY_MOD, "subject_name","tCount", 1, "%", "%");
 
         List<String> moduleNames = new ArrayList<>(moduleToOpenedPRs.keySet());
         moduleNames.addAll(moduleToAcceptedPRs.keySet());
         Collections.sort(moduleNames);
+
+        int openedPRCount = 0;
+        int acceptedPRCount = 0;
+        int openedTestCount = 0;
+        int acceptedTestCount = 0;
+        int patchedTestCount = 0;
 
         System.out.println("% Commands for PR table");
         for (String moduleName : moduleNames) {
@@ -257,7 +263,19 @@ public class CommandGenerator extends StandardMain {
             System.out.println(tools.command(prettyName + "OpenedTests", openedTests));
             System.out.println(tools.command(prettyName + "AcceptedTests", acceptedTests));
             System.out.println(tools.command(prettyName + "PatchedTests", patchedTests));
+
+            openedPRCount += Integer.valueOf(openedPR);
+            acceptedPRCount += Integer.valueOf(acceptedPR);
+            openedTestCount += Integer.valueOf(openedTests);
+            acceptedTestCount += Integer.valueOf(acceptedTests);
+            patchedTestCount += Integer.valueOf(patchedTests);
         }
+        System.out.println(tools.command("totalOpenedPRs", String.valueOf(openedPRCount)));
+        System.out.println(tools.command("totalAcceptedPRs", String.valueOf(acceptedPRCount)));
+        System.out.println(tools.command("totalOpenedTests", String.valueOf(openedTestCount)));
+        System.out.println(tools.command("totalAcceptedTests", String.valueOf(acceptedTestCount)));
+        System.out.println(tools.command("totalPatchedTests", String.valueOf(patchedTestCount)));
+
         System.out.println("");
 
 
