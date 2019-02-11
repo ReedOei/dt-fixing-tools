@@ -14,8 +14,8 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     # Do polluters (meaning test is a victim)
     rollingsum=0
     count=0
-    for t in $(grep ",${module}" ${testsfile} | grep ",victim" | cut -d',' -f1); do
-        f=$(find ${debuggingresults} -maxdepth 2 -name fixer.log | grep "=${t}")
+    for t in $(grep ",${module}" ${testsfile} | grep ",victim" | grep -v "#" | cut -d',' -f1); do
+        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}")
         if [[ ${f} != "" ]]; then
             l=$(grep -h "FIRST POLLUTER" ${f})
             time=$(echo ${l} | cut -d']' -f3 | cut -d' ' -f7)
@@ -32,8 +32,8 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     # Do setters (meaning test is a brittle)
     rollingsum=0
     count=0
-    for t in $(grep ",${module}" ${testsfile} | grep ",brittle" | cut -d',' -f1); do
-        f=$(find ${debuggingresults} -maxdepth 2 -name fixer.log | grep "=${t}")
+    for t in $(grep ",${module}" ${testsfile} | grep ",brittle" | grep -v "#" | cut -d',' -f1); do
+        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}")
         if [[ ${f} != "" ]]; then
             l=$(grep -h "FIRST POLLUTER" ${f})
             time=$(echo ${l} | cut -d']' -f3 | cut -d' ' -f7)
@@ -50,8 +50,8 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     # Do cleaners (meaning test is a victim)
     rollingsum=0
     count=0
-    for t in $(grep ",${module}" ${testsfile} | grep ",victim" | cut -d',' -f1); do
-        f=$(find $(find $(find ${debuggingresults} -maxdepth 2 -name fixer.log | grep "=${t}" | xargs -n1 dirname) -name minimized) -name "*.json" | head -1)
+    for t in $(grep ",${module}" ${testsfile} | grep ",victim" | grep -v "#" | cut -d',' -f1); do
+        f=$(find $(find $(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}" | xargs -n1 dirname) -name minimized) -name "*.json" | head -1)
         if [[ ${f} != "" ]]; then
             for time in $(python find_first_cleaner.py ${f}); do
                 rollingsum=$(echo ${rollingsum} + ${time} | bc -l)
@@ -68,8 +68,8 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     # Do patches
     rollingsum=0
     count=0
-    for t in $(grep ",${module}" ${testsfile} | cut -d',' -f1); do
-        f=$(find ${debuggingresults} -maxdepth 2 -name fixer.log | grep "=${t}")
+    for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
+        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}")
         if [[ ${f} != "" ]]; then
             l=$(grep -h "FIRST PATCH" ${f})
             if [[ ${l} != "" ]]; then
