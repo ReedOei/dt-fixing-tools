@@ -223,7 +223,7 @@ public class CommandGenerator extends StandardMain {
                 .count("numVictimNonSingletonCleanerGroup", 2, Integer.MAX_VALUE, 0, Integer.MAX_VALUE)
                 .finishGroup();
 
-        factory.create(SQLStatements.COUNT_CLEANER_BY_VICTIM)
+        factory.create(SQLStatements.COUNT_MAX_CLEANER)
                 .count("numCleanersMaxForVictims", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
                 .finishGroup();
 
