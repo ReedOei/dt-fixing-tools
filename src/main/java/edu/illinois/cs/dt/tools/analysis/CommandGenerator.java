@@ -224,7 +224,7 @@ public class CommandGenerator extends StandardMain {
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_MAX_CLEANER)
-                .count("numCleanersMaxForVictims", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
+                .print("numCleanersMaxForVictims", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
                 .finishGroup();
 
         factory.create(SQLStatements.COUNT_SETTERS)
