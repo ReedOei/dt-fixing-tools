@@ -122,8 +122,10 @@ public class SQLStatements {
     public static final Path COUNT_DIAGNOSED_FIELDS = Paths.get("src/main/sql/figures/count_diagnosed_fields.sql");
     public static final Path AVERAGE_DIAGNOSED_FIELDS = Paths.get("src/main/sql/figures/average_diagnosed_fields.sql");
     public static final Path COUNT_FIX_STATUS = Paths.get("src/main/sql/figures/count_fix_status.sql");
+    public static final Path COUNT_MAX_POLLUTER_VICTIM = Paths.get("src/main/sql/figures/count_max_polluter_victim.sql");
     public static final Path COUNT_DEPENDENCY_GROUP = Paths.get("src/main/sql/figures/count_dependency_group.sql");
     public static final Path COUNT_CLEANER_BY_POLLUTER = Paths.get("src/main/sql/figures/count_cleaner_by_polluter.sql");
+    public static final Path COUNT_MAX_CLEANER = Paths.get("src/main/sql/figures/count_max_cleaner_victim.sql");
     public static final Path COUNT_CLEANER_BY_VICTIM = Paths.get("src/main/sql/figures/count_cleaner_by_victim.sql");
     public static final Path COUNT_DEPENDENCY_GROUP_SIZE = Paths.get("src/main/sql/figures/count_dependency_group_size.sql");
     public static final Path AVERAGE_DEP_GROUP_SIZE = Paths.get("src/main/sql/figures/average_dep_group_size.sql");
@@ -183,8 +185,10 @@ public class SQLStatements {
         ensureExists(COUNT_DIAGNOSED_FIELDS);
         ensureExists(AVERAGE_DIAGNOSED_FIELDS);
         ensureExists(COUNT_FIX_STATUS);
+        ensureExists(COUNT_MAX_POLLUTER_VICTIM);
         ensureExists(COUNT_DEPENDENCY_GROUP);
         ensureExists(COUNT_CLEANER_BY_POLLUTER);
+        ensureExists(COUNT_MAX_CLEANER);
         ensureExists(COUNT_CLEANER_BY_VICTIM);
         ensureExists(COUNT_DEPENDENCY_GROUP_SIZE);
         ensureExists(AVERAGE_DEP_GROUP_SIZE);

@@ -192,6 +192,11 @@ public class CommandGenerator extends StandardMain {
                 .count("numBrittleNonSingletonSetterGroup", "brittle", 2, Integer.MAX_VALUE, 0, Integer.MAX_VALUE)
                 .finishGroup();
 
+        factory.create(SQLStatements.COUNT_MAX_POLLUTER_VICTIM)
+                .print("numPollutersMaxForVictims", "victim", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
+                .print("numSettersMaxForBrittles", "brittle", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
+                .finishGroup();
+
         factory.create(SQLStatements.AVERAGE_DEP_GROUP_SIZE)
                 .printDouble("avgNumDepInNonSingletonGroup", "%", 2, Integer.MAX_VALUE)
                 .printDouble("avgNumPolluterInNonSingletonGroup", "victim", 2, Integer.MAX_VALUE)
@@ -218,6 +223,10 @@ public class CommandGenerator extends StandardMain {
                 .count("numVictimNonSingletonCleanerGroup", 2, Integer.MAX_VALUE, 0, Integer.MAX_VALUE)
                 .finishGroup();
 
+        factory.create(SQLStatements.COUNT_CLEANER_BY_VICTIM)
+                .count("numCleanersMaxForVictims", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
+                .finishGroup();
+
         factory.create(SQLStatements.COUNT_SETTERS)
                 .count("numWithSingleSetter", 1, 1)
                 .count("numWithAnySetter", 1, Integer.MAX_VALUE)
@@ -239,7 +248,7 @@ public class CommandGenerator extends StandardMain {
 
         final Map<String, String> moduleToPatchedTests = moduleToPRs(SQLStatements.FIXED_TESTS_BY_MOD, "subject_name","tCount", 1, "%", "%");
 
-        Set<String> keys = new HashSet<String>(moduleToOpenedPRs.keySet());
+        Set<String> keys = new HashSet<>(moduleToOpenedPRs.keySet());
         keys.addAll(moduleToAcceptedPRs.keySet());
         keys.addAll(moduleToPatchedTests.keySet());
 
