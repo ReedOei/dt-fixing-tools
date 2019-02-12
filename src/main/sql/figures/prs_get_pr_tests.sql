@@ -1,5 +1,7 @@
 select pt.subject_name, count(pt.test_name) as tCount
 from pr_tests pt
-join od_classification oc on oc.subject_name = pt.subject_name
-where pt.pr_status like ? 
+where pt.pr_status like ?
+and pt.subject_name IN
+    (select subject_name
+    from od_classification)
 group by pt.subject_name;
