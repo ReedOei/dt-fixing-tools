@@ -22,7 +22,6 @@ Struts-plugins-portlet,org.apache.struts2.portlet.dispatcher.Jsr286DispatcherTes
 Struts-plugins-portlet,org.apache.struts2.portlet.dispatcher.Jsr286DispatcherTest.testRender_ok,Accepted,https://github.com/apache/struts/pull/263
 dropwizard-dropwizard-logging,io.dropwizard.logging.DefaultLoggingFactoryPrintErrorMessagesTest.testLogbackStatusPrinterPrintStreamIsRestoredToSystemOut,Accepted,https://github.com/dropwizard/dropwizard/pull/2550
 elastic-job-lite-elastic-job-lite-core,io.elasticjob.lite.internal.instance.ShutdownListenerManagerTest.assertIsShutdownAlready,Opened,https://github.com/elasticjob/elastic-job-lite/pull/592
-jfreechart,org.jfree.data.time.DayTest.testParseDay,Accepted,https://github.com/jfree/jfreechart/pull/103
 http-request-lib,com.github.kevinsawicki.http.HttpRequestTest.basicProxyAuthentication,Opened,https://github.com/kevinsawicki/http-request/pull/151
 http-request-lib,com.github.kevinsawicki.http.HttpRequestTest.deleteWithEscapedMappedQueryParams,Opened,https://github.com/kevinsawicki/http-request/pull/151
 http-request-lib,com.github.kevinsawicki.http.HttpRequestTest.deleteWithEscapedVarargsQueryParams,Opened,https://github.com/kevinsawicki/http-request/pull/151
