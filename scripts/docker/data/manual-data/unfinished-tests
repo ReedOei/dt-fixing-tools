@@ -1,0 +1,15 @@
+org.apache.hadoop.fs.http.server.TestHttpFSServer.instrumentation
+org.apache.hadoop.fs.http.server.TestHttpFSServerNoXAttrs.testWithXAttrs
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testCreateFileWithUnmaskedPermissions
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testCreateSnapshotNoSnapshotName
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testDelegationTokenOperations
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testDeleteSnapshot
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testFileAcls
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testGetSnapshotDiff
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testMkdirWithUnmaskedPermissions
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testOpenOffsetLength
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testPerms
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testRenameSnapshot
+org.apache.hadoop.fs.http.server.TestHttpFSServer.testXAttrs
+org.apache.hadoop.registry.client.binding.TestRegistryOperationUtils.testUsernameExtractionEnvVarOverrride
+org.apache.hadoop.registry.secure.TestSecureLogins.testKerberosRulesValid
