@@ -1,15 +1,23 @@
 #!/bin/bash
 
-if [[ $1 == "" ]]; then
+if [[ $1 == "" ]] || [[ $2 == "" ]]; then
     echo "arg1 - directory with results of debugging"
+    echo "arg2 - file with list of tests, types, and modules (list_od_test_type.csv)"
     exit
 fi
 
 debuggingresults=$1
+testsfile=$2
+
+overalluniquepatches=0
+overalluniquepatchescount=0
+overallworkingpatches=0
+overallworkingpatchescount=0
+overallpossiblepatches=0
+overallpossiblepatchescount=0
 
 IFS=$'\n'
-#for m in $(find ${debuggingresults} -name "*.patch.*" | xargs -n1 basename | sed 's;\.patch.*;;' | sort -u); do
-for proj in $(find ${debuggingresults} -name "fixer.log" | rev | cut -d'/' -f3 | rev | cut -d'=' -f1 | sort -u); do
+for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     # Make a temporary file but manipulate it through a file descriptor, so it gets deleted regardless when script ends
     tmpfile=$(mktemp /tmp/find_unique_patches.XXXXXX)
     exec 3> "${tmpfile}"
@@ -18,8 +26,9 @@ for proj in $(find ${debuggingresults} -name "fixer.log" | rev | cut -d'/' -f3 |
     testcount=0
     pairscount=0
     count=0
-    for d in $(find ${debuggingresults} -name "${proj}=*"); do
-        # Count how many dependent tests there are
+    for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
+        d=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}" | xargs -n1 dirname)
+        # Count how many fixed dependent tests there are
         if [[ $(grep -r "INLINE" ${d}) != "" ]]; then
             testcount=$((testcount + 1))
         fi
@@ -38,15 +47,34 @@ for proj in $(find ${debuggingresults} -name "fixer.log" | rev | cut -d'/' -f3 |
             fi
         done
     done
+    echo "\\Def{${module}_fixed_tests}{${testcount}}"
     if [[ ${count} == 0 ]]; then
-        echo "\\Def{${proj}_unique_patches}{N/A}"
-        echo "\\Def{${proj}_unique_patches_percentage}{N/A}"
+        echo "\\Def{${module}_unique_patches}{N/A}"
+        echo "\\Def{${module}_unique_patches_percentage}{N/A}"
     else
-        echo "\\Def{${proj}_unique_patches}{$(sort -u <3 | wc -l)}"
-        echo "\\Def{${proj}_unique_patches_percentage}{$(echo "$(sort -u <3 | wc -l) / ${count}" | bc -l | xargs printf "%.2f")}"
+        echo "\\Def{${module}_unique_patches}{$(sort -u <3 | wc -l)}"
+        echo "\\Def{${module}_unique_patches_percentage}{$(echo "$(sort -u <3 | wc -l) / ${count}" | bc -l | xargs printf "%.2f")}"
+        overalluniquepatches=$(echo "$(sort -u <3 | wc -l) + ${overalluniquepatches}" | bc -l)
+        overalluniquepatchescount=$((overalluniquepatchescount + 1))
     fi
-    echo "\\Def{${proj}_fixed_tests}{${testcount}}"
-    echo "\\Def{${proj}_working_patches}{${count}}"
-    echo "\\Def{${proj}_possible_patches}{${pairscount}}"
+    if [[ ${count} == 0 ]]; then
+        echo "\\Def{${module}_working_patches}{N/A}"
+    else
+        echo "\\Def{${module}_working_patches}{${count}}"
+        overallworkingpatches=$(echo "${overallworkingpatches} + ${count}" | bc -l)
+        overallworkingpatchescount=$((overallworkingpatchescount + 1))
+    fi
+    if [[ ${pairscount} == 0 ]]; then
+        echo "\\Def{${module}_possible_patches}{N/A}"
+    else
+        echo "\\Def{${module}_possible_patches}{${pairscount}}"
+        overallpossiblepatches=$(echo "${overallpossiblepatches} + ${pairscount}" | bc -l)
+        overallpossiblepatchescount=$((overallpossiblepatchescount + 1))
+    fi
     echo -n "" >3
 done
+
+# Output the overall macros
+echo "\\Def{average_unique_patches}{$(echo ${overalluniquepatches} / ${overalluniquepatchescount} | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_working_patches}{$(echo ${overallworkingpatches} / ${overallworkingpatchescount} | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_possible_patches}{$(echo ${overallpossiblepatches} / ${overallpossiblepatchescount} | bc -l | xargs printf "%.2f")}"

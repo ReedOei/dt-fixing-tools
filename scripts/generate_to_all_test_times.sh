@@ -15,6 +15,8 @@ overallpolluterstime=0
 overallpolluterscount=0
 overallcleanerstime=0
 overallcleanerscount=0
+overallpatchtime=0
+overallpatchcount=0
 
 IFS=$'\n'
 for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
@@ -90,9 +92,33 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         overallcleanerstime=$(echo ${avgtime} + ${overallcleanerstime} | bc -l)
         overallcleanerscount=$((overallcleanerscount + 1))
     fi
+
+    # Do patches
+    rollingsum=0
+    count=0
+    for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
+        # Parse the fix json to get the total time
+        f=$(find $(find $(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}" | xargs -n1 dirname) -name fixer) -name "*.json" | head -1)
+        if [[ ${f} != "" ]]; then
+            time=$(python find_patch_time.py ${f})
+            if [[ ${time} != 0 ]]; then
+                rollingsum=$(echo ${rollingsum} + ${time} | bc -l)
+                count=$((count + 1))
+            fi
+        fi
+    done
+    if [[ ${count} == 0 ]]; then
+        echo "\\Def{${module}_avgpatch_time}{N/A}"
+    else
+        avgtime=$(echo ${rollingsum} / ${count})
+        echo "\\Def{${module}_avgpatch_time}{$(echo ${avgtime} | bc -l | xargs printf "%.2f")}"
+        overallpatchtime=$(echo ${avgtime} + ${overallpatchtime} | bc -l)
+        overallpatchcount=$((overallpatchcount + 1))
+    fi
 done
 
 # Output the overall times
 echo "\\Def{average_avgpolluter_time}{$(echo ${overallpolluterstime} / ${overallpolluterscount} | bc -l | xargs printf "%.2f")}"
 echo "\\Def{average_avgsetter_time}{$(echo ${overallsetterstime} / ${overallsetterscount} | bc -l | xargs printf "%.2f")}"
 echo "\\Def{average_avgcleaner_time}{$(echo ${overallcleanerstime} / ${overallcleanerscount} | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_avgpatch_time}{$(echo ${overallpatchtime} / ${overallpatchcount} | bc -l | xargs printf "%.2f")}"
