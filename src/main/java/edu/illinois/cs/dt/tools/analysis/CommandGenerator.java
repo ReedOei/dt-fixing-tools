@@ -283,6 +283,7 @@ public class CommandGenerator extends StandardMain {
         }
         System.out.println(tools.command("totalOpenedPRs", String.valueOf(openedPRCount)));
         System.out.println(tools.command("totalAcceptedPRs", String.valueOf(acceptedPRCount)));
+        System.out.println(tools.command("totalPRs", String.valueOf(acceptedPRCount+openedPRCount)));
         System.out.println(tools.command("totalOpenedTests", String.valueOf(openedTestCount)));
         System.out.println(tools.command("totalAcceptedTests", String.valueOf(acceptedTestCount)));
         System.out.println(tools.command("totalPatchedTests", String.valueOf(patchedTestCount)));

@@ -121,11 +121,11 @@ public class Analysis extends StandardMain {
     protected void run() throws Exception {
         createTables();
 
-        insertNOTests(results.resolve("no-tests"));
-        insertPRTests(results.resolve("pr-tests"));
-        insertIncompatibleTests(results.resolve("incompatible-tests"));
-        insertUnfinishedTests(results.resolve("unfinished-tests"));
-        insertSeparateJVMTests(results.resolve("separate-jvm-tests"));
+        insertNOTests(results.resolve("manual-data/no-tests"));
+        insertPRTests(results.resolve("manual-data/pr-tests"));
+        insertIncompatibleTests(results.resolve("manual-data/incompatible-tests"));
+        insertUnfinishedTests(results.resolve("manual-data/unfinished-tests"));
+        insertSeparateJVMTests(results.resolve("manual-data/separate-jvm-tests"));
 
         insertFullSubjectList(subjectList);
         insertSubjectLOC(subjectListLOC);
