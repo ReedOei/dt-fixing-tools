@@ -1053,7 +1053,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         request.getProperties().setProperty("maven.javadoc.skip", "true");
         request.getProperties().setProperty("maven.source.skip", "true");
         request.setUpdateSnapshots(false);
-        request.setOffline(true);
 
         ByteArrayOutputStream baosOutput = new ByteArrayOutputStream();
         PrintStream outputStream = new PrintStream(baosOutput);
