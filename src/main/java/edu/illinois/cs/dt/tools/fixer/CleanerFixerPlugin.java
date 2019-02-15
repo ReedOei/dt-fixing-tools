@@ -582,8 +582,17 @@ public class CleanerFixerPlugin extends TestPlugin {
                 return deltaDebug(failingOrder, methodToModify, otherChunk, 2, prepend);    // If works, then delta debug some more the complement chunk
             }
         }
-        // If not chunk/complement work, increase granularity and try again
-        return deltaDebug(failingOrder, methodToModify, cleanerStmts, n * 2, prepend);
+        // If number of cleaners is equal to the number of chunks, we are finished, cannot go down more
+        if (cleanerStmts.size() == n) {
+            return cleanerStmts;
+        }
+
+        // If not chunk/complement work, increase granularity (up to number of cleaner statements)
+        if (cleanerStmts.size() < n * 2) {
+            return deltaDebug(failingOrder, methodToModify, cleanerStmts, cleanerStmts.size(), prepend);
+        } else {
+            return deltaDebug(failingOrder, methodToModify, cleanerStmts, n * 2, prepend);
+        }
     }
 
     private NodeList<Statement> getCodeFromAnnotatedMethod(final String testClassName, final JavaFile javaFile, final String annotation) throws Exception {
