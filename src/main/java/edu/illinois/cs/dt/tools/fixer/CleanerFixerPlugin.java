@@ -461,8 +461,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             PatchResult patchResult = applyFix(failingOrder, fullFailingOrder, polluterMethodOpt.orElse(null), cleanerMethodOpt.get(), victimMethodOpt.get(), prepend);
             patchResults.add(patchResult);
             // A successful patch means we do not need to try all the remaining cleaners for this ordering
-            if (!foundFirst && (patchResult.status() == FixStatus.FIX_INLINE || patchResult.status() == FixStatus.FIX_INLINE_CANREMOVE
-                || patchResult.status() == FixStatus.FIX_NO_INLINE || patchResult.status() == FixStatus.FIX_NO_INLINE_CANREMOVE)) {
+            if (!foundFirst && (patchResult.status().ordinal() > FixStatus.FIX_INVALID.ordinal())) {
                 //return patchResults;
                 double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
                 TestPluginPlugin.info("FIRST PATCH: Found first patch for dependent test " + victimMethodOpt.get().methodName() + " in " + elapsedSeconds + " seconds.");
@@ -739,7 +738,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         return helperMethod;
     }
 
-    private boolean checkCleanerRemoval(List<String> failingOrder, JavaMethod cleanerMethod, NodeList<Statement> cleanerStmts) throws Exception {
+    private FixStatus checkCleanerRemoval(List<String> failingOrder, JavaMethod cleanerMethod, NodeList<Statement> cleanerStmts) throws Exception {
         // Try to modify the cleanerMethod to remove the cleaner statements
         NodeList<Statement> allStatements = cleanerMethod.body().getStatements();
         NodeList<Statement> strippedStatements = NodeList.nodeList();
@@ -756,7 +755,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         // If the stripped statements is still the same as all statements, then the cleaner statements must all be in @Before/After
         if (strippedStatements.equals(allStatements)) {
             TestPluginPlugin.info("All cleaner statements must be in setup/teardown.");
-            return true;
+            return FixStatus.FIX_INLINE_SETUPTEARDOWN;  // Indicating statements were in setup/teardown
         }
 
         // Set the cleaner method body to be the stripped version
@@ -771,7 +770,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             TestPluginPlugin.debug("Error building the code after stripping statements, does not compile");
             // Restore the state
             restore(cleanerMethod.javaFile());
-            return false;
+            return FixStatus.NOD;   // Indicating did not work (TODO: Make it more clear)
         }
         // First try running in isolation
         List<String> isolationOrder = Collections.singletonList(cleanerMethod.methodName());
@@ -779,7 +778,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             TestPluginPlugin.info("Running cleaner by itself after removing statements does not pass.");
             // Restore the state
             restore(cleanerMethod.javaFile());
-            return false;
+            return FixStatus.NOD;   // Indicating did not work (TODO: Make it more clear)
         }
         // Then try running with the failing order, replacing the last test with this one
         List<String> newFailingOrder = new ArrayList<>(failingOrder);
@@ -790,12 +789,12 @@ public class CleanerFixerPlugin extends TestPlugin {
             TestPluginPlugin.info("Running cleaner in failing order after polluter still passes.");
             // Restore the state
             restore(cleanerMethod.javaFile());
-            return false;
+            return FixStatus.NOD;   // Indicating did not work (TODO: Make it more clear)
         }
 
         // Restore the state
         restore(cleanerMethod.javaFile());
-        return true;
+        return FixStatus.FIX_INLINE_CANREMOVE;  // Indicating statements can be removed
     }
 
     // Make the cleaner statements based on the cleaner method and what method needs to be modified in the process
@@ -961,13 +960,34 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
 
         // Do the check of removing cleaner statements from cleaner itself and see if the cleaner now starts failing
-        // TODO: Only applies for polluter+victim scenario for now
         TestPluginPlugin.info("Trying to remove statements from cleaner to see if it becomes order-dependent.");
-        boolean removalCheck = checkCleanerRemoval(failingOrder, cleanerMethod, minimalCleanerStmts);
-        if (!removalCheck) {
-            TestPluginPlugin.info("Removing cleaner statements does not lead to cleaner becoming order-dependent.");
+        FixStatus removalCheck = checkCleanerRemoval(failingOrder, cleanerMethod, minimalCleanerStmts);
+
+        // Figure out what the final fix status should be
+        FixStatus fixStatus;
+        String status;
+        if (inlineSuccessful) {
+            if (removalCheck == FixStatus.FIX_INLINE_SETUPTEARDOWN) {
+                fixStatus = FixStatus.FIX_INLINE_SETUPTEARDOWN;
+                status = "INLINE SUCCESSFUL SETUPTEARDOWN";
+            } else if (removalCheck == FixStatus.FIX_INLINE_CANREMOVE) {
+                fixStatus = FixStatus.FIX_INLINE_CANREMOVE;
+                status = "INLINE SUCCESSFUL CANREMOVE";
+            } else {
+                fixStatus = FixStatus.FIX_INLINE;
+                status = "INLINE SUCCESSFUL";
+            }
         } else {
-            TestPluginPlugin.info("Removing cleaner statements leads to cleaner becoming order-dependent, these statements might be real reset.");
+            if (removalCheck == FixStatus.FIX_INLINE_SETUPTEARDOWN) {
+                fixStatus = FixStatus.FIX_NO_INLINE_SETUPTEARDOWN;
+                status = "INLINE FAIL SETUPTEARDOWN";
+            } else if (removalCheck == FixStatus.FIX_INLINE_CANREMOVE) {
+                fixStatus = FixStatus.FIX_NO_INLINE_CANREMOVE;
+                status = "INLINE FAIL CANREMOVE";
+            } else {
+                fixStatus = FixStatus.FIX_NO_INLINE;
+                status = "INLINE FAIL";
+            }
         }
 
         // Write out the changes in the form of a patch
@@ -977,7 +997,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         } else {
             startingLine = methodToModify.endLine() - 1;    // Shift one, patch starts before end of method
         }
-        String status = inlineSuccessful ? "INLINE SUCCESSFUL" : "INLINE FAIL";
         Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), status);
 
         patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
@@ -991,20 +1010,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Final compile to get state to right place
         runMvnInstall(false);
 
-        FixStatus fixStatus;
-        if (inlineSuccessful) {
-            if (removalCheck) {
-                fixStatus = FixStatus.FIX_INLINE_CANREMOVE;
-            } else {
-                fixStatus = FixStatus.FIX_INLINE;
-            }
-        } else {
-            if (removalCheck) {
-                fixStatus = FixStatus.FIX_NO_INLINE_CANREMOVE;
-            } else {
-                fixStatus = FixStatus.FIX_NO_INLINE;
-            }
-        }
         return new PatchResult(elapsedTime.get(0), fixStatus, victimMethod.methodName(), polluterMethod != null ? polluterMethod.methodName() : "N/A", cleanerMethod.methodName(), this.iterations, patchFile.toString());
     }
 
