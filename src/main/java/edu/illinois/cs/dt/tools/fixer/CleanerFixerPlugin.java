@@ -742,11 +742,12 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Try to modify the cleanerMethod to remove the cleaner statements
         NodeList<Statement> allStatements = cleanerMethod.body().getStatements();
         NodeList<Statement> strippedStatements = NodeList.nodeList();
+        NodeList<Statement> otherCleanerStmts = NodeList.nodeList(cleanerStmts);
         int j = 0;
         for (int i = 0; i < allStatements.size(); i++) {
             // Do not include the statement if we see it from the cleaner statements
-            if (j < cleanerStmts.size() && allStatements.get(i).equals(cleanerStmts.get(j))) {
-                j++;
+            if (otherCleanerStmts.contains(allStatements.get(i))) {
+                otherCleanerStmts.remove(allStatements.get(i));
             } else {
                 strippedStatements.add(allStatements.get(i));
             }
@@ -763,7 +764,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         cleanerMethod = JavaMethod.find(cleanerMethod.methodName(), testSources(), classpath).get();    // Reload, just in case
         cleanerMethod.method().setBody(new BlockStmt(strippedStatements));
         cleanerMethod.javaFile().writeAndReloadCompilationUnit();
-        TestPluginPlugin.info("AWSHI2 STRIPPED: " + strippedStatements);
         try {
             runMvnInstall(false);
         } catch (Exception ex) {
