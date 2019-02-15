@@ -178,8 +178,16 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
                 return deltaDebug(chunk, 2); // If works, then delta debug some more this chunk
             }
         }
+        // If size is equal to number of ochunks, we are finished, cannot go down more
+        if (deps.size() == n) {
+            return deps;
+        }
         // If not chunk/complement work, increase granularity and try again
-        return deltaDebug(deps, n * 2);
+        if (deps.size() < n * 2) {
+            return deltaDebug(deps, deps.size());
+        } else {
+            return deltaDebug(deps, n * 2);
+        }
     }
 
     private List<String> run(List<String> order) throws Exception {

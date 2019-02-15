@@ -235,8 +235,17 @@ public class CleanerFinder {
                 return deltaDebug(otherChunk, 2);   // If works, then delta debug some more the complement chunk
             }
         }
+        // If size is equal to number of ochunks, we are finished, cannot go down more
+        if (cleanerGroup.size() == n) {
+            return cleanerGroup;
+        }
+
         // If not chunk/complement work, increase granularity and try again
-        return deltaDebug(cleanerGroup, n * 2);
+        if (cleanerGroup.size() < n * 2) {
+            return deltaDebug(cleanerGroup, cleanerGroup.size());
+        } else {
+            return deltaDebug(cleanerGroup, n * 2);
+        }
     }
 
     private ListEx<String> reduce(final ListEx<String> cleanerGroup) {
