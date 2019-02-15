@@ -548,6 +548,78 @@ public class CleanerFixerPlugin extends TestPlugin {
         //        }
     }
 
+    private NodeList<Statement> deltaDebugWithTry(final List<String> failingOrder,
+                                                  final JavaMethod methodToModify,
+                                                  final NodeList<Statement> cleanerStmts,
+                                                  final int tryStmtIndex,
+                                                  int n, boolean prepend) throws Exception {
+        this.iterations++;
+
+        // The index in the cleaner statements must be a try statement
+        if (!(cleanerStmts.get(tryStmtIndex) instanceof TryStmt)) {
+            TestPluginPlugin.error("tryStmtIndex is not a try statement!");
+            return cleanerStmts;
+        }
+
+        TryStmt tryStmt = (TryStmt)(cleanerStmts.get(tryStmtIndex));
+
+        // If n granularity is greater than number of statements in try block, then finished, simply return all existing cleaner statements
+        NodeList<Statement> tryBlockStmts = tryStmt.getTryBlock().getStatements();
+        if (tryBlockStmts.size() < n) {
+            // Before returning, see if it is possible to just unravel the statements from the try
+            cleanerStmts.set(tryStmtIndex, new BlockStmt(tryBlockStmts));
+            if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, true)) {
+                cleanerStmts.set(tryStmtIndex, tryStmt);    // Reset if unraveling does not work
+            }
+            return cleanerStmts;
+        }
+
+        // Cut the statements into n equal chunks and try each chunk
+        int chunkSize = (int)Math.round((double)(tryBlockStmts.size()) / n);
+        List<NodeList<Statement>> chunks = new ArrayList<>();
+        for (int i = 0; i < tryBlockStmts.size(); i += chunkSize) {
+            NodeList<Statement> chunk = NodeList.nodeList();
+            NodeList<Statement> otherChunk = NodeList.nodeList();
+            // Create chunk starting at this iteration
+            int endpoint = Math.min(tryBlockStmts.size(), i + chunkSize);
+            chunk.addAll(tryBlockStmts.subList(i, endpoint));
+
+            // Complement chunk are elements before and after this current chunk
+            otherChunk.addAll(tryBlockStmts.subList(0, i));
+            otherChunk.addAll(tryBlockStmts.subList(endpoint, tryBlockStmts.size()));
+
+            // Check if applying chunk works, replacing the try statement in the cleaner statements
+            cleanerStmts.set(tryStmtIndex, new TryStmt(new BlockStmt(chunk), tryStmt.getCatchClauses(), tryStmt.getFinallyBlock().orElse(null)));
+            if (checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, true)) {
+                return deltaDebugWithTry(failingOrder, methodToModify, cleanerStmts, tryStmtIndex, 2, prepend); // If works, then delta debug some more this chunk
+            }
+            // Otherwise, check if applying complement chunk works
+            cleanerStmts.set(tryStmtIndex, new TryStmt(new BlockStmt(otherChunk), tryStmt.getCatchClauses(), tryStmt.getFinallyBlock().orElse(null)));
+            if (checkCleanerStmts(failingOrder, methodToModify, otherChunk, prepend, true)) {
+                return deltaDebugWithTry(failingOrder, methodToModify, cleanerStmts, tryStmtIndex, 2, prepend); // If works, then delta debug some more the complement chunk
+            }
+        }
+        // Reset the try statement from the cleaner statements
+        cleanerStmts.set(tryStmtIndex, tryStmt);
+
+        // If number of statements in try block is equal to the number of chunks, we are finished, cannot go down more
+        if (tryBlockStmts.size() == n) {
+            // Before returning, see if it is possible to just unravel the statements from the try
+            cleanerStmts.set(tryStmtIndex, new BlockStmt(tryBlockStmts));
+            if (!checkCleanerStmts(failingOrder, methodToModify, cleanerStmts, prepend, true)) {
+                cleanerStmts.set(tryStmtIndex, tryStmt);    // Reset if unraveling does not work
+            }
+            return cleanerStmts;
+        }
+
+        // If not chunk/complement work, increase granularity (up to number of statements in try block)
+        if (tryBlockStmts.size() < n * 2) {
+            return deltaDebugWithTry(failingOrder, methodToModify, cleanerStmts, tryStmtIndex, tryBlockStmts.size(), prepend);
+        } else {
+            return deltaDebugWithTry(failingOrder, methodToModify, cleanerStmts, tryStmtIndex, n * 2, prepend);
+        }
+    }
+
     // The delta debugging logic to return minimal list of statements to add in to make run pass
     // In addition to failing order to run, need also list of statements; assumed statements already make run pass
     // The value n is needed to represent granularity of partitioning the statements to get minimal list
@@ -557,6 +629,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                                            final NodeList<Statement> cleanerStmts,
                                            int n, boolean prepend) throws Exception {
         this.iterations++;
+
         // If n granularity is greater than number of cleaner statements, then finished, simply return cleaner statements
         if (cleanerStmts.size() < n) {
             return cleanerStmts;
@@ -836,7 +909,21 @@ public class CleanerFixerPlugin extends TestPlugin {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.AfterClass"));
         }
 
+        TestPluginPlugin.info("AWSHI2 CLEANER STATEMENTS " + cleanerStmts);
         return cleanerStmts;
+    }
+
+    private int statementsSize(NodeList<Statement> stmts) {
+        int size = 0;
+        for (Statement stmt : stmts) {
+            // Take care of try statement block
+            if (stmt instanceof TryStmt) {
+                size += ((TryStmt) stmt).getTryBlock().getStatements().size();
+            } else {
+                size++;
+            }
+        }
+        return size;
     }
 
     // Returns if applying the fix was successful or not
@@ -924,7 +1011,23 @@ public class CleanerFixerPlugin extends TestPlugin {
         this.iterations = 0;
         final NodeList<Statement> minimalCleanerStmts = OperationTime.runOperation(() -> {
             // Cleaner is good, so now we can start delta debugging
-            return deltaDebug(failingOrder, finalHelperMethod, cleanerStmts, 2, finalPrepend);
+            NodeList<Statement> interCleanerStmts = deltaDebug(failingOrder, finalHelperMethod, cleanerStmts, 2, finalPrepend);
+            // Try to go through each statement and look to see if can delta debug a try statement more
+            for (int i = 0; i < interCleanerStmts.size(); i++) {
+                if (interCleanerStmts.get(i) instanceof TryStmt) {
+                    interCleanerStmts = deltaDebugWithTry(failingOrder, finalHelperMethod, interCleanerStmts, i, 2, finalPrepend);
+                }
+            }
+            // One more pass to "unravel" any regular BlockStmt out
+            NodeList<Statement> unraveledCleanerStmts = NodeList.nodeList();
+            for (Statement stmt : interCleanerStmts) {
+                if (stmt instanceof BlockStmt) {
+                    unraveledCleanerStmts.addAll(((BlockStmt)stmt).getStatements());
+                } else {
+                    unraveledCleanerStmts.add(stmt);
+                }
+            }
+            return unraveledCleanerStmts;
         }, (finalCleanerStmts, time) -> {
             elapsedTime.add(time);
             return finalCleanerStmts;
@@ -938,7 +1041,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             restore(methodToModify.javaFile());
             restore(finalHelperMethod.javaFile());
             runMvnInstall(false);
-            Path patch = writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), "BROKEN MINIMAL");
+            Path patch = writePatch(victimMethod, 0, patchedBlock, statementsSize(cleanerStmts), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), "BROKEN MINIMAL");
             return new PatchResult(elapsedTime.get(0), FixStatus.FIX_INVALID, victimMethod.methodName(), polluterMethod != null ? polluterMethod.methodName() : "N/A", cleanerMethod.methodName(), this.iterations, patch.toString());
         }
         // Also check against the full failing order
@@ -948,7 +1051,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             restore(methodToModify.javaFile());
             restore(finalHelperMethod.javaFile());
             runMvnInstall(false);
-            Path patch = writePatch(victimMethod, 0, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), "BROKEN MINIMAL FOR FULL");
+            Path patch = writePatch(victimMethod, 0, patchedBlock, statementsSize(cleanerStmts), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), "BROKEN MINIMAL FOR FULL");
             return new PatchResult(elapsedTime.get(0), FixStatus.FIX_INVALID, victimMethod.methodName(), polluterMethod != null ? polluterMethod.methodName() : "N/A", cleanerMethod.methodName(), this.iterations, patch.toString());
         }*/
 
@@ -998,7 +1101,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         } else {
             startingLine = methodToModify.endLine() - 1;    // Shift one, patch starts before end of method
         }
-        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, cleanerStmts.size(), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), status);
+        Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, statementsSize(cleanerStmts), methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), status);
 
         patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
 
@@ -1026,7 +1129,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         patchLines.add("CLEANER: " + (cleanerMethod == null ? "N/A" : cleanerMethod.methodName()));
         patchLines.add("POLLUTER: " + (polluterMethod == null ? "N/A" : polluterMethod.methodName()));
         patchLines.add("ORIGINAL CLEANER SIZE: " + (originalsize == 0 ? "N/A" : String.valueOf(originalsize)));
-        patchLines.add("NEW CLEANER SIZE: " + (blockStmt != null ? String.valueOf(blockStmt.getStatements().size()) : "N/A"));
+        patchLines.add("NEW CLEANER SIZE: " + (blockStmt != null ? String.valueOf(statementsSize(blockStmt.getStatements())) : "N/A"));
         patchLines.add("ELAPSED TIME: " + elapsedTime);
 
         // If there is a block to add (where it might not be if in error state and need to just output empty)
