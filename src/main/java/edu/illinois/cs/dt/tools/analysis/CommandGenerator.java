@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -192,11 +193,6 @@ public class CommandGenerator extends StandardMain {
                 .count("numBrittleNonSingletonSetterGroup", "brittle", 2, Integer.MAX_VALUE, 0, Integer.MAX_VALUE)
                 .finishGroup();
 
-        factory.create(SQLStatements.COUNT_MAX_POLLUTER_VICTIM)
-                .print("numPollutersMaxForVictims", "victim", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
-                .print("numSettersMaxForBrittles", "brittle", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
-                .finishGroup();
-
         factory.create(SQLStatements.AVERAGE_DEP_GROUP_SIZE)
                 .printDouble("avgNumDepInNonSingletonGroup", "%", 2, Integer.MAX_VALUE)
                 .printDouble("avgNumPolluterInNonSingletonGroup", "victim", 2, Integer.MAX_VALUE)
@@ -223,9 +219,20 @@ public class CommandGenerator extends StandardMain {
                 .count("numVictimNonSingletonCleanerGroup", 2, Integer.MAX_VALUE, 0, Integer.MAX_VALUE)
                 .finishGroup();
 
-        factory.create(SQLStatements.COUNT_MAX_CLEANER)
-                .print("numCleanersMaxForVictims", 0, Integer.MAX_VALUE, 2, Integer.MAX_VALUE)
-                .finishGroup();
+        final Map<String, String> testToCleanerCount = moduleToPRs(SQLStatements.COUNT_MAX_CLEANER, "test_name",
+                                                                   "num", 0,
+                                                                   Integer.MAX_VALUE, 2, Integer.MAX_VALUE);
+        printMedianMax(testToCleanerCount, "Cleaner");
+
+        final Map<String, String> testToPolluterCount = moduleToPRs(SQLStatements.COUNT_MAX_POLLUTER_VICTIM, "test_name",
+                                                                   "num", "victim", 0,
+                                                                    Integer.MAX_VALUE, 2, Integer.MAX_VALUE);
+        printMedianMax(testToPolluterCount , "Polluter");
+
+        final Map<String, String> testToSetterCount = moduleToPRs(SQLStatements.COUNT_MAX_POLLUTER_VICTIM, "test_name",
+                                                                    "num", "brittle", 0,
+                                                                  Integer.MAX_VALUE, 2, Integer.MAX_VALUE);
+        printMedianMax(testToSetterCount , "Setter");
 
         factory.create(SQLStatements.COUNT_SETTERS)
                 .count("numWithSingleSetter", 1, 1)
@@ -471,6 +478,15 @@ public class CommandGenerator extends StandardMain {
 
         // TODO: automated sanity checks
         // TODO: Union of any polluter OR cleaner in the same test class as the victim
+    }
+
+    private void printMedianMax(Map<String, String> testToCount, String type) {
+        List<Integer> counts = testToCount.values().stream().map(Integer::parseInt).collect(Collectors.toList());
+        Collections.sort(counts);
+        int lastIndex = counts.size() - 1;
+        int medianIndex = lastIndex / 2;
+        System.out.println(tools.command("num" + type + "MaxForVictims", String.valueOf(counts.get(lastIndex))));
+        System.out.println(tools.command("num" + type + "MedianForVictims", String.valueOf(counts.get(medianIndex))));
     }
 
     private Map<String, List<String>> queryCleanerByDependency(final String type) throws SQLException {
