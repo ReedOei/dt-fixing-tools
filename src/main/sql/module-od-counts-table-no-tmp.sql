@@ -1,8 +1,8 @@
 select subject_name as subject_name, test_count, victim_count + brittle_count as totalCount, victim_count, brittle_count,
-       case when victim_count = 0 then 'N/A' else polluter_count end as polluter_count,
-       case when polluter_count = 0 then 'N/A' else cleaner_count end as cleaner_count,
-       case when brittle_count = 0 then 'N/A' else setter_count end as setter_count,
-       case when victim_count = 0 then 'N/A' else vic_with_clean_count end as vic_with_clean_count
+       case when victim_count = 0 then '\na' else polluter_count end as polluter_count,
+       case when polluter_count = 0 then '\na' else cleaner_count end as cleaner_count,
+       case when brittle_count = 0 then '\na' else setter_count end as setter_count,
+       case when victim_count = 0 then '\na' else vic_with_clean_count end as vic_with_clean_count
 from
 (select otn.subject_name as subject_name,
        ifnull(tn.n, 0) as test_count,
