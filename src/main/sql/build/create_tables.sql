@@ -57,6 +57,12 @@ create table incompatible_tests
   test_name text not null
 );
 
+create table fix_method_order_tests
+(
+  id integer primary key,
+  test_name text not null
+);
+
 create table flaky_test
 (
   id integer primary key,
