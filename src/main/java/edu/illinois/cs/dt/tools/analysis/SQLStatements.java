@@ -133,6 +133,7 @@ public class SQLStatements {
     public static final Path COUNT_DIAGNOSED_NON_FIXABLE = Paths.get("src/main/sql/figures/count_diagnosed_non_fixable.sql");
     public static final Path COUNT_DIAGNOSED_UNFIXED = Paths.get("src/main/sql/figures/count_diagnosed_unfixed.sql");
     public static final Path INSERT_NO_TEST = Paths.get("src/main/sql/build/insert_no_test.sql");
+    public static final Path INSERT_FIX_METHOD_ORDER_TESTS = Paths.get("src/main/sql/build/insert_fix_method_order_tests.sql");
     public static final Path INSERT_INCOMPATIBLE_TESTS = Paths.get("src/main/sql/build/insert_incompatible_tests.sql");
     public static final Path INSERT_SEPARATE_JVM_TESTS = Paths.get("src/main/sql/build/insert_separate_jvm_tests.sql");
     public static final Path INSERT_UNFINISHED_TESTS = Paths.get("src/main/sql/build/insert_unfinished_tests.sql");
@@ -194,6 +195,7 @@ public class SQLStatements {
         ensureExists(AVERAGE_DEP_GROUP_SIZE);
         ensureExists(INSERT_NO_TEST);
         ensureExists(INSERT_PR_TESTS);
+        ensureExists(INSERT_FIX_METHOD_ORDER_TESTS);
         ensureExists(INSERT_INCOMPATIBLE_TESTS);
         ensureExists(INSERT_SEPARATE_JVM_TESTS);
         ensureExists(INSERT_UNFINISHED_TESTS);

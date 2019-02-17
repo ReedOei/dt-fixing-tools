@@ -123,6 +123,7 @@ public class Analysis extends StandardMain {
 
         insertNOTests(results.resolve("manual-data/no-tests"));
         insertPRTests(results.resolve("manual-data/pr-tests"));
+        insertFixMethodOrderTests(results.resolve("manual-data/fixed-method-order-tests"));
         insertIncompatibleTests(results.resolve("manual-data/incompatible-tests"));
         insertUnfinishedTests(results.resolve("manual-data/unfinished-tests"));
         insertSeparateJVMTests(results.resolve("manual-data/separate-jvm-tests"));
@@ -176,6 +177,14 @@ public class Analysis extends StandardMain {
                     .param(testName)
                     .param(pr_status)
                     .param(pr_link)
+                    .insertSingleRow();
+        }
+    }
+
+    private void insertFixMethodOrderTests(final Path path) throws SQLException, IOException {
+        for (final String testName : Files.readAllLines(path)) {
+            sqlite.statement(SQLStatements.INSERT_FIX_METHOD_ORDER_TESTS)
+                    .param(testName)
                     .insertSingleRow();
         }
     }
