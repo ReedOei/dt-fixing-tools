@@ -906,13 +906,14 @@ public class CleanerFixerPlugin extends TestPlugin {
                 helperMethod = addHelperMethod(cleanerMethod, methodToModify, sameTestClass(cleanerMethod.methodName(), methodToModify.methodName()), prepend);
                 if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
                     TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
-                    Path patch = writePatch(victimMethod, 0, null, 0, null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
+                    Path patch = writePatch(victimMethod, 0, new BlockStmt(cleanerStmts), cleanerStmts.size(), null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
                     restore(methodToModify.javaFile());
                     restore(helperMethod.javaFile());
                     return new PatchResult(OperationTime.instantaneous(), FixStatus.CLEANER_FAIL, victimMethod.methodName(), polluterMethod.methodName(), cleanerMethod.methodName(), 0, patch.toString());
                 }
             } else {
-                return new PatchResult(OperationTime.instantaneous(), FixStatus.CLEANER_FAIL, victimMethod.methodName(), "N/A", cleanerMethod.methodName(), 0, null);
+                Path patch = writePatch(victimMethod, 0, new BlockStmt(cleanerStmts), cleanerStmts.size(), null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
+                return new PatchResult(OperationTime.instantaneous(), FixStatus.CLEANER_FAIL, victimMethod.methodName(), "N/A", cleanerMethod.methodName(), 0, patch.toString());
             }
         }
 
