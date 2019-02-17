@@ -53,7 +53,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_unique_patches_percentage}{n/a}"
     else
         echo "\\Def{${module}_unique_patches}{$(sort -u <3 | wc -l)}"
-        echo "\\Def{${module}_unique_patches_percentage}{$(echo "$(sort -u <3 | wc -l) / ${count}" | bc -l | xargs printf "%.2f")}"
+        echo "\\Def{${module}_unique_patches_percentage}{$(echo "$(sort -u <3 | wc -l) / ${count}" | bc -l | xargs printf "%.1f")\\%}"
         overalluniquepatches=$(echo "$(sort -u <3 | wc -l) + ${overalluniquepatches}" | bc -l)
         overalluniquepatchescount=$((overalluniquepatchescount + 1))
     fi
@@ -75,6 +75,6 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
 done
 
 # Output the overall macros
-echo "\\Def{average_unique_patches}{$(echo ${overalluniquepatches} / ${overalluniquepatchescount} | bc -l | xargs printf "%.2f")}"
-echo "\\Def{average_working_patches}{$(echo ${overallworkingpatches} / ${overallworkingpatchescount} | bc -l | xargs printf "%.2f")}"
-echo "\\Def{average_possible_patches}{$(echo ${overallpossiblepatches} / ${overallpossiblepatchescount} | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_unique_patches}{$(echo ${overalluniquepatches} / ${overalluniquepatchescount} | bc -l | xargs printf "%.1f")}"
+echo "\\Def{average_working_patches}{$(echo ${overallworkingpatches} / ${overallworkingpatchescount} | bc -l | xargs printf "%.1f")}"
+echo "\\Def{average_possible_patches}{$(echo ${overallpossiblepatches} / ${overallpossiblepatchescount} | bc -l | xargs printf "%.1f")}"

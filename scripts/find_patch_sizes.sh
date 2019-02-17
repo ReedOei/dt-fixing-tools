@@ -84,9 +84,9 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_avgsizeperc}{n/a}"
     else
         avgsize=$(echo "${rollingsize} / ${count}" | bc -l)
-        echo "\\Def{${module}_avgsize}{$(echo "${avgsize}" | xargs printf "%.2f")}"
+        echo "\\Def{${module}_avgsize}{$(echo "${avgsize}" | xargs printf "%.1f")}"
         avgsizeperc=$(echo "${rollingsizeperc} / ${count} * 100" | bc -l)
-        echo "\\Def{${module}_avgsizeperc}{$(echo "${avgsizeperc}" | xargs printf "%.2f")}"
+        echo "\\Def{${module}_avgsizeperc}{$(echo "${avgsizeperc}" | xargs printf "%.1f")\\%}"
         overallsize=$(echo "${avgsize} + ${overallsize}" | bc -l)
         overallsizeperc=$(echo "${avgsizeperc} + ${overallsizeperc}" | bc -l)
         overallsizecount=$((overallsizecount + 1))
@@ -96,7 +96,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_stdsize}{n/a}"
     else
         avgstd=$(echo "${rollingstd} / ${rollingstdcount}" | bc -l)
-        echo "\\Def{${module}_stdsize}{$(echo "${avgstd}" | xargs printf "%.2f")}"
+        echo "\\Def{${module}_stdsize}{$(echo "${avgstd}" | xargs printf "%.1f")}"
         overallstd=$(echo "${avgstd} + ${overallstd}" | bc -l)
         overallstdcount=$((overallstdcount + 1))
     fi
@@ -104,6 +104,6 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
 done
 
 # Output the overall macros
-echo "\\Def{average_avgsize}{$(echo "${overallsize} / ${overallsizecount}" | bc -l | xargs printf "%.2f")}"
-echo "\\Def{average_avgsizeperc}{$(echo "${overallsizeperc} / ${overallsizecount}" | bc -l | xargs printf "%.2f")}"
-echo "\\Def{average_stdsize}{$(echo "${overallstd} / ${overallstdcount}" | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_avgsize}{$(echo "${overallsize} / ${overallsizecount}" | bc -l | xargs printf "%.1f")}"
+echo "\\Def{average_avgsizeperc}{$(echo "${overallsizeperc} / ${overallsizecount}" | bc -l | xargs printf "%.1f")\\%}"
+echo "\\Def{average_stdsize}{$(echo "${overallstd} / ${overallstdcount}" | bc -l | xargs printf "%.1f")}"
