@@ -15,6 +15,13 @@ def main(args):
         if len(cleanerData['cleaners']) > 0:
             totaltime += cleanerData['time']['totalTime']['elapsedSeconds']
 
+    # If the total time found so far is 0, then there must be no polluters, so grab overall time minus the polluter times
+    if totaltime == 0:
+        poltime = 0
+        for pol in data['polluters']:
+            poltime += pol['time']['elapsedSeconds']
+        totaltime = max(data['time']['elapsedSeconds'] - poltime, 0)
+
     print totaltime
 
 if __name__ == '__main__':

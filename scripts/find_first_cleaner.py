@@ -8,13 +8,19 @@ def main(args):
     with open(jsonfile) as f:
         data = json.load(f)
 
-    for pol in data['polluters']:
-        polluter = '|'.join(pol['deps'])
-        cleanerData = pol['cleanerData']
-        dependentTest = cleanerData['dependentTest']
+    firstpol = data['polluters'][0]
+    cleanerData = firstpol['cleanerData']
+
+    # If there are cleaners, we want the time spent looking for that first cleaner of the first polluter
+    if len(cleanerData['cleaners']) > 0:
         for cleaner in cleanerData['cleaners']:
-            if cleaner['orderFound'] == 0:
-                print cleaner['time']['totalTime']['elapsedSeconds']
+            print cleaner['time']['totalTime']['elapsedSeconds']
+    else:
+        # If there is only one polluter, then it is the overall time, minus the time for the polluter
+        if len(data['polluters']) == 1:
+            print data['time']['elapsedSeconds'] - firstpol['time']['elapsedSeconds']
+        else:
+            sys.stderr.write('WEIRD CASE, NEED TO HANDLE ' + jsonfile + '\n')
 
 if __name__ == '__main__':
     main(sys.argv)
