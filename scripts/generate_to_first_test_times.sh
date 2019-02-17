@@ -33,10 +33,10 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         fi
     done
     if [[ ${count} == 0 ]]; then
-        echo "\\Def{${module}_firstpolluter_time}{N/A}"
+        echo "\\Def{${module}_firstpolluter_time}{n/a}"
     else
         avgtime=$(echo ${rollingsum} / ${count} | bc -l)
-        echo "\\Def{${module}_firstpolluter_time}{$(echo ${avgtime} | xargs printf "%.2f")}"
+        echo "\\Def{${module}_firstpolluter_time}{$(echo ${avgtime} | xargs printf "%.0f")}"
         overallpolluterstime=$(echo ${avgtime} + ${overallpolluterstime} | bc -l)
         overallpolluterscount=$((overallpolluterscount + 1))
     fi
@@ -54,10 +54,10 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         fi
     done
     if [[ ${count} == 0 ]]; then
-        echo "\\Def{${module}_firstsetter_time}{N/A}"
+        echo "\\Def{${module}_firstsetter_time}{n/a}"
     else
         avgtime=$(echo ${rollingsum} / ${count} | bc -l)
-        echo "\\Def{${module}_firstsetter_time}{$(echo ${avgtime} | xargs printf "%.2f")}"
+        echo "\\Def{${module}_firstsetter_time}{$(echo ${avgtime} | xargs printf "%.0f")}"
         overallsetterstime=$(echo ${avgtime} + ${overallsetterstime} | bc -l)
         overallsetterscount=$((overallsetterscount + 1))
     fi
@@ -75,10 +75,10 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         fi
     done
     if [[ ${count} == 0 ]]; then
-        echo "\\Def{${module}_firstcleaner_time}{N/A}"
+        echo "\\Def{${module}_firstcleaner_time}{n/a}"
     else
         avgtime=$(echo ${rollingsum} / ${count} | bc -l)
-        echo "\\Def{${module}_firstcleaner_time}{$(echo ${avgtime} | xargs printf "%.2f")}"
+        echo "\\Def{${module}_firstcleaner_time}{$(echo ${avgtime} | xargs printf "%.0f")}"
         overallcleanerstime=$(echo ${avgtime} + ${overallcleanerstime} | bc -l)
         overallcleanerscount=$((overallcleanerscount + 1))
     fi
@@ -98,17 +98,17 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         fi
     done
     if [[ ${count} == 0 ]]; then
-        echo "\\Def{${module}_firstpatch_time}{N/A}"
+        echo "\\Def{${module}_firstpatch_time}{n/a}"
     else
         avgtime=$(echo ${rollingsum} / ${count} | bc -l)
-        echo "\\Def{${module}_firstpatch_time}{$(echo ${avgtime} | xargs printf "%.2f")}"
+        echo "\\Def{${module}_firstpatch_time}{$(echo ${avgtime} | xargs printf "%.0f")}"
         overallpatchtime=$(echo ${avgtime} + ${overallpatchtime} | bc -l)
         overallpatchcount=$((overallpatchcount + 1))
     fi
 done
 
 # Output the overall times
-echo "\\Def{average_firstpolluter_time}{$(echo ${overallpolluterstime} / ${overallpolluterscount} | bc -l | xargs printf "%.2f")}"
-echo "\\Def{average_firstsetter_time}{$(echo ${overallsetterstime} / ${overallsetterscount} | bc -l | xargs printf "%.2f")}"
-echo "\\Def{average_firstcleaner_time}{$(echo ${overallcleanerstime} / ${overallcleanerscount} | bc -l | xargs printf "%.2f")}"
-echo "\\Def{average_firstpatch_time}{$(echo ${overallpatchtime} / ${overallpatchcount} | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_firstpolluter_time}{$(echo ${overallpolluterstime} / ${overallpolluterscount} | bc -l | xargs printf "%.0f")}"
+echo "\\Def{average_firstsetter_time}{$(echo ${overallsetterstime} / ${overallsetterscount} | bc -l | xargs printf "%.0f")}"
+echo "\\Def{average_firstcleaner_time}{$(echo ${overallcleanerstime} / ${overallcleanerscount} | bc -l | xargs printf "%.0f")}"
+echo "\\Def{average_firstpatch_time}{$(echo ${overallpatchtime} / ${overallpatchcount} | bc -l | xargs printf "%.0f")}"
