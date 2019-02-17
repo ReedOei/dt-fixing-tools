@@ -222,7 +222,7 @@ public class JavaFile {
         return null;
     }
 
-    // Adding a void, no parameter method
+    // Adding a void, no parameter method (annotated with @Test just to overcome error-prone)
     public MethodDeclaration addMethod(final String method) {
         // First check if method exists, and don't do anything if it already does
         MethodDeclaration existingMethod = findMethodDeclaration(method);
@@ -236,7 +236,9 @@ public class JavaFile {
         String methodName = method.substring(method.lastIndexOf('.') + 1);
         for (final ClassOrInterfaceDeclaration classDeclaration : classList) {
             if (classDeclaration.getNameAsString().equals(className)) {
-                return classDeclaration.addMethod(methodName, Modifier.PUBLIC);
+                MethodDeclaration newMeth = classDeclaration.addMethod(methodName, Modifier.PUBLIC);
+                newMeth.addAnnotation("Test");
+                return newMeth;
             }
         }
         return null;
