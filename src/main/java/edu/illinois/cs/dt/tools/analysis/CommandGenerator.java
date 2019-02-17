@@ -193,6 +193,10 @@ public class CommandGenerator extends StandardMain {
                 .count("numBrittleNonSingletonSetterGroup", "brittle", 2, Integer.MAX_VALUE, 0, Integer.MAX_VALUE)
                 .finishGroup();
 
+        factory.create(SQLStatements.COUNT_VICTIM_WITH_POLLUTERS_CLEANER)
+                .count("numVictimWithPollutersAndCleaners")
+                .finishGroup();
+
         factory.create(SQLStatements.AVERAGE_DEP_GROUP_SIZE)
                 .printDouble("avgNumDepInNonSingletonGroup", "%", 2, Integer.MAX_VALUE)
                 .printDouble("avgNumPolluterInNonSingletonGroup", "victim", 2, Integer.MAX_VALUE)

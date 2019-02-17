@@ -128,6 +128,7 @@ public class SQLStatements {
     public static final Path COUNT_MAX_CLEANER = Paths.get("src/main/sql/figures/count_max_cleaner_victim.sql");
     public static final Path COUNT_CLEANER_BY_VICTIM = Paths.get("src/main/sql/figures/count_cleaner_by_victim.sql");
     public static final Path COUNT_DEPENDENCY_GROUP_SIZE = Paths.get("src/main/sql/figures/count_dependency_group_size.sql");
+    public static final Path COUNT_VICTIM_WITH_POLLUTERS_CLEANER = Paths.get("src/main/sql/figures/victim-with-polluter-cleaner.sql");
     public static final Path AVERAGE_DEP_GROUP_SIZE = Paths.get("src/main/sql/figures/average_dep_group_size.sql");
     public static final Path COUNT_DIAGNOSED_FIELDS_NUM = Paths.get("src/main/sql/figures/count_diagnosed_fields_num.sql");
     public static final Path COUNT_DIAGNOSED_NON_FIXABLE = Paths.get("src/main/sql/figures/count_diagnosed_non_fixable.sql");
@@ -192,6 +193,7 @@ public class SQLStatements {
         ensureExists(COUNT_MAX_CLEANER);
         ensureExists(COUNT_CLEANER_BY_VICTIM);
         ensureExists(COUNT_DEPENDENCY_GROUP_SIZE);
+        ensureExists(COUNT_VICTIM_WITH_POLLUTERS_CLEANER);
         ensureExists(AVERAGE_DEP_GROUP_SIZE);
         ensureExists(INSERT_NO_TEST);
         ensureExists(INSERT_PR_TESTS);
