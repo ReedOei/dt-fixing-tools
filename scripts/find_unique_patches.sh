@@ -49,8 +49,8 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     done
     echo "\\Def{${module}_fixed_tests}{${testcount}}"
     if [[ ${count} == 0 ]]; then
-        echo "\\Def{${module}_unique_patches}{N/A}"
-        echo "\\Def{${module}_unique_patches_percentage}{N/A}"
+        echo "\\Def{${module}_unique_patches}{n/a}"
+        echo "\\Def{${module}_unique_patches_percentage}{n/a}"
     else
         echo "\\Def{${module}_unique_patches}{$(sort -u <3 | wc -l)}"
         echo "\\Def{${module}_unique_patches_percentage}{$(echo "$(sort -u <3 | wc -l) / ${count}" | bc -l | xargs printf "%.2f")}"
@@ -58,14 +58,14 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         overalluniquepatchescount=$((overalluniquepatchescount + 1))
     fi
     if [[ ${count} == 0 ]]; then
-        echo "\\Def{${module}_working_patches}{N/A}"
+        echo "\\Def{${module}_working_patches}{n/a}"
     else
         echo "\\Def{${module}_working_patches}{${count}}"
         overallworkingpatches=$(echo "${overallworkingpatches} + ${count}" | bc -l)
         overallworkingpatchescount=$((overallworkingpatchescount + 1))
     fi
     if [[ ${pairscount} == 0 ]]; then
-        echo "\\Def{${module}_possible_patches}{N/A}"
+        echo "\\Def{${module}_possible_patches}{n/a}"
     else
         echo "\\Def{${module}_possible_patches}{${pairscount}}"
         overallpossiblepatches=$(echo "${overallpossiblepatches} + ${pairscount}" | bc -l)

@@ -47,6 +47,7 @@ done
 #echo "\\Def{average_multipatch_std}{$(echo "${rollingstd} / ${rollingstdcount}" | bc -l |  xargs printf "%.2f")}"
 
 overallsize=0
+overallsizeperc=0
 overallsizecount=0
 overallstd=0
 overallstdcount=0
@@ -54,14 +55,18 @@ overallstdcount=0
 # Do some computation of sizes per module
 for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     rollingsize=0
+    rollingsizeperc=0
     count=0
     rollingstd=0
     rollingstdcount=0
     for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
         for p in $(find ${debuggingresults} -name "${t}.patch*"); do
             if [[ $(grep "INLINE" ${p}) != "" ]]; then
+                origsize=$(grep "ORIGINAL CLEANER SIZE: " ${p} | cut -d':' -f2 | xargs)
                 newsize=$(grep "NEW CLEANER SIZE: " ${p} | cut -d':' -f2 | xargs)
+                sizeperc=$(echo "${newsize} / ${origsize}" | bc -l)
                 rollingsize=$(echo "${rollingsize} + ${newsize}" | bc -l)
+                rollingsizeperc=$(echo "${rollingsizeperc} + ${sizeperc}" | bc -l)
                 count=$((count + 1))
             fi
         done
@@ -75,16 +80,20 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     done
 
     if [[ ${count} == 0 ]]; then
-        echo "\\Def{${module}_avgsize}{N/A}"
+        echo "\\Def{${module}_avgsize}{n/a}"
+        echo "\\Def{${module}_avgsizeperc}{n/a}"
     else
         avgsize=$(echo "${rollingsize} / ${count}" | bc -l)
         echo "\\Def{${module}_avgsize}{$(echo "${avgsize}" | xargs printf "%.2f")}"
+        avgsizeperc=$(echo "${rollingsizeperc} / ${count} * 100" | bc -l)
+        echo "\\Def{${module}_avgsizeperc}{$(echo "${avgsizeperc}" | xargs printf "%.2f")}"
         overallsize=$(echo "${avgsize} + ${overallsize}" | bc -l)
+        overallsizeperc=$(echo "${avgsizeperc} + ${overallsizeperc}" | bc -l)
         overallsizecount=$((overallsizecount + 1))
     fi
 
     if [[ ${rollingstdcount} == 0 ]]; then
-        echo "\\Def{${module}_stdsize}{N/A}"
+        echo "\\Def{${module}_stdsize}{n/a}"
     else
         avgstd=$(echo "${rollingstd} / ${rollingstdcount}" | bc -l)
         echo "\\Def{${module}_stdsize}{$(echo "${avgstd}" | xargs printf "%.2f")}"
@@ -95,5 +104,6 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
 done
 
 # Output the overall macros
-echo "\\Def{average_avgsize}{$(echo ${overallsize} / ${overallsizecount} | bc -l | xargs printf "%.2f")}"
-echo "\\Def{average_stdsize}{$(echo ${overallstd} / ${overallstdcount} | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_avgsize}{$(echo "${overallsize} / ${overallsizecount}" | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_avgsizeperc}{$(echo "${overallsizeperc} / ${overallsizecount}" | bc -l | xargs printf "%.2f")}"
+echo "\\Def{average_stdsize}{$(echo "${overallstd} / ${overallstdcount}" | bc -l | xargs printf "%.2f")}"
