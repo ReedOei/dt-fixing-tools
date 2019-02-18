@@ -52,6 +52,8 @@ overallsizecount=0
 overallstd=0
 overallstdcount=0
 
+overallsizeonecount=0
+
 # Do some computation of sizes per module
 for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     rollingsize=0
@@ -61,13 +63,19 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     rollingstdcount=0
     for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
         for p in $(find ${debuggingresults} -name "${t}.patch*"); do
-            if [[ $(grep "INLINE" ${p}) != "" ]]; then
+            if [[ $(grep "INLINE" ${p}) != "" ]] || [[ $(grep "CLEANER DOES NOT FIX" ${p}) != "" ]] ; then
                 origsize=$(grep "ORIGINAL CLEANER SIZE: " ${p} | cut -d':' -f2 | xargs)
+                if [[ ${origsize} == "N/A" ]]; then
+                    continue
+                fi
                 newsize=$(grep "NEW CLEANER SIZE: " ${p} | cut -d':' -f2 | xargs)
                 sizeperc=$(echo "${newsize} / ${origsize}" | bc -l)
                 rollingsize=$(echo "${rollingsize} + ${newsize}" | bc -l)
                 rollingsizeperc=$(echo "${rollingsizeperc} + ${sizeperc}" | bc -l)
                 count=$((count + 1))
+                if [[ ${newsize} == 1 ]]; then
+                    overallsizeonecount=$((overallsizeonecount + 1))
+                fi
             fi
         done
         # Standard deviation of sizes
@@ -107,3 +115,4 @@ done
 echo "\\Def{average_avgsize}{$(echo "${overallsize} / ${overallsizecount}" | bc -l | xargs printf "%.1f")}"
 echo "\\Def{average_avgsizeperc}{$(echo "${overallsizeperc} / ${overallsizecount}" | bc -l | xargs printf "%.1f")\\%}"
 echo "\\Def{average_stdsize}{$(echo "${overallstd} / ${overallstdcount}" | bc -l | xargs printf "%.1f")}"
+echo "\\Def{overall_sizeone}{$(echo "${overallsizeonecount}")}"

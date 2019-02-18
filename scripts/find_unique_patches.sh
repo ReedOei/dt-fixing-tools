@@ -10,6 +10,7 @@ debuggingresults=$1
 testsfile=$2
 
 overalluniquepatches=0
+overalluniquepatchessizes=0
 overalluniquepatchescount=0
 overallworkingpatches=0
 overallworkingpatchescount=0
@@ -38,23 +39,31 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
             if [[ $(grep "NO CLEANERS" ${p}) == "" ]]; then
                 pairscount=$((pairscount + 1))
             fi
-            if [[ $(grep "INLINE" ${p}) != "" ]]; then
+            if [[ $(grep "INLINE" ${p}) != "" ]] || [[ $(grep "CLEANER DOES NOT FIX" ${p}) != "" ]] ; then
+                size=$(grep "NEW CLEANER SIZE: " ${p} | cut -d':' -f2 | xargs)
+                if [[ ${size} == "N/A" ]]; then
+                    continue
+                fi
                 count=$((count + 1))
                 linenum=$(grep -n "============" ${p} | cut -d':' -f1)
                 modified=$(grep -h "MODIFIED" ${p})
                 # Checking both patch contents and the name of the modified method
-                echo $(md5sum <(echo "$(echo ${modified}) $(tail -n +$((linenum + 1)) ${p})") | cut -d' ' -f1) >>3
+                #echo $(md5sum <(echo "$(echo ${modified}) $(tail -n +$((linenum + 1)) ${p})") | cut -d' ' -f1) ${size} >>3
+                echo $(md5sum <(echo "$(tail -n +$((linenum + 1)) ${p})") | cut -d' ' -f1) ${size} >>3
             fi
         done
     done
     echo "\\Def{${module}_fixed_tests}{${testcount}}"
     if [[ ${count} == 0 ]]; then
         echo "\\Def{${module}_unique_patches}{n/a}"
+        echo "\\Def{${module}_unique_patches_sizes}{n/a}"
         echo "\\Def{${module}_unique_patches_percentage}{n/a}"
     else
         echo "\\Def{${module}_unique_patches}{$(sort -u <3 | wc -l)}"
+        echo "\\Def{${module}_unique_patches_sizes}{$(sort -u <3 | cut -d' ' -f2 | sort -u | wc -l)}"
         echo "\\Def{${module}_unique_patches_percentage}{$(echo "$(sort -u <3 | wc -l) / ${count}" | bc -l | xargs printf "%.1f")\\%}"
         overalluniquepatches=$(echo "$(sort -u <3 | wc -l) + ${overalluniquepatches}" | bc -l)
+        overalluniquepatchessizes=$(echo "$(sort -u <3 | cut -d' ' -f2 | sort -u | wc -l) + ${overalluniquepatchessizes}" | bc -l)
         overalluniquepatchescount=$((overalluniquepatchescount + 1))
     fi
     if [[ ${count} == 0 ]]; then
@@ -76,5 +85,6 @@ done
 
 # Output the overall macros
 echo "\\Def{average_unique_patches}{$(echo ${overalluniquepatches} / ${overalluniquepatchescount} | bc -l | xargs printf "%.1f")}"
+echo "\\Def{average_unique_patches_sizes}{$(echo ${overalluniquepatchessizes} / ${overalluniquepatchescount} | bc -l | xargs printf "%.1f")}"
 echo "\\Def{average_working_patches}{$(echo ${overallworkingpatches} / ${overallworkingpatchescount} | bc -l | xargs printf "%.1f")}"
 echo "\\Def{average_possible_patches}{$(echo ${overallpossiblepatches} / ${overallpossiblepatchescount} | bc -l | xargs printf "%.1f")}"
