@@ -1,13 +1,1 @@
-com.alibaba.json.bvt.bug.Issue_717.test_for_issue
-com.alibaba.json.bvt.date.DateTest_tz.test_codec
-com.alibaba.json.bvt.date.DateTest.test_date
-com.alibaba.json.bvt.issue_1200.Issue1298.test_for_issue
-com.alibaba.json.bvt.issue_1200.Issue1298.test_for_issue_1
-com.alibaba.json.bvt.issue_1600.Issue1679.test_for_issue
-com.alibaba.json.bvt.issue_1700.Issue1769.test_for_issue
-com.alibaba.json.bvt.issue_1900.Issue1977.test_for_issue
-com.alibaba.json.bvt.serializer.date.DateTest4_indian.test_date
-com.alibaba.json.bvt.serializer.date.DateTest5_iso8601.test_date
-com.alibaba.json.bvt.serializer.JSONFieldTest5.test_jsonField
-com.alibaba.json.bvt.serializer.JSONSerializerTest2.test_0
-com.alibaba.json.bvt.serializer.MaxBufSizeTest.test_max_buf
+
