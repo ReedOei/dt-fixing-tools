@@ -57,3 +57,5 @@ io.elasticjob.lite.internal.instance.TriggerListenerManagerTest.assertTriggerWhe
 io.elasticjob.lite.internal.schedule.JobRegistryTest.assertGetCurrentShardingTotalCountIfNull,Opened,https://github.com/elasticjob/elastic-job-lite/pull/625
 io.elasticjob.lite.internal.schedule.JobRegistryTest.assertGetCurrentShardingTotalCountIfNull,Opened,https://github.com/elasticjob/elastic-job-lite/pull/625
 io.elasticjob.lite.internal.sharding.ShardingListenerManagerTest.assertListenServersChangedJobListenerWhenIsInstanceChangeButJobInstanceIsShutdown,Opened,https://github.com/elasticjob/elastic-job-lite/pull/625
+com.alibaba.json.bvt.issue_1700.Issue1769.test_for_issue,Opened,https://github.com/alibaba/fastjson/pull/2290
+com.alibaba.json.bvt.serializer.MaxBufSizeTest.test_max_buf,Opened,https://github.com/alibaba/fastjson/pull/2291
