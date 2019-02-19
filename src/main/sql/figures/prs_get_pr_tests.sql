@@ -1,4 +1,4 @@
-select pt.subject_name, count(pt.test_name) as tCount
+select pt.subject_name, count(distinct pt.test_name) as tCount
 from pr_tests pt
 where pt.pr_status like ?
 and pt.subject_name IN

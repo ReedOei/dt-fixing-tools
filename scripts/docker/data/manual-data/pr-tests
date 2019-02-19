@@ -4,9 +4,7 @@ fastjson,com.alibaba.json.bvt.issue_1200.Issue1298.test_for_issue,Accepted,https
 fastjson,com.alibaba.json.bvt.issue_1200.Issue1298.test_for_issue_1,Accepted,https://github.com/alibaba/fastjson/pull/2148
 fastjson,com.alibaba.json.bvt.issue_1600.Issue1679.test_for_issue,Accepted,https://github.com/alibaba/fastjson/pull/2148
 fastjson,com.alibaba.json.bvt.issue_1900.Issue1977.test_for_issue,Accepted,https://github.com/alibaba/fastjson/pull/2148
-fastjson,com.alibaba.json.bvt.serializer.date.DateTest4_indian.test_date,Accepted,https://github.com/alibaba/fastjson/pull/2148
 fastjson,com.alibaba.json.bvt.serializer.date.DateTest5_iso8601.test_date,Accepted,https://github.com/alibaba/fastjson/pull/2148
-fastjson,com.alibaba.json.bvt.serializer.JSONSerializerTest2.test_0,Accepted,https://github.com/alibaba/fastjson/pull/2133
 hadoop-hadoop-yarn-project-hadoop-yarn-hadoop-yarn-server-hadoop-yarn-server-timeline-pluginstorage,org.apache.hadoop.yarn.server.timeline.TestEntityGroupFSTimelineStore.testCleanLogs,Opened,https://github.com/apache/hadoop/pull/438
 incubator-dubbo-dubbo-serialization-dubbo-serialization-fst,org.apache.dubbo.common.serialize.fst.FstObjectInputTest.testEmptyByteArrayForEmptyInput,Accepted,https://github.com/apache/incubator-dubbo/pull/2815
 incubator-dubbo-dubbo-cluster,org.apache.dubbo.rpc.cluster.StickyTest.testMethodStickyNoCheck,Accepted,https://github.com/apache/incubator-dubbo/pull/2807
@@ -54,7 +52,6 @@ undertow-websockets-jsr,io.undertow.websockets.jsr.test.annotated.AnnotatedEndpo
 wildfly-naming,org.jboss.as.naming.WritableServiceBasedNamingStoreTestCase.testPermissions,Accepted,https://github.com/wildfly/wildfly/pull/11833
 elastic-job-lite-elastic-job-lite-core,io.elasticjob.lite.internal.failover.FailoverServiceTest.assertGetLocalFailoverItemsIfShutdown,Opened,https://github.com/elasticjob/elastic-job-lite/pull/625
 elastic-job-lite-elastic-job-lite-core,io.elasticjob.lite.internal.instance.TriggerListenerManagerTest.assertTriggerWhenJobIsNotRunning,Opened,https://github.com/elasticjob/elastic-job-lite/pull/625
-elastic-job-lite-elastic-job-lite-core,io.elasticjob.lite.internal.schedule.JobRegistryTest.assertGetCurrentShardingTotalCountIfNull,Opened,https://github.com/elasticjob/elastic-job-lite/pull/625
 elastic-job-lite-elastic-job-lite-core,io.elasticjob.lite.internal.schedule.JobRegistryTest.assertGetCurrentShardingTotalCountIfNull,Opened,https://github.com/elasticjob/elastic-job-lite/pull/625
 elastic-job-lite-elastic-job-lite-core,io.elasticjob.lite.internal.sharding.ShardingListenerManagerTest.assertListenServersChangedJobListenerWhenIsInstanceChangeButJobInstanceIsShutdown,Opened,https://github.com/elasticjob/elastic-job-lite/pull/625
 fastjson,com.alibaba.json.bvt.issue_1700.Issue1769.test_for_issue,Opened,https://github.com/alibaba/fastjson/pull/2290
