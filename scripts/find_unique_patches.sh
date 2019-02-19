@@ -39,7 +39,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
             if [[ $(grep "NO CLEANERS" ${p}) == "" ]]; then
                 pairscount=$((pairscount + 1))
             fi
-            if [[ $(grep "INLINE" ${p}) != "" ]] || [[ $(grep "CLEANER DOES NOT FIX" ${p}) != "" ]] ; then
+            if [[ $(grep "INLINE" ${p}) != "" ]] || [[ $(grep "CLEANER DOES NOT FIX" ${p}) != "" ]] || [[ $(grep "BROKEN MINIMAL" ${p}) != "" ]]; then
                 size=$(grep "NEW CLEANER SIZE: " ${p} | cut -d':' -f2 | xargs)
                 if [[ ${size} == "N/A" ]]; then
                     continue
@@ -88,3 +88,6 @@ echo "\\Def{average_unique_patches}{$(echo ${overalluniquepatches} / ${overallun
 echo "\\Def{average_unique_patches_sizes}{$(echo ${overalluniquepatchessizes} / ${overalluniquepatchescount} | bc -l | xargs printf "%.1f")}"
 echo "\\Def{average_working_patches}{$(echo ${overallworkingpatches} / ${overallworkingpatchescount} | bc -l | xargs printf "%.1f")}"
 echo "\\Def{average_possible_patches}{$(echo ${overallpossiblepatches} / ${overallpossiblepatchescount} | bc -l | xargs printf "%.1f")}"
+
+echo "\\Def{total_unique_patches}{${overalluniquepatches}}"
+echo "\\Def{total_working_patches}{${overallworkingpatches}}"
