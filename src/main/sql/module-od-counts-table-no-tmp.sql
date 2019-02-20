@@ -2,7 +2,11 @@ select subject_name as subject_name, test_count, victim_count + brittle_count as
        case when victim_count = 0 then '\na' else polluter_count end as polluter_count,
        case when polluter_count = 0 then '\na' else cleaner_count end as cleaner_count,
        case when brittle_count = 0 then '\na' else setter_count end as setter_count,
-       case when victim_count = 0 then '\na' else vic_with_clean_count end as vic_with_clean_count
+       case when victim_count = 0 then '\na' else vic_with_clean_count end as vic_with_clean_count,
+       ifnull(round(cast(polluter_count as float) / victim_count, 1), '\na') as polluter_per_victim,
+       ifnull(round(cast(setter_count as float) / brittle_count, 1), '\na') as setter_per_brittle,
+       ifnull(round(cast(cleaner_count as float) / polluter_count, 1), '\na') as cleaner_per_polluter,
+       ifnull(round(cast(cleaner_count as float) / victim_count, 1), '\na') as cleaner_per_victim
 from
 (select otn.subject_name as subject_name,
        ifnull(tn.n, 0) as test_count,
@@ -66,7 +70,11 @@ left join
 order by otn.subject_name)
 inner join subject s on s.name = subject_name
 union all
-select 'Total' as subject_name, sum(test_count) as test_count, sum(victim_count + brittle_count) as totalCount, sum(victim_count) as victim_count, sum(brittle_count) as brittle_count, sum(polluter_count) as polluter_count, sum(cleaner_count) as cleaner_count, sum(setter_count) as setter_count, sum(vic_with_clean_count) as vic_with_clean_count
+select 'Total' as subject_name, sum(test_count) as test_count, sum(victim_count + brittle_count) as totalCount, sum(victim_count) as victim_count, sum(brittle_count) as brittle_count, sum(polluter_count) as polluter_count, sum(cleaner_count) as cleaner_count, sum(setter_count) as setter_count, sum(vic_with_clean_count) as vic_with_clean_count,
+       round(cast(sum(polluter_count) as float) / sum(victim_count), 1) as polluter_per_victim,
+       round(cast(sum(setter_count) as float) / sum(brittle_count), 1) as setter_per_brittle,
+       round(cast(sum(cleaner_count) as float) / sum(polluter_count), 1) as cleaner_per_polluter,
+       round(cast(sum(cleaner_count) as float) / sum(victim_count), 1) as cleaner_per_victim
 from
 (select otn.subject_name as subject_name,
        ifnull(tn.n, 0) as test_count,
