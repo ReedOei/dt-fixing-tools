@@ -28,7 +28,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     pairscount=0
     count=0
     for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
-        d=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}" | xargs -n1 dirname)
+        d=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}/" | xargs -n1 dirname)
         # Count how many fixed dependent tests there are
         if [[ $(grep -r "INLINE" ${d}) != "" ]]; then
             testcount=$((testcount + 1))

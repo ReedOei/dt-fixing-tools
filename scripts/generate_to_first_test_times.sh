@@ -24,7 +24,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     rollingsum=0
     count=0
     for t in $(grep ",${module}" ${testsfile} | grep ",victim" | grep -v "#" | cut -d',' -f1); do
-        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}")
+        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}/")
         if [[ ${f} != "" ]]; then
             l=$(grep -h "FIRST POLLUTER" ${f})
             time=$(echo ${l} | cut -d']' -f3 | cut -d' ' -f7)
@@ -45,7 +45,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     rollingsum=0
     count=0
     for t in $(grep ",${module}" ${testsfile} | grep ",brittle" | grep -v "#" | cut -d',' -f1); do
-        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}")
+        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}/")
         if [[ ${f} != "" ]]; then
             l=$(grep -h "FIRST POLLUTER" ${f})
             time=$(echo ${l} | cut -d']' -f3 | cut -d' ' -f7)
@@ -66,7 +66,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     rollingsum=0
     count=0
     for t in $(grep ",${module}" ${testsfile} | grep ",victim" | grep -v "#" | cut -d',' -f1); do
-        f=$(find $(find $(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}" | xargs -n1 dirname) -name minimized) -name "*.json" | head -1)
+        f=$(find $(find $(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}/" | xargs -n1 dirname) -name minimized) -name "*.json" | head -1)
         if [[ ${f} != "" ]]; then
             for time in $(python find_first_cleaner.py ${f} | head -1); do
                 rollingsum=$(echo ${rollingsum} + ${time} | bc -l)
@@ -87,7 +87,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     rollingsum=0
     count=0
     for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
-        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}")
+        f=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}/")
         if [[ ${f} != "" ]]; then
             l=$(grep -h "FIRST PATCH" ${f})
             if [[ ${l} != "" ]]; then
