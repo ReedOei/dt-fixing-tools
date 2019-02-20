@@ -302,7 +302,8 @@ public class CommandGenerator extends StandardMain {
         System.out.println("% End for PR table");
 
         String[] values = new String[]{"test_count", "totalCount", "victim_count", "brittle_count", "polluter_count",
-                "cleaner_count", "setter_count", "vic_with_clean_count"};
+                "cleaner_count", "setter_count", "vic_with_clean_count", "polluter_per_victim",
+                "setter_per_brittle", "cleaner_per_polluter", "cleaner_per_victim"};
         final Map<String, List<String>> subjectToRow = subjectRows(SQLStatements.SUBJECT_INFO, "subject_name", values);
 
         System.out.println("% Commands for subject info table");
@@ -318,6 +319,10 @@ public class CommandGenerator extends StandardMain {
             System.out.println(tools.command(prettyName + "CleanerCount", results.get(5)));
             System.out.println(tools.command(prettyName + "SetterCount", results.get(6)));
             System.out.println(tools.command(prettyName + "VicWithCleanCount", results.get(7)));
+            System.out.println(tools.command(prettyName + "PolluterPerVicAvg", results.get(8)));
+            System.out.println(tools.command(prettyName + "SetterPerBrittleAvg", results.get(9)));
+            System.out.println(tools.command(prettyName + "CleanPerPolluterAvg", results.get(10)));
+            System.out.println(tools.command(prettyName + "CleanPerVicAvg", results.get(11)));
         }
 
         System.out.println("% End for subject info table");
