@@ -20,7 +20,10 @@ def main(args):
         if len(data['polluters']) == 1:
             print data['time']['elapsedSeconds'] - firstpol['time']['elapsedSeconds']
         else:
-            sys.stderr.write('WEIRD CASE, NEED TO HANDLE ' + jsonfile + '\n')
+            # Otherwise, need to grab time of second polluter and subtract the start of that with the end of the first
+            secondpol = data['polluters'][1]
+            print (secondpol['time']['startTime'] - firstpol['time']['endTime']) / 1000.0
+            #sys.stderr.write('WEIRD CASE, NEED TO HANDLE ' + jsonfile + '\n')
 
 if __name__ == '__main__':
     main(sys.argv)
