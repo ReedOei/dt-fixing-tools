@@ -53,6 +53,7 @@ overallstd=0
 overallstdcount=0
 
 overallsizeonecount=0
+overallcount=0
 
 # Do some computation of sizes per module
 for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
@@ -76,6 +77,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
                 if [[ ${newsize} == 1 ]]; then
                     overallsizeonecount=$((overallsizeonecount + 1))
                 fi
+                overallcount=$((overallcount + 1))
             fi
         done
         # Standard deviation of sizes
@@ -116,4 +118,4 @@ echo "\\Def{average_avgsize}{$(echo "${overallsize} / ${overallsizecount}" | bc 
 echo "\\Def{average_avgsizeperc}{$(echo "${overallsizeperc} / ${overallsizecount}" | bc -l | xargs printf "%.1f")\\%}"
 echo "\\Def{average_stdsize}{$(echo "${overallstd} / ${overallstdcount}" | bc -l | xargs printf "%.1f")}"
 echo "\\Def{overall_sizeone}{$(echo "${overallsizeonecount}")}"
-echo "\\Def{overall_sizeone_perc}{$(echo ${overallsizeonecount} / ${overallsizecount} | bc -l | xargs printf "%.1f")\\%}"
+echo "\\Def{overall_sizeone_perc}{$(echo "(${overallsizeonecount} / ${overallcount}) * 100" | bc -l | xargs printf "%.1f")\\%}"
