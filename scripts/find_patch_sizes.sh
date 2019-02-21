@@ -116,3 +116,4 @@ echo "\\Def{average_avgsize}{$(echo "${overallsize} / ${overallsizecount}" | bc 
 echo "\\Def{average_avgsizeperc}{$(echo "${overallsizeperc} / ${overallsizecount}" | bc -l | xargs printf "%.1f")\\%}"
 echo "\\Def{average_stdsize}{$(echo "${overallstd} / ${overallstdcount}" | bc -l | xargs printf "%.1f")}"
 echo "\\Def{overall_sizeone}{$(echo "${overallsizeonecount}")}"
+echo "\\Def{overall_sizeone_perc}{$(echo ${overallsizeonecount} / ${overallsizecount} | bc -l | xargs printf "%.1f")\\%}"

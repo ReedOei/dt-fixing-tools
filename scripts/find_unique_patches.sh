@@ -35,6 +35,8 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     rollingpertestunique=0
     rollingpertestuniquesize=0
 
+    rollingpertestpatches=0
+
     for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
         d=$(find ${debuggingresults} -maxdepth 4 -name fixer.log | grep "=${t}/" | xargs -n1 dirname)
         # Count how many fixed dependent tests there are
@@ -94,6 +96,8 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_working_patches}{n/a}"
     else
         echo "\\Def{${module}_working_patches}{${count}}"
+        workingpatchespertest=$(echo "${count} / ${testcount}" | bc -l)
+        echo "\\Def{${module}_working_patches_pertest}{$(echo "${workingpatchespertest}" | xargs printf "%.1f")}"
         overallworkingpatches=$(echo "${overallworkingpatches} + ${count}" | bc -l)
         overallworkingpatchescount=$((overallworkingpatchescount + 1))
     fi
@@ -130,6 +134,7 @@ echo "\\Def{average_working_patches}{$(echo ${overallworkingpatches} / ${overall
 echo "\\Def{average_possible_patches}{$(echo ${overallpossiblepatches} / ${overallpossiblepatchescount} | bc -l | xargs printf "%.1f")}"
 
 echo "\\Def{total_testcount}{${overalltestcount}}"
+echo "\\Def{average_working_patches_pertest}{$(echo ${overallworkingpatches} / ${overalltestcount} | bc -l | xargs printf "%.1f")}"
 echo "\\Def{average_unique_patches_pertest}{$(echo ${overalluniquepatchespertest} / ${overalltestcount} | bc -l | xargs printf "%.1f")}"
 echo "\\Def{average_unique_patches_sizes_pertest}{$(echo ${overalluniquepatchessizespertest} / ${overalltestcount} | bc -l | xargs printf "%.1f")}"
 
