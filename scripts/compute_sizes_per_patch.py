@@ -54,17 +54,14 @@ def main(args):
         if ispass:
             outputline(fixerdirname, testname, 'N/A', pol['deps'][0])
         else:
+            found = False
             for c in pol['cleanerData']['cleaners']:
                 # Search through patches in the fixer/ directory, see if they have the polluter and cleaner
                 if outputline(fixerdirname, testname, pol['deps'][0], c['cleanerTests'][0]):
+                    found = True
                     continue
-
-                #print testname + ',' + pol['deps'][0] + ',' + c['cleanerTests'][0]
-                #if same_class(testname, pol['deps'][0]):    # Test class same
-                #    if not same_class(testname, c['cleanerTests'][0]):
-                #        print testname + ',' + pol['deps'][0] + ',' + c['cleanerTests'][0]
-                #    if c['cleanerTests'][0] == testname or c['cleanerTests'][0] == pol['deps'][0]:
-                #        print testname + ',' + pol['deps'][0] + ',' + c['cleanerTests'][0]
+            if len(pol['cleanerData']['cleaners']) > 0 and not found:
+                print 'AWSHI2', testname, pol['deps'][0]
 
 if __name__ == '__main__':
     main(sys.argv)
