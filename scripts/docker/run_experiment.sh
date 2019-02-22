@@ -52,6 +52,6 @@ su - awshi2 -c "$script_to_run ${slug} ${rounds} ${timeout} ${testName}"
 
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)
 modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
-cp -r /home/awshi2/output/ /Scratch/${modifiedslug}_output/
-chown -R $(id -u):$(id -g) /Scratch/${modifiedslug}_output/
-chmod -R 777 /Scratch/${modifiedslug}_output/
+cp -r /home/awshi2/output/ /Scratch/${modifiedslug}=${testName}_output/
+chown -R $(id -u):$(id -g) /Scratch/${modifiedslug}=${testName}_output/
+chmod -R 777 /Scratch/${modifiedslug}=${testName}_output/
