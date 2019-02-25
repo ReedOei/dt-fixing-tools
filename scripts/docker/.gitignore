@@ -1,0 +1,11 @@
+debuggingresults*
+notes
+*_output/
+alloutputs/
+*_Dockerfile
+logs*
+*playing
+*.class
+*-fixer/
+detector-*.tar.gz
+sorted_remaining*
