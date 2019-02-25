@@ -236,12 +236,16 @@ public class JavaFile {
         String methodName = method.substring(method.lastIndexOf('.') + 1);
         for (final ClassOrInterfaceDeclaration classDeclaration : classList) {
             if (classDeclaration.getNameAsString().equals(className)) {
-                MethodDeclaration newMeth = classDeclaration.addMethod(methodName, Modifier.PUBLIC);
-                newMeth.addAnnotation("Test");
-                return newMeth;
+                return classDeclaration.addMethod(methodName, Modifier.PUBLIC);
             }
         }
         return null;
+    }
+
+    public MethodDeclaration addMethod(final String method, final String annotation) {
+        MethodDeclaration newMethod = addMethod(method);
+        newMethod.addAnnotation(annotation);
+        return newMethod;
     }
 
     /**
