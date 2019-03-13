@@ -890,7 +890,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         List<String> newFailingOrder = new ArrayList<>(failingOrder);
         newFailingOrder.remove(newFailingOrder.size() - 1);
         newFailingOrder.add(cleanerMethod.methodName());
-        TestPluginPlugin.info("AWSHI2 FAILING ORDER: " + newFailingOrder);
         if (testOrderPasses(newFailingOrder)) {
             TestPluginPlugin.info("Running cleaner in failing order after polluter still passes.");
             // Restore the state
@@ -942,7 +941,6 @@ public class CleanerFixerPlugin extends TestPlugin {
             cleanerStmts.addAll(getCodeFromAnnotatedMethod(cleanerMethod.getClassName(), cleanerMethod.javaFile(), "@org.junit.AfterClass"));
         }
 
-        TestPluginPlugin.info("AWSHI2 CLEANER STATEMENTS " + cleanerStmts);
         return cleanerStmts;
     }
 
@@ -1139,7 +1137,6 @@ public class CleanerFixerPlugin extends TestPlugin {
         } else {
             startingLine = methodToModify.endLine() - 1;    // Shift one, patch starts before end of method
         }
-        TestPluginPlugin.info("AWSHI2 SIZE: " + statementsSize(cleanerStmts) + " " + cleanerStmts);
         Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, originalsize, methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), status);
 
         patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
