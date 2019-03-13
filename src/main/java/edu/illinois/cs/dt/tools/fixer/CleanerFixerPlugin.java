@@ -1165,8 +1165,11 @@ public class CleanerFixerPlugin extends TestPlugin {
         List<String> patchLines = new ArrayList<>();
         patchLines.add("STATUS: " + status);
         patchLines.add("MODIFIED: " + (modifiedMethod == null ? "N/A" : modifiedMethod.methodName()));
+        patchLines.add("MODIFIED FILE: " + (modifiedMethod == null ? "N/A" : modifiedMethod.javaFile().path()));
         patchLines.add("CLEANER: " + (cleanerMethod == null ? "N/A" : cleanerMethod.methodName()));
+        patchLines.add("CLEANER FILE: " + (cleanerMethod == null ? "N/A" : cleanerMethod.javaFile().path()));
         patchLines.add("POLLUTER: " + (polluterMethod == null ? "N/A" : polluterMethod.methodName()));
+        patchLines.add("POLLUTER FILE: " + (polluterMethod == null ? "N/A" : polluterMethod.javaFile().path()));
         patchLines.add("ORIGINAL CLEANER SIZE: " + (originalsize == 0 ? "N/A" : String.valueOf(originalsize)));
         patchLines.add("NEW CLEANER SIZE: " + (blockStmt != null ? String.valueOf(statementsSize(blockStmt.getStatements())) : "N/A"));
         patchLines.add("ELAPSED TIME: " + elapsedTime);
