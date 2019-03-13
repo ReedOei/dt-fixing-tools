@@ -797,7 +797,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
         for (Method meth : clazz.getDeclaredMethods()) {
             for (Annotation anno : meth.getDeclaredAnnotations()) {
-                if (anno.toString().equals("@org.junit.Before()")) {
+                if (anno.toString().equals(annotation)) {
                     methodName = meth.getName();
                     break;
                 }
