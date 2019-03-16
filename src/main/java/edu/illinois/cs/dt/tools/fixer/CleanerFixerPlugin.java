@@ -32,6 +32,7 @@ import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerGroup;
 import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.utility.ErrorLogger;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
@@ -815,16 +816,19 @@ public class CleanerFixerPlugin extends TestPlugin {
         return auxiliaryMethod;
     }
 
-    private ExpressionStmt getHelperCallStmt(JavaMethod cleanerMethod, boolean isSameTestClass) {
-        Expression objectCreation = new ObjectCreationExpr(null, new ClassOrInterfaceType(null, cleanerMethod.getClassName()), NodeList.nodeList());
+    private ExpressionStmt getHelperCallStmt(JavaMethod cleanerMethod, boolean newTestClass) {
+        Expression objectCreation = null;
+        if (newTestClass) {
+            objectCreation = new ObjectCreationExpr(null, new ClassOrInterfaceType(null, cleanerMethod.getClassName()), NodeList.nodeList());
+        }
         Expression helperCall = new MethodCallExpr(objectCreation, "cleanerHelper");
         ExpressionStmt helperCallStmt = new ExpressionStmt(helperCall);
         return helperCallStmt;
     }
 
-    private JavaMethod addHelperMethod(JavaMethod cleanerMethod, JavaMethod methodToModify, boolean isSameTestClass, boolean prepend) throws Exception {
+    private JavaMethod addHelperMethod(JavaMethod cleanerMethod, JavaMethod methodToModify, boolean newTestClass, boolean prepend) throws Exception {
         // The modification is to modify the cleaner class to add a helper, then have the other method call the helper
-        ExpressionStmt helperCallStmt = getHelperCallStmt(cleanerMethod, isSameTestClass);
+        ExpressionStmt helperCallStmt = getHelperCallStmt(cleanerMethod, newTestClass);
         if (prepend) {
             methodToModify.prepend(NodeList.nodeList(helperCallStmt));
         } else {
@@ -957,6 +961,55 @@ public class CleanerFixerPlugin extends TestPlugin {
         return size;
     }
 
+    // Helper method to try out combinations of including all code from cleaner method to make tests pass
+    private Object[] findValidMethodToModify(JavaMethod cleanerMethod, List<String> failingOrder,
+                                             JavaMethod victimMethod, JavaMethod polluterMethod) throws Exception {
+        Object[] returnValues = new Object[5];
+
+        for (Boolean newTestClass : new boolean[]{true, false}) {
+            for (ImmutablePair<JavaMethod, Boolean> tuple :
+                    new ImmutablePair[]{ImmutablePair.of(victimMethod, true), ImmutablePair.of(polluterMethod, false)}) {
+                JavaMethod methodToModify = tuple.getLeft();
+                if (methodToModify == null) {   // When polluter is null, so brittle
+                    continue;
+                }
+                boolean prepend = tuple.getRight();
+
+                // Start with all cleaner statements, based on what method to modify
+                final NodeList<Statement> cleanerStmts = NodeList.nodeList();
+                cleanerStmts.addAll(makeCleanerStatements(cleanerMethod, methodToModify));
+
+                // Get a reference to the setup/teardown method, where we want to add the call to the helper
+                JavaMethod auxiliaryMethodToModify = getAuxiliaryMethod(methodToModify, prepend);
+
+                // Get the helper method reference
+                JavaMethod helperMethod = addHelperMethod(cleanerMethod, auxiliaryMethodToModify, newTestClass, prepend);
+
+                // Check if applying these cleaners on the method suffices
+                TestPluginPlugin.info("Applying code from cleaner and recompiling.");
+                if (checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
+                    /*restore(methodToModify.javaFile());
+                    methodToModify.javaFile().writeAndReloadCompilationUnit();
+                    restore(helperMethod.javaFile());
+                    helperMethod.javaFile().writeAndReloadCompilationUnit();*/
+
+                    returnValues[0] = methodToModify;
+                    returnValues[1] = auxiliaryMethodToModify;
+                    returnValues[2] = helperMethod;
+                    returnValues[3] = cleanerStmts;
+                    returnValues[4] = prepend;
+                    return returnValues;
+                }
+                TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
+                restore(methodToModify.javaFile());
+                restore(helperMethod.javaFile());
+            }
+        }
+
+        return returnValues;
+
+    }
+
     // Returns if applying the fix was successful or not
     private PatchResult applyFix(final List<String> failingOrder,
                                  final List<String> fullFailingOrder,
@@ -982,66 +1035,33 @@ public class CleanerFixerPlugin extends TestPlugin {
                 methodToModify = polluterMethod;
             }
         }*/
-        JavaMethod methodToModify = victimMethod;
+        /*JavaMethod methodToModify = victimMethod;
         if (!prepend && polluterMethod != null) {
             methodToModify = polluterMethod;
-        }
+        }*/
 
         // Back up the files we are going to modify
-        backup(methodToModify.javaFile());
+        if (polluterMethod != null) {
+            backup(polluterMethod.javaFile());
+        }
+        backup(victimMethod.javaFile());
         backup(cleanerMethod.javaFile());
 
-        boolean isSameTestClass = sameTestClass(cleanerMethod.methodName(), methodToModify.methodName());
-
-        // Do our fix using all cleaner code, which includes setup and teardown
-        TestPluginPlugin.info("Applying code from cleaner and recompiling.");
-        final NodeList<Statement> cleanerStmts = NodeList.nodeList();
-        cleanerStmts.addAll(makeCleanerStatements(cleanerMethod, methodToModify));
-
-        // Get a reference to the setup/teardown method, where we want to add the call to the helper
-        JavaMethod auxiliaryMethodToModify = getAuxiliaryMethod(methodToModify, prepend);
-
-        // Get the helper method reference
-        JavaMethod helperMethod = addHelperMethod(cleanerMethod, auxiliaryMethodToModify, isSameTestClass, prepend);
-
-        TestPluginPlugin.info("Trying to modify " + methodToModify.methodName() + " to make failing order pass.");
-
-        // Check if applying these cleaners on the method suffices
-        if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
-            TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
-            restore(methodToModify.javaFile());
-            restore(helperMethod.javaFile());
-
-            // If does not suffice (and in polluter case), do not abandon hope, try the opposite way as well
-            if (polluterMethod != null) {
-                if (prepend) {
-                    methodToModify = polluterMethod;
-                } else {
-                    methodToModify = victimMethod;
-                }
-                backup(methodToModify.javaFile());
-                backup(helperMethod.javaFile());
-                prepend = !prepend;
-                cleanerStmts.clear();
-                cleanerStmts.addAll(makeCleanerStatements(cleanerMethod, methodToModify));
-                auxiliaryMethodToModify = getAuxiliaryMethod(methodToModify, prepend);
-                helperMethod = addHelperMethod(cleanerMethod, auxiliaryMethodToModify, sameTestClass(cleanerMethod.methodName(), methodToModify.methodName()), prepend);
-                if (!checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
-                    TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
-                    Path patch = writePatch(victimMethod, 0, new BlockStmt(cleanerStmts), statementsSize(cleanerStmts), null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
-                    restore(methodToModify.javaFile());
-                    restore(helperMethod.javaFile());
-                    return new PatchResult(OperationTime.instantaneous(), FixStatus.CLEANER_FAIL, victimMethod.methodName(), polluterMethod.methodName(), cleanerMethod.methodName(), 0, patch.toString());
-                }
-            } else {
-                Path patch = writePatch(victimMethod, 0, new BlockStmt(cleanerStmts), statementsSize(cleanerStmts), null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
-                return new PatchResult(OperationTime.instantaneous(), FixStatus.CLEANER_FAIL, victimMethod.methodName(), "N/A", cleanerMethod.methodName(), 0, patch.toString());
-            }
+        // Get the starting form
+        Object[] startingValues = findValidMethodToModify(cleanerMethod, failingOrder, victimMethod, polluterMethod);
+        JavaMethod methodToModify = (JavaMethod)startingValues[0];
+        if (methodToModify == null) {   // If not method returned, means things are broken
+            NodeList<Statement> initialCleanerStmts = makeCleanerStatements(cleanerMethod, victimMethod);
+            Path patch = writePatch(victimMethod, 0, new BlockStmt(initialCleanerStmts), statementsSize(initialCleanerStmts), null, cleanerMethod, polluterMethod, 0, "CLEANER DOES NOT FIX");
+            return new PatchResult(OperationTime.instantaneous(), FixStatus.CLEANER_FAIL, victimMethod.methodName(), "N/A", cleanerMethod.methodName(), 0, patch.toString());
         }
+        final JavaMethod auxiliaryMethodToModify = (JavaMethod)startingValues[1];
+        final JavaMethod finalHelperMethod = (JavaMethod)startingValues[2];
+        final NodeList<Statement> cleanerStmts = (NodeList<Statement>)startingValues[3];
+        final boolean finalPrepend = ((Boolean)startingValues[4]).booleanValue();
 
-        final JavaMethod finalHelperMethod = helperMethod;
-        final boolean finalPrepend = prepend;
-
+        // Minimizing cleaner code, which includes setup and teardown
+        TestPluginPlugin.info("Going to modify " + methodToModify.methodName() + " to make failing order pass.");
         final List<OperationTime> elapsedTime = new ArrayList<>();
         this.iterations = 0;
         int originalsize = statementsSize(cleanerStmts);
@@ -1072,7 +1092,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         BlockStmt patchedBlock = new BlockStmt(minimalCleanerStmts);
 
         // Check that the results are valid
-        if (!checkCleanerStmts(failingOrder, finalHelperMethod, minimalCleanerStmts, prepend, false)) {
+        if (!checkCleanerStmts(failingOrder, finalHelperMethod, minimalCleanerStmts, finalPrepend, false)) {
             TestPluginPlugin.info("Final minimal is not actually working!");
             restore(methodToModify.javaFile());
             restore(finalHelperMethod.javaFile());
@@ -1080,23 +1100,13 @@ public class CleanerFixerPlugin extends TestPlugin {
             Path patch = writePatch(victimMethod, 0, patchedBlock, originalsize, methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), "BROKEN MINIMAL");
             return new PatchResult(elapsedTime.get(0), FixStatus.FIX_INVALID, victimMethod.methodName(), polluterMethod != null ? polluterMethod.methodName() : "N/A", cleanerMethod.methodName(), this.iterations, patch.toString());
         }
-        // Also check against the full failing order
-        // TODO: Commenting out for now since other tests may be failing in this full failing order that we do not care about yet
-        /*if (!checkCleanerStmts(fullFailingOrder, finalHelperMethod, minimalCleanerStmts, prepend, false)) {
-            TestPluginPlugin.info("Final minimal is not actually working for the full failing order!");
-            restore(methodToModify.javaFile());
-            restore(finalHelperMethod.javaFile());
-            runMvnInstall(false);
-            Path patch = writePatch(victimMethod, 0, patchedBlock, originalsize, methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), "BROKEN MINIMAL FOR FULL");
-            return new PatchResult(elapsedTime.get(0), FixStatus.FIX_INVALID, victimMethod.methodName(), polluterMethod != null ? polluterMethod.methodName() : "N/A", cleanerMethod.methodName(), this.iterations, patch.toString());
-        }*/
 
         // Try to inline these statements into the method
         restore(methodToModify.javaFile());
         methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
-        boolean inlineSuccessful = checkCleanerStmts(failingOrder, methodToModify, minimalCleanerStmts, prepend, false);
+        boolean inlineSuccessful = checkCleanerStmts(failingOrder, methodToModify, minimalCleanerStmts, finalPrepend, false);
         if (!inlineSuccessful) {
-            TestPluginPlugin.info("Inlining patch into " + methodToModify.methodName() + " still not good enough to run.");
+            TestPluginPlugin.info("Inlining patch into " + methodToModify.methodName() + " not good enough to run.");
         }
 
         // Do the check of removing cleaner statements from cleaner itself and see if the cleaner now starts failing
@@ -1132,14 +1142,14 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Write out the changes in the form of a patch
         int startingLine;
-        if (prepend) {
+        if (finalPrepend) {
             startingLine = methodToModify.beginLine() + 1;  // Shift one, do not include declaration line
         } else {
             startingLine = methodToModify.endLine() - 1;    // Shift one, patch starts before end of method
         }
         Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, originalsize, methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), status);
 
-        patches.add(new Patch(methodToModify, patchedBlock, prepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
+        patches.add(new Patch(methodToModify, patchedBlock, finalPrepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
 
         // Report successful patching, report where the patch is
         TestPluginPlugin.info("Patching successful, patch file for " + victimMethod.methodName() + " found at: " + patchFile);
