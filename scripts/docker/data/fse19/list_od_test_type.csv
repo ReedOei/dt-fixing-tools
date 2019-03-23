@@ -173,7 +173,7 @@ org.jfree.data.time.DayTest.testParseDay,jfreechart,victim
 #net.sf.marineapi.ais.parser.AISMessageFactoryTest.testCreateWithTwo,marine-api,victim
 #com.openpojo.issues.issue112.IssueTest.shouldNotFail,openpojo,?
 #com.openpojo.validation.test.impl.GetterTesterTest.shouldSuccessfullyValidateEvenIfLoggingFails,openpojo,?
-#com.openpojo.validation.test.impl.SerializableTesterTest.shouldSkipOverNonSerializableClass,openpojo,?
+com.openpojo.validation.test.impl.SerializableTesterTest.shouldSkipOverNonSerializableClass,openpojo,victim
 #com.openpojo.validation.test.impl.SetterTesterTest.shouldSuccessfullyValidateEvenIfLoggingFails,openpojo,?
 #com.openpojo.validation.utils.ValidationHelperTest.shouldReportMissingASMProperly,openpojo,?
 #com.pholser.junit.quickcheck.guava.generator.FunctionPropertyParameterTypesTest.arrayOfFunction,junit-quickcheck-guava,brittle
