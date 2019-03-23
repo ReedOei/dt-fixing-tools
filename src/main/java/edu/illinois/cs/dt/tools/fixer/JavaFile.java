@@ -243,9 +243,24 @@ public class JavaFile {
     }
 
     public MethodDeclaration addMethod(final String method, final String annotation) {
-        MethodDeclaration newMethod = addMethod(method);
-        newMethod.addAnnotation(annotation);
-        return newMethod;
+        // First check if method exists, and don't do anything if it already does
+        MethodDeclaration existingMethod = findMethodDeclaration(method);
+        if (existingMethod != null) {
+            return existingMethod;
+        }
+
+        // Search for the class that this one should belong to
+        String className = method.substring(0, method.lastIndexOf('.'));
+        className = className.substring(className.lastIndexOf('.') + 1);
+        String methodName = method.substring(method.lastIndexOf('.') + 1);
+        for (final ClassOrInterfaceDeclaration classDeclaration : classList) {
+            if (classDeclaration.getNameAsString().equals(className)) {
+                MethodDeclaration newMethod = classDeclaration.addMethod(methodName, Modifier.PUBLIC);
+                newMethod.addAnnotation(annotation);
+                return newMethod;
+            }
+        }
+        return null;
     }
 
     /**
