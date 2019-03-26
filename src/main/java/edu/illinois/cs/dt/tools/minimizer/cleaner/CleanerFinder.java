@@ -5,8 +5,8 @@ import com.reedoei.eunomia.collections.StreamUtil;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
+import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
-import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.runner.RunnerPathManager;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 import edu.illinois.cs.dt.tools.utility.TestRunParser;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CleanerFinder {
-    private final InstrumentingSmartRunner runner;
+    private final SmartRunner runner;
     private final String dependentTest;
     private final List<String> deps;
     private final Result expected;
@@ -41,7 +41,7 @@ public class CleanerFinder {
     private int startingTryingEveryTest = -1;
     private int startingTryingEveryTestConfirmed = -1;
 
-    public CleanerFinder(final InstrumentingSmartRunner runner,
+    public CleanerFinder(final SmartRunner runner,
                          final String dependentTest, final List<String> deps,
                          final Result expected, final Result isolationResult, final List<String> testOrder) {
         this.runner = runner;

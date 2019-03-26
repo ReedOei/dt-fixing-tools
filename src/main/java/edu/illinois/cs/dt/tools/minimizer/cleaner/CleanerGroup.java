@@ -5,7 +5,7 @@ import java.util.Objects;
 import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
-import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
+import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 import edu.illinois.cs.dt.tools.utility.TimeManager;
 
@@ -31,7 +31,7 @@ public class CleanerGroup {
         return originalSize;
     }
 
-    public boolean confirm(final InstrumentingSmartRunner runner,
+    public boolean confirm(final SmartRunner runner,
                            final ListEx<String> deps,
                            final Result expected, final Result isolationResult, final TimeManager findFilterCandidateTime) throws Exception {
 
@@ -70,7 +70,7 @@ public class CleanerGroup {
     }
 
     private boolean confirmRun(final String runType,
-                               final InstrumentingSmartRunner runner,
+                               final SmartRunner runner,
                                final Result desiredRes, final ListEx<String> order) {
         System.out.printf("Expected %s cleaner result: %s, got: ", runType, desiredRes);
 

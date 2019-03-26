@@ -10,10 +10,10 @@ import com.reedoei.eunomia.util.Util;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
+import com.reedoei.testrunner.runner.SmartRunner;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerData;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerFinder;
 import edu.illinois.cs.dt.tools.minimizer.cleaner.CleanerGroup;
-import edu.illinois.cs.dt.tools.runner.InstrumentingSmartRunner;
 import edu.illinois.cs.dt.tools.utility.MD5;
 import edu.illinois.cs.dt.tools.utility.OperationTime;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -29,7 +29,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     protected final String dependentTest;
     protected final Result expected;
     protected final Result isolationResult;
-    protected final InstrumentingSmartRunner runner;
+    protected final SmartRunner runner;
 
     protected final Path path;
 
@@ -43,7 +43,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
         TestPluginPlugin.mojo().getLog().info(str);
     }
 
-    public TestMinimizer(final List<String> testOrder, final InstrumentingSmartRunner runner, final String dependentTest) {
+    public TestMinimizer(final List<String> testOrder, final SmartRunner runner, final String dependentTest) {
         // Only take the tests that come before the dependent test
         this.testOrder = testOrder.contains(dependentTest) ? ListUtil.before(testOrder, dependentTest) : testOrder;
         this.dependentTest = dependentTest;
