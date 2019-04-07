@@ -55,6 +55,14 @@ public class PomFile {
     private List<String> testClasses = new ArrayList<String>();
     private List<String> dependencyIds = new ArrayList<String>();
 
+    private enum Plugin {
+      testrunner, rvPredict;
+    }
+
+    private static Plugin pluginType;
+    private static String testName;
+    private static String jarPath;
+
     public PomFile(String pom) {
         this.pom = pom;
         try {
@@ -271,55 +279,10 @@ public class PomFile {
                 build.appendChild(plugins);
             }
 
-            // Construct <plugin> for PIT
-            {
-                Node plugin = doc.createElement("plugin");
-                {
-                    Node groupId = doc.createElement("groupId");
-                    groupId.setTextContent("com.reedoei");
-                    plugin.appendChild(groupId);
-                }
-                {
-                    Node artifactId = doc.createElement("artifactId");
-                    artifactId.setTextContent("testrunner-maven-plugin");
-                    plugin.appendChild(artifactId);
-                }
-                {
-                    Node version = doc.createElement("version");
-                    version.setTextContent("0.1-SNAPSHOT");
-                    plugin.appendChild(version);
-                }
-                {
-                    Node dependencies = doc.createElement("dependencies");
-                    {
-                        Node dependency = doc.createElement("dependency");
-                        {
-                            Node depGroupId = doc.createElement("groupId");
-                            depGroupId.setTextContent("edu.illinois.cs");
-                            dependency.appendChild(depGroupId);
-
-                            Node depArtifactId = doc.createElement("artifactId");
-                            depArtifactId.setTextContent("dt-fixing-tools");
-                            dependency.appendChild(depArtifactId);
-
-                            Node depVersion = doc.createElement("version");
-                            depVersion.setTextContent("1.0.0-SNAPSHOT");
-                            dependency.appendChild(depVersion);
-                        }
-                        dependencies.appendChild(dependency);
-                    }
-                    plugin.appendChild(dependencies);
-                }
-                {
-                    Node configuration = doc.createElement("configuration");
-                    {
-                        Node className = doc.createElement("className");
-                        className.setTextContent("edu.illinois.cs.dt.tools.detection.DetectorPlugin");
-                        configuration.appendChild(className);
-                    }
-                    plugin.appendChild(configuration);
-                }
-                plugins.appendChild(plugin);
+            if (pluginType == Plugin.testrunner) {
+              addTestRunnerPlugin(plugins, doc);
+            } else if (pluginType == Plugin.rvPredict) {
+              addRVPredict(plugins, doc);
             }
 
             // Construct string representation of the file
@@ -348,6 +311,90 @@ public class PomFile {
         } catch (TransformerException e) {
             e.printStackTrace();
         }
+    }
+
+    private void addRVPredict(Node plugins, Document doc) {
+      {
+          Node plugin = doc.createElement("plugin");
+          {
+              Node groupId = doc.createElement("groupId");
+              groupId.setTextContent("org.apache.maven.plugins");
+              plugin.appendChild(groupId);
+          }
+          {
+              Node artifactId = doc.createElement("artifactId");
+              artifactId.setTextContent("maven-surefire-plugin");
+              plugin.appendChild(artifactId);
+          }
+          {
+              Node version = doc.createElement("version");
+              version.setTextContent("2.16");
+              plugin.appendChild(version);
+          }
+          {
+              Node configuration = doc.createElement("configuration");
+              {
+                  Node className = doc.createElement("argLine");
+                  String argsToTool = "'--log --log-dirname " + testName + "'";
+                  className.setTextContent("-javaagent:" + jarPath + "=" + argsToTool);
+                  configuration.appendChild(className);
+              }
+              plugin.appendChild(configuration);
+          }
+          plugins.appendChild(plugin);
+      }
+    }
+
+    private void addTestRunnerPlugin(Node plugins, Document doc) {
+      {
+          Node plugin = doc.createElement("plugin");
+          {
+              Node groupId = doc.createElement("groupId");
+              groupId.setTextContent("com.reedoei");
+              plugin.appendChild(groupId);
+          }
+          {
+              Node artifactId = doc.createElement("artifactId");
+              artifactId.setTextContent("testrunner-maven-plugin");
+              plugin.appendChild(artifactId);
+          }
+          {
+              Node version = doc.createElement("version");
+              version.setTextContent("0.1-SNAPSHOT");
+              plugin.appendChild(version);
+          }
+          {
+              Node dependencies = doc.createElement("dependencies");
+              {
+                  Node dependency = doc.createElement("dependency");
+                  {
+                      Node depGroupId = doc.createElement("groupId");
+                      depGroupId.setTextContent("edu.illinois.cs");
+                      dependency.appendChild(depGroupId);
+
+                      Node depArtifactId = doc.createElement("artifactId");
+                      depArtifactId.setTextContent("dt-fixing-tools");
+                      dependency.appendChild(depArtifactId);
+
+                      Node depVersion = doc.createElement("version");
+                      depVersion.setTextContent("1.0.0-SNAPSHOT");
+                      dependency.appendChild(depVersion);
+                  }
+                  dependencies.appendChild(dependency);
+              }
+              plugin.appendChild(dependencies);
+          }
+          {
+              Node configuration = doc.createElement("configuration");
+              {
+                  Node className = doc.createElement("className");
+                  className.setTextContent("edu.illinois.cs.dt.tools.detection.DetectorPlugin");
+                  configuration.appendChild(className);
+              }
+              plugin.appendChild(configuration);
+          }
+          plugins.appendChild(plugin);
+      }
     }
 
     // Accessors
@@ -439,6 +486,17 @@ public class PomFile {
     }
 
     public static void main(String[] args) {
+        if (args.length != 0) {
+          pluginType = Plugin.valueOf(args[0]);
+        } else {
+          pluginType = Plugin.testrunner;
+        }
+
+        if (pluginType == Plugin.rvPredict) {
+          testName = args[1];
+          jarPath = args[2];
+        }
+
         InputStreamReader isReader = new InputStreamReader(System.in);
         BufferedReader bufReader = new BufferedReader(isReader);
         Map<String, PomFile> mapping = new HashMap<String, PomFile>();

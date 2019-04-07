@@ -38,6 +38,7 @@ source ~/.bashrc
 # Incorporate tooling into the project, using Java XML parsing
 # TODO: Update the modify-script to allow adding other classes. This would allow us to simplify the line below that calls the testrunner
 cd /home/awshi2/${slug}
+/home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh . rvPredict ${testName} /home/awshi2/RV-Predict/rv-predict.jar
 
 # Run the plugin, get module test times
 echo "*******************REED************************"

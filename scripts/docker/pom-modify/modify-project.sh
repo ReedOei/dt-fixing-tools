@@ -1,8 +1,27 @@
 #!/bin/bash
 
-if [ "$1" == "" ]; then
+if [[ $1 == "" ]]; then
     echo "arg1 - the path to the project, where high-level pom.xml is"
+    echo "arg2 - (Optional) Plugin type (testrunner or rvPredict)"
+    echo "arg3 - (Optional) Fully qualified test name when using rvPredict"
+    echo "arg4 - (Optional) Path to rvPredict jar"
     exit
+fi
+
+if [[ $2 == "" ]]; then
+  pluginType="testrunner"
+else
+  if { [[ $3 == "" ]] || [[ $4 == "" ]]; } && [[ $2 == "rvPredict" ]]; then
+    echo "arg1 - the path to the project, where high-level pom.xml is"
+    echo "arg2 - (Optional) Plugin type (testrunner or rvPredict)"
+    echo "arg3 - (Optional) Fully qualified test name when using rvPredict"
+    echo "arg4 - (Optional) Path to rvPredict jar"
+    exit
+  else
+    pluginType=$2
+    testName=$3
+    jarPath=$4
+  fi
 fi
 
 crnt=`pwd`
@@ -24,7 +43,7 @@ function process_poms
 
 #find ${project_path} -name pom.xml | process_poms
 javac PomFile.java
-find ${project_path} -name pom.xml | grep -v "src/" | java PomFile
+find ${project_path} -name pom.xml | grep -v "src/" | java PomFile ${pluginType} ${testName} ${jarPath}
 rm -f PomFile.class
 
 cd ${crnt}
