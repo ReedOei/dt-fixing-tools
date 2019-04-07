@@ -42,13 +42,13 @@ cd /home/awshi2/${slug}
 
 # Run the plugin, get module test times
 echo "*******************REED************************"
-echo "Running the debugging tools"
+echo "Running the concurrency tools"
 git rev-parse HEAD
 date
 
 MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmaven.javadoc.skip=true"
 
-timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn test ${MVNOPTIONS} -Dtest=${className} -DargLine="-javaagent:/home/awshi2/RV-Predict/rv-predict.jar='--log --log-dirname ${testName}'" -DfailIfNoTests=false -fn -B -e |& tee concurrency.log
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn test ${MVNOPTIONS} -Dtest=${className} -DfailIfNoTests=false -fn -B -e |& tee concurrency.log
 
 
 # Gather the results, put them up top
