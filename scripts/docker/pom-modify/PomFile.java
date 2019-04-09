@@ -335,7 +335,7 @@ public class PomFile {
               Node configuration = doc.createElement("configuration");
               {
                   Node className = doc.createElement("argLine");
-                  String argsToTool = "'--log --log-dirname " + testName + "'";
+                  String argsToTool = "'--log --base-log-dir logs --log-dirname " + testName + "'";
                   className.setTextContent("-javaagent:" + jarPath + "=" + argsToTool);
                   configuration.appendChild(className);
               }
