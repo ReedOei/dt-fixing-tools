@@ -198,11 +198,6 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             return deps;
         }
 
-        debug("Trying dts as isolated dependencies.");
-        if (tryIsolated(deps, order)) {
-            return deps;
-        }
-
         deps.addAll(deltaDebug(order, 2));
 
         return deps;
