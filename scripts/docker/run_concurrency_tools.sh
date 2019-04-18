@@ -20,9 +20,10 @@ fi
 slug=$1
 rounds=$2
 timeout=$3
-testName=$4
+fullTestName=$4
 toolName=$5
-className=$( echo ${testName} | rev | cut -d . -f 2- | rev )
+className=$( echo ${fullTestName} | rev | cut -d . -f 2- | rev )
+testName=$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )
 
 # Setup concurrency tool
 cd /home/awshi2/
@@ -52,9 +53,9 @@ source ~/.bashrc
 cd /home/awshi2/${slug}
 
 if [[ $toolName == "rvPredict" ]]; then
-    /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh . rvPredict ${testName} /home/awshi2/RV-Predict/Java/lib/rv-predict.jar
+    /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh . rvPredict ${fullTestName} /home/awshi2/RV-Predict/Java/lib/rv-predict.jar
 elif [[ $toolName == "wiretap" ]]; then
-    /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh . wiretap ${testName} /home/awshi2/wiretap/build/wiretap.jar
+    /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh . wiretap ${fullTestName} /home/awshi2/wiretap/build/wiretap.jar
 else
     echo "Unknown toolName. Arguments passed to run_concurrency_tools.sh are: $1 | $2 | $3 | $4 | $5"
     exit
@@ -69,7 +70,7 @@ date
 MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmaven.javadoc.skip=true"
 
 echo "Running: mvn test ${MVNOPTIONS} -Dtest=${className}#${testName} -DfailIfNoTests=false -fn -B -e"
-timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn test ${MVNOPTIONS} -Dtest=${testName} -DfailIfNoTests=false -fn -B -e |& tee concurrency.log
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn test ${MVNOPTIONS} -Dtest=${className}#${testName} -DfailIfNoTests=false -fn -B -e |& tee concurrency.log
 
 # Gather the results, put them up top
 RESULTSDIR=/home/awshi2/output/
