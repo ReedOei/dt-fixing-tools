@@ -68,6 +68,7 @@ date
 
 MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmaven.javadoc.skip=true"
 
+echo 'Running: mvn test ${MVNOPTIONS} -Dtest="${className}#${testName}" -DfailIfNoTests=false -fn -B -e'
 timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn test ${MVNOPTIONS} -Dtest="${className}#${testName}" -DfailIfNoTests=false -fn -B -e |& tee concurrency.log
 
 # Gather the results, put them up top
@@ -85,4 +86,3 @@ echo "*******************REED************************"
 echo "Finished run_concurrency_tools.sh"
 date
 
-sleep 2700
