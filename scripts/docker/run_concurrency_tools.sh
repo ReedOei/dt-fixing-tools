@@ -69,7 +69,7 @@ date
 MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmaven.javadoc.skip=true"
 
 echo "Running: mvn test ${MVNOPTIONS} -Dtest=${className}#${testName} -DfailIfNoTests=false -fn -B -e"
-timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn test ${MVNOPTIONS} -Dtest=${className}#${testName} -DfailIfNoTests=false -fn -B -e |& tee concurrency.log
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn test ${MVNOPTIONS} -Dtest=${testName} -DfailIfNoTests=false -fn -B -e |& tee concurrency.log
 
 # Gather the results, put them up top
 RESULTSDIR=/home/awshi2/output/
