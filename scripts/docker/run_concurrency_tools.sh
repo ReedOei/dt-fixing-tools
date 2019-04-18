@@ -80,11 +80,10 @@ for logs in $(find . -name "logs" -type d); do (if [[ $logs != *".git"* ]]; then
 
 /home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
 mv concurrency.log ${RESULTSDIR}
-mv /home/awshi2/mvn-test.log ${RESULTSDIR}
-mv /home/awshi2/mvn-test-time.log ${RESULTSDIR}
+mv mvn-test.log ${RESULTSDIR}
+mv mvn-test-time.log ${RESULTSDIR}
 
 echo "*******************REED************************"
 echo "Finished run_concurrency_tools.sh"
 date
 
-sleep 2700
