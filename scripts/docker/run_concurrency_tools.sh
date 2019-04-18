@@ -28,6 +28,8 @@ className=$( echo ${testName} | rev | cut -d . -f 2- | rev )
 # Setup concurrency tool
 cd /home/awshi2/
 
+sudo apt-get install -y  ant
+
 if [[ $toolName == "rvPredict" ]]; then
     # Setup RV-Predict
     wget "http://winglam2.web.engr.illinois.edu/personal/RV-Predict.zip" -O "/home/awshi2/RV-Predict.zip"
