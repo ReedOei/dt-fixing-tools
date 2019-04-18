@@ -56,7 +56,7 @@ public class PomFile {
     private List<String> dependencyIds = new ArrayList<String>();
 
     private enum Plugin {
-      testrunner, rvPredict;
+        testrunner, rvPredict, wiretap;
     }
 
     private static Plugin pluginType;
@@ -283,6 +283,8 @@ public class PomFile {
               addTestRunnerPlugin(plugins, doc);
             } else if (pluginType == Plugin.rvPredict) {
               addRVPredict(plugins, doc);
+            } else if (pluginType == Plugin.wiretap) {
+                addWiretap(plugins, doc);
             }
 
             // Construct string representation of the file
@@ -312,6 +314,40 @@ public class PomFile {
             e.printStackTrace();
         }
     }
+
+    private void addWiretap(Node plugins, Document doc) {
+      {
+          Node plugin = doc.createElement("plugin");
+          {
+              Node groupId = doc.createElement("groupId");
+              groupId.setTextContent("org.apache.maven.plugins");
+              plugin.appendChild(groupId);
+          }
+          {
+              Node artifactId = doc.createElement("artifactId");
+              artifactId.setTextContent("maven-surefire-plugin");
+              plugin.appendChild(artifactId);
+          }
+          {
+              Node version = doc.createElement("version");
+              version.setTextContent("2.16");
+              plugin.appendChild(version);
+          }
+          {
+              Node configuration = doc.createElement("configuration");
+              {
+                  Node className = doc.createElement("argLine");
+
+                  String argsToTool = String.format("-noverify -javaagent:%s -Dwiretap.recorder=BinaryHistoryLogger -Dwiretap.outfolder=logs/%s -Dwiretap.classfilesfolder=logs/%s/classes -Dwiretap.ignoredprefixes=", jarPath, testName, testName);
+                  className.setTextContent(argsToTool + "'org/mockito,org/powermock,edu/ucla/pls/wiretap,java,sun'");
+                  configuration.appendChild(className);
+              }
+              plugin.appendChild(configuration);
+          }
+          plugins.appendChild(plugin);
+      }
+    }
+
 
     private void addRVPredict(Node plugins, Document doc) {
       {
@@ -492,7 +528,7 @@ public class PomFile {
           pluginType = Plugin.testrunner;
         }
 
-        if (pluginType == Plugin.rvPredict) {
+        if (pluginType == Plugin.rvPredict || pluginType == Plugin.wiretap) {
           testName = args[1];
           jarPath = args[2];
         }

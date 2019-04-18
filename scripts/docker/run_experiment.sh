@@ -9,6 +9,7 @@ if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]] || [[ $4 == "" ]]; then
     echo "arg3 - Timeout in seconds"
     echo "arg4 - Test name (Optional)"
     echo "arg5 - Script to run (Optional)"
+    echo "arg6 - Script arguments (Optional)"
     exit
 fi
 
@@ -21,6 +22,7 @@ elif [[ -z "$5" ]]; then
 else
     # otherwise, assume it's relative to the docker directory
     script_to_run="/home/awshi2/dt-fixing-tools/scripts/docker/$5"
+    script_args="$6"
 fi
 
 slug=$1
@@ -48,7 +50,7 @@ if [[ -e "/home/awshi2/mvn-test-time.log" ]] && [[ ! -e "/home/awshi2/$slug/mvn-
 fi
 
 # Start the script using the awshi2 user
-su - awshi2 -c "$script_to_run ${slug} ${rounds} ${timeout} ${testName}"
+su - awshi2 -c "$script_to_run ${slug} ${rounds} ${timeout} ${testName} ${script_args}"
 
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)
 modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
