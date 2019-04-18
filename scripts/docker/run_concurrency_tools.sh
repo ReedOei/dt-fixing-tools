@@ -3,7 +3,6 @@
 echo "*******************REED************************"
 echo "Starting run_concurrency_tools.sh"
 
-git rev-parse HEAD
 date
 
 # This script is run inside the Docker image, for single experiment (one project)
@@ -27,8 +26,6 @@ className=$( echo ${testName} | rev | cut -d . -f 2- | rev )
 
 # Setup concurrency tool
 cd /home/awshi2/
-
-sudo apt-get install -y  ant
 
 if [[ $toolName == "rvPredict" ]]; then
     # Setup RV-Predict
