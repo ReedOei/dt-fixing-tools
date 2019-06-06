@@ -19,5 +19,7 @@ for pom_path in $(find -name "pom.xml"); do
 
     wget "http://mir.cs.illinois.edu/awshi2/dt-files/$testName-data/flaky-lists.json" -O "$dir/.dtfixingtools/detection-results/flaky-lists.json"
     # wget "http://reedoei.com/files/${module_key}-flaky-lists.json" -O "$dir/.dtfixingtools/detection-results/flaky-lists.json"
+
+    wget "http://mir.cs.illinois.edu/awshi2/dt-files/$testName-data/original-order" -O "$dir/.dtfixingtools/original-order"
 done
 
