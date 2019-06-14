@@ -80,9 +80,10 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
     public MinimizeTestsResult run() throws Exception {
         final long startTime = System.currentTimeMillis();
-        final boolean[] foundFirst = new boolean[1];
         return OperationTime.runOperation(() -> {
             info("Running minimizer for: " + dependentTest + " (expected result in this order: " + expected + ")");
+
+            boolean foundFirst = false;
 
             final List<String> order =
                     testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
@@ -112,9 +113,9 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
                 info("Ran minimizer, dependencies: " + deps);
                 double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
-                if (!foundFirst[0]) {
+                if (!foundFirst) {
                     info("FIRST POLLUTER: Found first polluter " + deps + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
-                    foundFirst[0] = true;
+                    foundFirst = true;
                 } else {
                     info("POLLUTER: Found polluter " + deps + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
                 }
