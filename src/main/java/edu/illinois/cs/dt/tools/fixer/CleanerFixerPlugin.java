@@ -685,14 +685,61 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
 
         // If the test class is a subclass of JUnit 3's TestCase, then there is no annotation, just handle setUp and tearDown
-        for (Class clz : superClasses) {
-            if (clz.toString().equals("class junit.framework.TestCase")) {
+        boolean isJUnit3 = false;
+        for (Class clazz : superClasses) {
+            if (clazz.toString().equals("class junit.framework.TestCase")) {
+                isJUnit3 = true;
+                break;
+            }
+        }
+        // In JUnit 3 mode, try to get statements in setUp/tearDown only if in local class; otherwise put in a call to method if in superclass
+        if (isJUnit3) {
+            // Check if the test class had defined a setUp/tearDown
+            String methName = "";
+            for (Method meth : testClass.getDeclaredMethods()) {
                 if (annotation.equals("@org.junit.Before")) {
-                    stmts.add(new ExpressionStmt(new MethodCallExpr(null, "setUp")));
+                    if (meth.getName().equals("setUp")) {
+                        methName = "setUp";
+                        break;
+                    }
                 } else if (annotation.equals("@org.junit.After")) {
-                    stmts.add(new ExpressionStmt(new MethodCallExpr(null, "tearDown")));
+                    if (meth.getName().equals("tearDown")) {
+                        methName = "tearDown";
+                        break;
+                    }
                 }
-                return stmts;
+            }
+            if (!methName.equals("")) {
+                MethodDeclaration method = javaFile.findMethodDeclaration(testClassName + "." + methName);
+                Optional<BlockStmt> body = method.getBody();
+                if (body.isPresent()) {
+                    if (method.getDeclarationAsString(false, true, false).contains("throws ")) {
+                        // Wrap the body inside a big try statement to suppress any exceptions
+                        ClassOrInterfaceType exceptionType = new ClassOrInterfaceType().setName(new SimpleName("Throwable"));
+                        CatchClause catchClause = new CatchClause(new Parameter(exceptionType, "ex"), new BlockStmt());
+                        stmts.add(new TryStmt(new BlockStmt(body.get().getStatements()), NodeList.nodeList(catchClause), new BlockStmt()));
+                    } else {
+                        stmts.addAll(body.get().getStatements());
+                    }
+                }
+                return stmts;   // Finished getting all the statements
+            }
+
+            // If reached here, means should go over super classes to see if one of these methods is even defined
+            for (Class clazz : superClasses) {
+                for (Method meth : clazz.getDeclaredMethods()) {
+                    if (annotation.equals("@org.junit.Before")) {
+                        if (meth.getName().equals("setUp")) {
+                            stmts.add(new ExpressionStmt(new MethodCallExpr(null, "setUp")));
+                            return stmts;
+                        }
+                    } else if (annotation.equals("@org.junit.After")) {
+                        if (meth.getName().equals("tearDown")) {
+                            stmts.add(new ExpressionStmt(new MethodCallExpr(null, "tearDown")));
+                            return stmts;
+                        }
+                    }
+                }
             }
         }
 
