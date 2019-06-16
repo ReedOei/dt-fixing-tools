@@ -1036,11 +1036,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                 // Check if applying these cleaners on the method suffices
                 TestPluginPlugin.info("Applying code from cleaner and recompiling.");
                 if (checkCleanerStmts(failingOrder, helperMethod, cleanerStmts, prepend, false)) {
-                    restore(methodToModify.javaFile());
-                    methodToModify.javaFile().writeAndReloadCompilationUnit();
-                    restore(helperMethod.javaFile());
-                    helperMethod.javaFile().writeAndReloadCompilationUnit();
-
                     returnValues[0] = methodToModify;
                     //returnValues[1] = auxiliaryMethodToModify;
                     returnValues[1] = methodToModify;
