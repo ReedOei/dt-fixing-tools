@@ -1066,29 +1066,6 @@ public class CleanerFixerPlugin extends TestPlugin {
                                  final JavaMethod cleanerMethod,
                                  final JavaMethod victimMethod,
                                  boolean prepend) throws Exception {
-        // If failing order still failing, apply all the patches from before first to see if already fixed
-        /*if (!patches.isEmpty()) {
-            boolean passWithPatch = applyPatchesAndRun(failingOrder, victimMethod, polluterMethod);
-            if (passWithPatch) {
-                return true;
-            }
-        }*/
-
-        // If polluter/victim case, check if cleaner is same test class as polluter, so append to polluter
-        // Method to modify is based on this decision
-        /*boolean prepend = true;
-        JavaMethod methodToModify = victimMethod;
-        if (polluterMethod != null) {
-            if (sameTestClass(cleanerMethod.methodName(), polluterMethod.methodName())) {
-                prepend = false;
-                methodToModify = polluterMethod;
-            }
-        }*/
-        /*JavaMethod methodToModify = victimMethod;
-        if (!prepend && polluterMethod != null) {
-            methodToModify = polluterMethod;
-        }*/
-
         // Back up the files we are going to modify
         if (polluterMethod != null) {
             backup(polluterMethod.javaFile());
