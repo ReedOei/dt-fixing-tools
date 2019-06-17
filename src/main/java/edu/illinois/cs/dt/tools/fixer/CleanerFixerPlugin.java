@@ -1045,6 +1045,7 @@ public class CleanerFixerPlugin extends TestPlugin {
                 TestPluginPlugin.error("Applying all of cleaner " + cleanerMethod.methodName() + " to " + methodToModify.methodName() + " does not fix!");
                 restore(methodToModify.javaFile());
                 restore(helperMethod.javaFile());
+                runMvnInstall(false);
             }
         }
 
