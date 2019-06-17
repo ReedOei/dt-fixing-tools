@@ -74,13 +74,10 @@ import java.util.stream.Stream;
 public class CleanerFixerPlugin extends TestPlugin {
     public static final String PATCH_LINE_SEP = "==========================";
 
-    private String classpath;
     private MavenProject project;
     private InstrumentingSmartRunner runner;
 
     private List<Patch> patches;
-
-    private URLClassLoader projectClassLoader;
 
     // Some fields to help with computing time to first cleaner and outputing in log
     private long startTime;
@@ -105,6 +102,20 @@ public class CleanerFixerPlugin extends TestPlugin {
         return String.join(File.pathSeparator, elements);
     }
 
+    private URLClassLoader projectClassLoader() throws DependencyResolutionRequiredException {
+        // Get the project classpath, it will be useful for many things
+        List<URL> urlList = new ArrayList();
+        for (String cp : classpath().split(":")) {
+            try {
+                urlList.add(new File(cp).toURL());
+            } catch (MalformedURLException mue) {
+                TestPluginPlugin.error("Classpath element " + cp + " is malformed!");
+            }
+        }
+        URL[] urls = urlList.toArray(new URL[urlList.size()]);
+        return URLClassLoader.newInstance(urls);
+    }
+
     @Override
     public void execute(final MavenProject project) {
         this.project = project;
@@ -118,19 +129,6 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         logger.runAndLogError(() -> {
             logger.writeSubjectProperties();
-            this.classpath = classpath();
-
-            // Get the project classpath, it will be useful for many things
-            List<URL> urlList = new ArrayList();
-            for (String cp : this.classpath.split(":")) {
-                try {
-                    urlList.add(new File(cp).toURL());
-                } catch (MalformedURLException mue) {
-                    TestPluginPlugin.error("Classpath element " + cp + " is malformed!");
-                }
-            }
-            URL[] urls = urlList.toArray(new URL[urlList.size()]);
-            this.projectClassLoader = URLClassLoader.newInstance(urls);
 
             if (runnerOption.isDefined()) {
                 this.runner = InstrumentingSmartRunner.fromRunner(runnerOption.get());
@@ -365,7 +363,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         List<String> cleanerTestNames = new ArrayList<>();  // Can potentially work with many cleaners, try them all
 
         String victimTestName = minimized.dependentTest();
-        Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+        Optional<JavaMethod> victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath());
         if (!victimMethodOpt.isPresent()) {
             TestPluginPlugin.error("Could not find victim method " + victimTestName);
             TestPluginPlugin.error("Tried looking in: " + testFiles);
@@ -379,7 +377,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             failingOrder = polluterData.withDeps(minimized.dependentTest());
 
             polluterTestName = polluterData.deps().get(polluterData.deps().size() - 1); // If more than one polluter, want to potentially modify last one
-            polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath);
+            polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath());
 
             if (polluterData.cleanerData().cleaners().isEmpty()) {
                 TestPluginPlugin.info("Found polluters for " + victimTestName + " but no cleaners.");
@@ -448,11 +446,11 @@ public class CleanerFixerPlugin extends TestPlugin {
         // Try to apply fix with all cleaners, but if one of them works, then we are good
         for (String cleanerTestName : cleanerTestNames) {
             // Reload methods
-            victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath);
+            victimMethodOpt = JavaMethod.find(victimTestName, testFiles, classpath());
             if (polluterMethodOpt.isPresent()) {
-                polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath);
+                polluterMethodOpt = JavaMethod.find(polluterTestName, testFiles, classpath());
             }
-            Optional<JavaMethod> cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath);
+            Optional<JavaMethod> cleanerMethodOpt = JavaMethod.find(cleanerTestName, testFiles, classpath());
             if (!cleanerMethodOpt.isPresent()) {
                 TestPluginPlugin.error("Could not find cleaner method " + cleanerTestName);
                 TestPluginPlugin.error("Tried looking in: " + testFiles);
@@ -676,7 +674,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         NodeList<Statement> stmts = NodeList.nodeList();
 
         // Determine super classes, to be used for later looking up helper methods
-        Class testClass = this.projectClassLoader.loadClass(testClassName);
+        Class testClass = projectClassLoader().loadClass(testClassName);
         List<Class> superClasses = new ArrayList<>();
         Class currClass = testClass;
         while (currClass != null) {
@@ -835,7 +833,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         String methodName = "auxiliary";    // Default name is auxiliary
         String annotation = "";
 
-        Class clazz = this.projectClassLoader.loadClass(className);
+        Class clazz = projectClassLoader().loadClass(className);
 
         // Prepending means getting the @Before, otherwise means getting the @After
         if (prepend) {
@@ -858,7 +856,7 @@ public class CleanerFixerPlugin extends TestPlugin {
             methodToModify.javaFile().addMethod(fullMethodName, annotation.replace("()", "").replace("@", ""));
             methodToModify.javaFile().writeAndReloadCompilationUnit();
         }
-        JavaMethod auxiliaryMethod = JavaMethod.find(fullMethodName, testSources(), classpath).get();
+        JavaMethod auxiliaryMethod = JavaMethod.find(fullMethodName, testSources(), classpath()).get();
 
         return auxiliaryMethod;
     }
@@ -884,13 +882,13 @@ public class CleanerFixerPlugin extends TestPlugin {
         methodToModify.javaFile().writeAndReloadCompilationUnit();
 
         String helperName = cleanerMethod.getClassName() + ".cleanerHelper";
-        cleanerMethod = JavaMethod.find(cleanerMethod.methodName(), testSources(), classpath).get();    // Reload, just in case
+        cleanerMethod = JavaMethod.find(cleanerMethod.methodName(), testSources(), classpath()).get();    // Reload, just in case
         cleanerMethod.javaFile().addMethod(helperName, "org.junit.Test");
         cleanerMethod.javaFile().writeAndReloadCompilationUnit();
-        JavaMethod helperMethod = JavaMethod.find(helperName, testSources(), classpath).get();
+        JavaMethod helperMethod = JavaMethod.find(helperName, testSources(), classpath()).get();
         helperMethod.javaFile().writeAndReloadCompilationUnit();
 
-        methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
+        methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath()).get();   // Reload, just in case
 
         return helperMethod;
     }
@@ -918,7 +916,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Set the cleaner method body to be the stripped version
         restore(cleanerMethod.javaFile());
-        cleanerMethod = JavaMethod.find(cleanerMethod.methodName(), testSources(), classpath).get();    // Reload, just in case
+        cleanerMethod = JavaMethod.find(cleanerMethod.methodName(), testSources(), classpath()).get();    // Reload, just in case
         cleanerMethod.method().setBody(new BlockStmt(strippedStatements));
         cleanerMethod.javaFile().writeAndReloadCompilationUnit();
         try {
@@ -1124,7 +1122,7 @@ public class CleanerFixerPlugin extends TestPlugin {
 
         // Try to inline these statements into the method
         restore(methodToModify.javaFile());
-        methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath).get();   // Reload, just in case
+        methodToModify = JavaMethod.find(methodToModify.methodName(), testSources(), classpath()).get();   // Reload, just in case
         boolean inlineSuccessful = checkCleanerStmts(failingOrder, methodToModify, minimalCleanerStmts, finalPrepend, false);
         if (!inlineSuccessful) {
             TestPluginPlugin.info("Inlining patch into " + methodToModify.methodName() + " not good enough to run.");
@@ -1170,7 +1168,7 @@ public class CleanerFixerPlugin extends TestPlugin {
         }
         Path patchFile = writePatch(victimMethod, startingLine, patchedBlock, originalsize, methodToModify, cleanerMethod, polluterMethod, elapsedTime.get(0).elapsedSeconds(), status);
 
-        patches.add(new Patch(methodToModify, patchedBlock, finalPrepend, cleanerMethod, victimMethod, testSources(), classpath, inlineSuccessful));
+        patches.add(new Patch(methodToModify, patchedBlock, finalPrepend, cleanerMethod, victimMethod, testSources(), classpath(), inlineSuccessful));
 
         // Report successful patching, report where the patch is
         TestPluginPlugin.info("Patching successful, patch file for " + victimMethod.methodName() + " found at: " + patchFile);
