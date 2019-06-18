@@ -49,7 +49,8 @@ timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Ddi
 # Gather the results, put them up top
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
-/home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
+#/home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
+/home/awshi2/dt-fixing-tools/scripts/gather-results.sh $(pwd) ${RESULTSDIR}
 mv minimizer.log ${RESULTSDIR}
 mv /home/awshi2/mvn-test.log ${RESULTSDIR}
 mv /home/awshi2/mvn-test-time.log ${RESULTSDIR}
