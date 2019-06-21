@@ -40,7 +40,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_avgpolluter_time}{n/a}"
     else
         avgtime=$(echo ${rollingsum} / ${count})
-        echo "\\Def{${module}_avgpolluter_time}{$(echo ${avgtime} | bc -l | xargs printf "%.0f")}"
+        echo "\\Def{${module}_avgpolluter_time}{$(echo ${avgtime} | bc -l | xargs printf "%'.0f")}"
         overallpolluterstime=$(echo ${avgtime} + ${overallpolluterstime} | bc -l)
         overallpolluterscount=$((overallpolluterscount + 1))
     fi
@@ -65,7 +65,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_avgsetter_time}{n/a}"
     else
         avgtime=$(echo ${rollingsum} / ${count})
-        echo "\\Def{${module}_avgsetter_time}{$(echo ${avgtime} | bc -l | xargs printf "%.0f")}"
+        echo "\\Def{${module}_avgsetter_time}{$(echo ${avgtime} | bc -l | xargs printf "%'.0f")}"
         overallsetterstime=$(echo ${avgtime} + ${overallsetterstime} | bc -l)
         overallsetterscount=$((overallsetterscount + 1))
     fi
@@ -88,7 +88,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_avgcleaner_time}{n/a}"
     else
         avgtime=$(echo ${rollingsum} / ${count})
-        echo "\\Def{${module}_avgcleaner_time}{$(echo ${avgtime} | bc -l | xargs printf "%.0f")}"
+        echo "\\Def{${module}_avgcleaner_time}{$(echo ${avgtime} | bc -l | xargs printf "%'.0f")}"
         overallcleanerstime=$(echo ${avgtime} + ${overallcleanerstime} | bc -l)
         overallcleanerscount=$((overallcleanerscount + 1))
     fi
@@ -111,14 +111,14 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_avgpatch_time}{n/a}"
     else
         avgtime=$(echo ${rollingsum} / ${count})
-        echo "\\Def{${module}_avgpatch_time}{$(echo ${avgtime} | bc -l | xargs printf "%.0f")}"
+        echo "\\Def{${module}_avgpatch_time}{$(echo ${avgtime} | bc -l | xargs printf "%'.0f")}"
         overallpatchtime=$(echo ${avgtime} + ${overallpatchtime} | bc -l)
         overallpatchcount=$((overallpatchcount + 1))
     fi
 done
 
 # Output the overall times
-echo "\\Def{average_avgpolluter_time}{$(echo ${overallpolluterstime} / ${overallpolluterscount} | bc -l | xargs printf "%.0f")}"
-echo "\\Def{average_avgsetter_time}{$(echo ${overallsetterstime} / ${overallsetterscount} | bc -l | xargs printf "%.0f")}"
-echo "\\Def{average_avgcleaner_time}{$(echo ${overallcleanerstime} / ${overallcleanerscount} | bc -l | xargs printf "%.0f")}"
-echo "\\Def{average_avgpatch_time}{$(echo ${overallpatchtime} / ${overallpatchcount} | bc -l | xargs printf "%.0f")}"
+echo "\\Def{average_avgpolluter_time}{$(echo ${overallpolluterstime} / ${overallpolluterscount} | bc -l | xargs printf "%'.0f")}"
+echo "\\Def{average_avgsetter_time}{$(echo ${overallsetterstime} / ${overallsetterscount} | bc -l | xargs printf "%'.0f")}"
+echo "\\Def{average_avgcleaner_time}{$(echo ${overallcleanerstime} / ${overallcleanerscount} | bc -l | xargs printf "%'.0f")}"
+echo "\\Def{average_avgpatch_time}{$(echo ${overallpatchtime} / ${overallpatchcount} | bc -l | xargs printf "%'.0f")}"

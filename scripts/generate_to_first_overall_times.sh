@@ -76,8 +76,8 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
 
     # Report average time per module
     if [[ ${count} != 0 ]]; then
-        echo "\\Def{${module}_firstoverall_time}{$(echo "${rollingsum} / ${count}" | bc -l | xargs printf "%.0f")}"
+        echo "\\Def{${module}_firstoverall_time}{$(echo "${rollingsum} / ${count}" | bc -l | xargs printf "%'.0f")}"
     fi
 done
 
-echo "\\Def{average_firstoverall_time}{$(echo "${overallendtoendtime} / ${overallendtoendcount}" | bc -l | xargs printf "%.0f")}"
+echo "\\Def{average_firstoverall_time}{$(echo "${overallendtoendtime} / ${overallendtoendcount}" | bc -l | xargs printf "%'.0f")}"
