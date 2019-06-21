@@ -9,7 +9,7 @@ if ! [ -x "$(command -v azcopy)" ]; then
 fi
 
 line=$(cat $1)
-imageName=$(echo ${line} | cut -d',' -f4)
+imageName=$(echo ${line} | cut -d',' -f5)
 
 azcopy \
     --source https://dtdataset.file.core.windows.net/dtdata/$imageName \
