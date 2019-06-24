@@ -14,7 +14,7 @@ def main(args):
     # If there are cleaners, we want the time spent looking for that first cleaner of the first polluter
     if len(cleanerData['cleaners']) > 0:
         for cleaner in cleanerData['cleaners']:
-            print str(cleaner['time']['totalTime']['elapsedSeconds']) + ',SUCCESS'
+            print str(cleaner['time']['addTime']['elapsedSeconds']) + ',SUCCESS'
     else:
         # If there is only one polluter, then it is the overall time, minus the time for the polluter
         if len(data['polluters']) == 1:
