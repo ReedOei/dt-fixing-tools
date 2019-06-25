@@ -27,6 +27,7 @@ for pom_path in $(find -name "pom.xml"); do
     # )
 
     wget "http://mir.cs.illinois.edu/awshi2/dt-files/$testName-data/flaky-lists.json" -O "$dir/.dtfixingtools/detection-results/flaky-lists.json"
+    wget "http://mir.cs.illinois.edu/awshi2/dt-files/$testName-data/original-order" -O "$dir/.dtfixingtools/original-order"
 
     wget "http://mir.cs.illinois.edu/awshi2/dt-files/$testName-data/minimized.zip" -O "$dir/.dtfixingtools/minimized.zip"
     (
