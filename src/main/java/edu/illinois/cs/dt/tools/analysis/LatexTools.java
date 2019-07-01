@@ -2,6 +2,8 @@ package edu.illinois.cs.dt.tools.analysis;
 
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 public class LatexTools {
     private final SQLite sqlite;
@@ -37,7 +39,14 @@ public class LatexTools {
         return command(commandName, String.format("%s%s%s", preStr, procedure.tableQuery().table().get(0).get(0), postStr));
     }
 
-    public String command(final String commandName, final String val) {
+    public String command(final String commandName, String val) {
+        try{
+            int num = Integer.parseInt(val);
+            val = NumberFormat.getNumberInstance(Locale.US).format(num);
+        } catch (NumberFormatException e) {
+            // not an integer!
+        }
+
         return String.format("\\newcommand{\\%s%s}{%s\\xspace}", commandPrefix, commandName, val);
     }
 
