@@ -68,7 +68,7 @@ foundFlakyCommit=""
 i=1
 
 # loop until we've found the earliest commit that reveals this flaky test
-while [ $foundFlakyCommit == "" ];
+while [[ $foundFlakyCommit == "" ]];
 do 
   if [[ $i == $maxCommits ]];
   then
