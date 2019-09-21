@@ -44,6 +44,9 @@ MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmave
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 
+# Incorporate tooling into the project, using Java XML parsing
+/home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
+
 # Step 1 : Run the entire test suite and save all tests' file
 timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file.log
 
