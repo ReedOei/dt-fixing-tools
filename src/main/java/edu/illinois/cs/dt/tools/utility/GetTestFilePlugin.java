@@ -71,6 +71,7 @@ public class GetTestFilePlugin extends TestPlugin {
                     Optional<JavaMethod> javaMethodOpt = JavaMethod.find(test, testSources(), classpath());
                     if (!javaMethodOpt.isPresent()) {
                         System.out.println("WARNING: " + test + " not directly found; maybe in superclass?");
+                        continue;
                     }
                     JavaMethod javaMethod = javaMethodOpt.get();
                     final String outputStr = test + "," + javaMethod.javaFile().path().toString();
