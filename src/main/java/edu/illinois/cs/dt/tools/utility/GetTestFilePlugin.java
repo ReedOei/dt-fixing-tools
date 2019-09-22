@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import com.reedoei.testrunner.mavenplugin.TestPlugin;
@@ -67,9 +68,11 @@ public class GetTestFilePlugin extends TestPlugin {
 
                 List<String> outputStrs = new ArrayList<>();
                 for (String test : tests) {
-                    JavaMethod javaMethod = JavaMethod.find(test,
-                                                            testSources(),
-                                                            classpath()).get();
+                    Optional<JavaMethod> javaMethodOpt = JavaMethod.find(test, testSources(), classpath());
+                    if (!javaMethodOpt.isPresent()) {
+                        System.out.println("WARNING: " + test + " not directly found; maybe in superclass?");
+                    }
+                    JavaMethod javaMethod = javaMethodOpt.get();
                     final String outputStr = test + "," + javaMethod.javaFile().path().toString();
                     outputStrs.add(outputStr);
                 }
