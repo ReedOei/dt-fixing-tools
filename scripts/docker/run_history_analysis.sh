@@ -101,7 +101,7 @@ do
 
   # Step 7 : Check whether iDFlakies found flaky tests
   files=$(find /home/awshi2/$slug-$shortSha/ -name list.txt)
-  if [ $files = "" ]; then
+  if [[ $files = "" ]]; then
     echo "No DTs found in this revision ($longSha)" >> /home/awshi2/commits.log
     ((i=i+1))
     cd /home/awshi2
