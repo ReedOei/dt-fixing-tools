@@ -53,8 +53,8 @@ timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MV
 cp get-test-file.log ${RESULTSDIR}
 
 # Step 2 : Get file for specific test name 
-testFile=$(grep "$fullTestName" /home/awshi2/$slug/test-to-file.csv | head -1 | cut -d"," -f2)
-cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
+testFile=$(grep "$fullTestName" $(find -name /home/awshi2/$slug/test-to-file.csv) | head -1 | cut -d"," -f2)
+find -name test-to-file.csv | xargs cat > ${RESULTSDIR}/test-to-file.csv
 
 # Step 3 : Get all commits for specific test file
 maxCommits=$(git log --follow -p $testFile | grep 'commit ' | wc -l | tr -d '[:space:]')
