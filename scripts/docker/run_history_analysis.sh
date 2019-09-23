@@ -100,14 +100,14 @@ do
   /home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug-$shortSha ${rounds} ${timeout}
 
   # Step 7 : Check whether iDFlakies found flaky tests
-  file=/home/awshi2/$slug-$shortSha/.dtfixingtools/detection-results/list.txt
-  if [ ! -e "$file" ]; then
+  files=$(find /home/awshi2/$slug-$shortSha/ -name list.txt)
+  if [ $files = "" ]; then
     echo "No DTs found in this revision ($longSha)" >> /home/awshi2/commits.log
     ((i=i+1))
     cd /home/awshi2
     rm -rf /home/awshi2/$slug-$shortSha
   else
-    foundFlakyCommit=$(grep "$fullTestName" $file)
+    foundFlakyCommit=$(grep "$fullTestName" $(cat $files))
     if [[ $foundFlakyCommit != "" ]]; 
     then
       echo "First commit where test is flaky:" >> /home/awshi2/commits.log
