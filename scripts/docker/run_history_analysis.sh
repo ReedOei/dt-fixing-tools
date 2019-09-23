@@ -107,7 +107,7 @@ do
     cd /home/awshi2
     rm -rf /home/awshi2/$slug-$shortSha
   else
-    foundFlakyCommit=$(grep "$fullTestName" $(cat $files))
+    foundFlakyCommit=$(grep "^$fullTestName$" $files)
     if [[ $foundFlakyCommit != "" ]]; 
     then
       echo "First commit where test is flaky:" >> /home/awshi2/commits.log
