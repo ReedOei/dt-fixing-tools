@@ -91,18 +91,14 @@ timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MV
 # Gather the results, put them up top
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
-/home/awshi2/dt-fixing-tools/scripts/gather-results $(pwd) ${RESULTSDIR}
+/home/awshi2/dt-fixing-tools/scripts/gather-results.sh $(pwd) ${RESULTSDIR}
 mv module_test_time.log ${RESULTSDIR}
-mv original.log ${RESULTSDIR}
 mv random_class_method.log ${RESULTSDIR}
-mv random_class.log ${RESULTSDIR}
-mv reverse_original.log ${RESULTSDIR}
-mv reverse_class.log ${RESULTSDIR}
 mv mvn-test.log ${RESULTSDIR}
 mv mvn-test-time.log ${RESULTSDIR}
 
 
 echo "*******************REED************************"
-echo "Finished run_project.sh"
+echo "Finished run_random_class_method.sh"
 date
 

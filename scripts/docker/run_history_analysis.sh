@@ -97,7 +97,7 @@ do
   timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests -fn -B |& tee /home/awshi2/$slug-$shortSha/mvn-test.log && { time -p timeout 1h /home/awshi2/apache-maven/bin/mvn test  -fn -B |& tee -a /home/awshi2/$slug-$shortSha/mvn-test.log ;} 2> /home/awshi2/$slug-$shortSha/mvn-test-time.log
 
   # Step 6 : Run iDFlakies on that commit
-  /home/awshi2/dt-fixing-tools/scripts/docker/run_experiment.sh $slug-$shortSha ${rounds} ${timeout} "run_random_class_method.sh" ""
+  /home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug-$shortSha ${rounds} ${timeout} "run_random_class_method.sh" ""
 
   # Step 7 : Check whether iDFlakies found flaky tests
   file=/home/awshi2/$slug-$shortSha/.dtfixingtools/detection-results/list.txt
