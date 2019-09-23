@@ -18,13 +18,6 @@ slug=$1
 rounds=$2
 timeout=$3
 
-# Setup prolog stuff
-cd /home/awshi2/dt-fixing-tools/scripts/
-./setup
-
-# Set environment up, just in case
-source ~/.bashrc
-
 # Incorporate tooling into the project, using Java XML parsing
 cd /home/awshi2/${slug}
 /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
