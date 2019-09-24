@@ -182,3 +182,5 @@ mv /home/awshi2/commits.log ${RESULTSDIR}
 echo "*******************REED************************"
 echo "Finished run_history_analysis.sh"
 date
+
+sleep 15m
