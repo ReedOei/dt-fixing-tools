@@ -55,8 +55,10 @@ cp get-test-file.log ${RESULTSDIR}
 # Step 2 : Get file for specific test name
 echo "" > /home/awshi2/commits.log
 
-# testFile=$(grep "$fullTestName" $(find /home/awshi2/${slug} -name test-to-file.csv) | head -1 | cut -d"," -f2)
-find . -name test-to-file.csv | xargs cat > ./test-to-file.csv
+# Redirect to a different name in case the test-to-file.csv is already in .
+# This is necessary because cat cannot read and redirect output to the same file 
+find . -name test-to-file.csv | xargs cat > ./test-to-file-temp.csv
+mv -f test-to-file-temp.csv test-to-file.csv
 
 # Output warning if test suite contains multiple tests with same name
 numTestName=$(grep "$fullTestName" /home/awshi2/$slug/test-to-file.csv | wc -l | tr -d '[:space:]')
@@ -121,7 +123,8 @@ do
 
   timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file.log
 
-  find . -name test-to-file.csv | xargs cat > ./test-to-file.csv
+  find . -name test-to-file.csv | xargs cat > ./test-to-file-temp.csv
+  mv -f test-to-file-temp.csv test-to-file.csv
 
   cp get-test-file.log ${REVRESULTSDIR}
   cp test-to-file.csv ${REVRESULTSDIR}
