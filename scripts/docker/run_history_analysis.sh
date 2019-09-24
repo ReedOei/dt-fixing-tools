@@ -133,7 +133,8 @@ do
     echo "Warning: Multiple tests with same name found in this revision ($longSha). Choosing first one to proceed." >> /home/awshi2/commits.log
     grep "$fullTestName" ./test-to-file.csv >> /home/awshi2/commits.log
     echo "" >> /home/awshi2/commits.log
-  elif [[ "$foundTest" -eq "0" ]]
+  elif [[ "$foundTest" -eq "0" ]];
+  then
     echo "Test not in this revision ($longSha)" >> /home/awshi2/commits.log
 
     [ -f mvn-test.log ] && mv mvn-test.log ${REVRESULTSDIR}
@@ -142,7 +143,7 @@ do
     cd /home/awshi2
     rm -rf /home/awshi2/$slug-$shortSha
     continue
-  done
+  fi
 
   # Not sure if the mvn-test.log and mvn-test-time.log is even needed anymore. if not can skip the next line
   { time -p timeout 1h /home/awshi2/apache-maven/bin/mvn test  -fn -B |& tee -a /home/awshi2/$slug-$shortSha/mvn-test.log ;} 2> /home/awshi2/$slug-$shortSha/mvn-test-time.log
