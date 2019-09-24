@@ -18,6 +18,14 @@ slug=$1
 rounds=$2
 timeout=$3
 
+RESULTSDIR=$4
+if [[ $4 == "" ]]; then
+  RESULTSDIR=/home/awshi2/output/
+fi
+mkdir -p ${RESULTSDIR}
+
+moduleName=$5
+
 # Incorporate tooling into the project, using Java XML parsing
 cd /home/awshi2/${slug}
 
@@ -62,8 +70,11 @@ echo "*******************REED************************"
 echo "Running testplugin for randomizemethods"
 date
 
-timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee random_class_method.log
-
+if [[ $moduleName == "" ]]; then
+  timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee random_class_method.log
+else 
+  # Run iDFlakies just on a specific module
+fi
 
 # Run the plugin, random class only
 # echo "*******************REED************************"
@@ -81,13 +92,9 @@ timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MV
 
 
 # Gather the results, put them up top
-RESULTSDIR=/home/awshi2/output/
-mkdir -p ${RESULTSDIR}
 /home/awshi2/dt-fixing-tools/scripts/gather-results.sh $(pwd) ${RESULTSDIR}
 mv module_test_time.log ${RESULTSDIR}
 mv random_class_method.log ${RESULTSDIR}
-mv mvn-test.log ${RESULTSDIR}
-mv mvn-test-time.log ${RESULTSDIR}
 
 
 echo "*******************REED************************"

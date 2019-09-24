@@ -84,6 +84,7 @@ echo $commits | rev >> /home/awshi2/commits.log
 foundFlakyCommit=""
 i=1
 
+
 # loop until we've found the earliest commit that reveals this flaky test
 while [[ $foundFlakyCommit == "" ]];
 do 
@@ -95,6 +96,9 @@ do
 
   longSha=$(echo $commits | cut -d" " -f$i | rev)
   shortSha=${longSha:0:7}
+
+  REVRESULTSDIR=$RESULTSDIR/$shortSha
+  mkdir -p ${REVRESULTSDIR}
 
   # Step 5 : Clone project again with that commit
   cd /home/awshi2/
@@ -117,15 +121,22 @@ do
 
   timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file.log
 
+  [ -f get-test-file.log ] && mv get-test-file.log ${REVRESULTSDIR}
+  [ -f test-to-file.csv ] && mv test-to-file.csv ${REVRESULTSDIR}
+
+
   foundTest=$(grep -R "$testName" test-to-file.csv | wc -l | tr -d '[:space:]')
+  moduleNameRev=$(grep "$fullTestName" ./test-to-file.csv | head -1 | cut -d"," -f3)
   if [[ "$foundTest" -gt "1" ]];
   then 
     echo "Warning: Multiple tests with same name found in this revision ($longSha). Choosing first one to proceed." >> /home/awshi2/commits.log
     grep "$fullTestName" ./test-to-file.csv >> /home/awshi2/commits.log
     echo "" >> /home/awshi2/commits.log
-    moduleNameRev=$(grep "$fullTestName" ./test-to-file.csv | head -1 | cut -d"," -f3)
   elif [[ "$foundTest" -eq "0" ]]
     echo "Test not in this revision ($longSha)" >> /home/awshi2/commits.log
+
+    [ -f mvn-test.log ] && mv mvn-test.log ${REVRESULTSDIR}
+
     ((i=i+1))
     cd /home/awshi2
     rm -rf /home/awshi2/$slug-$shortSha
@@ -136,7 +147,7 @@ do
   { time -p timeout 1h /home/awshi2/apache-maven/bin/mvn test  -fn -B |& tee -a /home/awshi2/$slug-$shortSha/mvn-test.log ;} 2> /home/awshi2/$slug-$shortSha/mvn-test-time.log
 
   # Step 6 : Run iDFlakies on that commit
-  /home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug-$shortSha ${rounds} ${timeout}
+  /home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug-$shortSha ${rounds} ${timeout} ${REVRESULTSDIR}
 
   # Step 7 : Check whether iDFlakies found flaky tests
   files=$(find /home/awshi2/$slug-$shortSha/ -name list.txt)
@@ -148,13 +159,18 @@ do
     then
       echo "First commit where test is flaky:" >> /home/awshi2/commits.log
       echo $longSha >> /home/awshi2/commits.log
+
+      [ -f mvn-test.log ] && mv mvn-test.log ${REVRESULTSDIR}
+      [ -f mvn-test-time.log ] && mv mvn-test-time.log ${REVRESULTSDIR}
       break
     else 
       echo "DTs were found in revision ($longSha) but not matching $fullTestName" >> /home/awshi2/commits.log
     fi
   fi
 
-  [ -f  ] && mv ROADMAP.md elastic-job-lite-core/
+  [ -f mvn-test.log ] && mv mvn-test.log ${REVRESULTSDIR}
+  [ -f mvn-test-time.log ] && mv mvn-test-time.log ${REVRESULTSDIR}
+
   cd /home/awshi2
   rm -rf /home/awshi2/$slug-$shortSha        
   ((i=i+1))
