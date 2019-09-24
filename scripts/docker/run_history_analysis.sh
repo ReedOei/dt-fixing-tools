@@ -65,7 +65,7 @@ then
   echo "Warning: Multiple tests with same name found. Choosing first one to proceed." >> /home/awshi2/commits.log
   grep "$fullTestName" /home/awshi2/$slug/test-to-file.csv >> /home/awshi2/commits.log
   echo "" >> /home/awshi2/commits.log
-done
+fi
 
 testInfo=$(grep "$fullTestName" /home/awshi2/$slug/test-to-file.csv | head -1)
 testFile=$(echo $testInfo | cut -d"," -f2)
