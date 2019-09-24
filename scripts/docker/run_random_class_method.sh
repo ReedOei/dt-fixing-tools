@@ -20,7 +20,6 @@ timeout=$3
 
 # Incorporate tooling into the project, using Java XML parsing
 cd /home/awshi2/${slug}
-/home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
 # Run the plugin, get module test times
 echo "*******************REED************************"

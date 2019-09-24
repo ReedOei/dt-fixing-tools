@@ -52,9 +52,26 @@ timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MV
 
 cp get-test-file.log ${RESULTSDIR}
 
-# Step 2 : Get file for specific test name 
-testFile=$(grep "$fullTestName" $(find /home/awshi2/${slug} -name test-to-file.csv) | head -1 | cut -d"," -f2)
-find -name test-to-file.csv | xargs cat > ${RESULTSDIR}/test-to-file.csv
+# Step 2 : Get file for specific test name
+echo "" > /home/awshi2/commits.log
+
+# testFile=$(grep "$fullTestName" $(find /home/awshi2/${slug} -name test-to-file.csv) | head -1 | cut -d"," -f2)
+# find -name test-to-file.csv | xargs cat > ${RESULTSDIR}/test-to-file.csv
+
+# Output warning if test suite contains multiple tests with same name
+numTestName=$(grep "$fullTestName" /home/awshi2/$slug/test-to-file.csv | wc -l | tr -d '[:space:]')
+if [[ "$numTestName" -gt "1" ]];
+then 
+  echo "Warning: Multiple tests with same name found. Choosing first one to proceed." >> /home/awshi2/commits.log
+  grep "$fullTestName" /home/awshi2/$slug/test-to-file.csv >> /home/awshi2/commits.log
+  echo "" >> /home/awshi2/commits.log
+done
+
+testInfo=$(grep "$fullTestName" /home/awshi2/$slug/test-to-file.csv | head -1)
+testFile=$(echo $testInfo | cut -d"," -f2)
+moduleName=$(echo $testInfo | cut -d"," -f3)
+
+cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
 # Step 3 : Get all commits for specific test file
 maxCommits=$(git log --follow -p $testFile | grep 'commit ' | wc -l | tr -d '[:space:]')
@@ -72,7 +89,7 @@ while [[ $foundFlakyCommit == "" ]];
 do 
   if [[ $i == $maxCommits ]];
   then
-    echo "Earliest commit is latest commit. Number commits: $maxCommits" >> /home/awshi2/commits.log
+    echo "At latest commit already. Number of commits including latest: $maxCommits" >> /home/awshi2/commits.log
     break
   fi
 
@@ -84,17 +101,39 @@ do
   git clone https://github.com/$slug $slug-$shortSha && cd $slug-$shortSha && git checkout $longSha 
 
   # If not empty, then there exist class file that matches $className and contains $testName
-  foundTest=$(grep -R "$testName" . | cut -d':' -f1 | grep "$className")
-  if [[ $foundTest == "" ]]; 
-  then
+  # foundTest=$(grep -R "$testName" . | cut -d':' -f1 | grep "$className")
+  # if [[ $foundTest == "" ]]; 
+  # then
+  #   echo "Test not in this revision ($longSha)" >> /home/awshi2/commits.log
+  #   ((i=i+1))
+  #   cd /home/awshi2
+  #   rm -rf /home/awshi2/$slug-$shortSha
+  #   continue
+  # fi
+
+  timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests -fn -B |& tee /home/awshi2/$slug-$shortSha/mvn-test.log 
+
+  /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
+
+  timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file.log
+
+  foundTest=$(grep -R "$testName" test-to-file.csv | wc -l | tr -d '[:space:]')
+  if [[ "$foundTest" -gt "1" ]];
+  then 
+    echo "Warning: Multiple tests with same name found in this revision ($longSha). Choosing first one to proceed." >> /home/awshi2/commits.log
+    grep "$fullTestName" ./test-to-file.csv >> /home/awshi2/commits.log
+    echo "" >> /home/awshi2/commits.log
+    moduleNameRev=$(grep "$fullTestName" ./test-to-file.csv | head -1 | cut -d"," -f3)
+  elif [[ "$foundTest" -eq "0" ]]
     echo "Test not in this revision ($longSha)" >> /home/awshi2/commits.log
     ((i=i+1))
     cd /home/awshi2
     rm -rf /home/awshi2/$slug-$shortSha
     continue
-  fi
+  done
 
-  timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests -fn -B |& tee /home/awshi2/$slug-$shortSha/mvn-test.log && { time -p timeout 1h /home/awshi2/apache-maven/bin/mvn test  -fn -B |& tee -a /home/awshi2/$slug-$shortSha/mvn-test.log ;} 2> /home/awshi2/$slug-$shortSha/mvn-test-time.log
+  # Not sure if the mvn-test.log and mvn-test-time.log is even needed anymore. if not can skip the next line
+  { time -p timeout 1h /home/awshi2/apache-maven/bin/mvn test  -fn -B |& tee -a /home/awshi2/$slug-$shortSha/mvn-test.log ;} 2> /home/awshi2/$slug-$shortSha/mvn-test-time.log
 
   # Step 6 : Run iDFlakies on that commit
   /home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug-$shortSha ${rounds} ${timeout}
@@ -103,9 +142,6 @@ do
   files=$(find /home/awshi2/$slug-$shortSha/ -name list.txt)
   if [[ $(cat $files | wc -l) = "0" ]]; then
     echo "No DTs found in this revision ($longSha)" >> /home/awshi2/commits.log
-    ((i=i+1))
-    cd /home/awshi2
-    rm -rf /home/awshi2/$slug-$shortSha
   else
     foundFlakyCommit=$(grep "^$fullTestName$" $files)
     if [[ $foundFlakyCommit != "" ]]; 
@@ -115,11 +151,14 @@ do
       break
     else 
       echo "DTs were found in revision ($longSha) but not matching $fullTestName" >> /home/awshi2/commits.log
-      ((i=i+1))
-      cd /home/awshi2
-      rm -rf /home/awshi2/$slug-$shortSha        
     fi
   fi
+
+  [ -f  ] && mv ROADMAP.md elastic-job-lite-core/
+  cd /home/awshi2
+  rm -rf /home/awshi2/$slug-$shortSha        
+  ((i=i+1))
+
 done
 
 mv /home/awshi2/commits.log ${RESULTSDIR}
@@ -127,4 +166,3 @@ mv /home/awshi2/commits.log ${RESULTSDIR}
 echo "*******************REED************************"
 echo "Finished run_history_analysis.sh"
 date
-

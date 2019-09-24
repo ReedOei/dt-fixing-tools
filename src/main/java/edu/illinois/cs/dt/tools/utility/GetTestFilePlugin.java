@@ -22,7 +22,6 @@ import edu.illinois.cs.dt.tools.fixer.JavaMethod;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
-import sun.security.pkcs11.Secmod;
 
 /**
  * Created by winglam on 9/18/19.
@@ -74,7 +73,7 @@ public class GetTestFilePlugin extends TestPlugin {
                         continue;
                     }
                     JavaMethod javaMethod = javaMethodOpt.get();
-                    final String outputStr = test + "," + javaMethod.javaFile().path().toString();
+                    final String outputStr = test + "," + javaMethod.javaFile().path().toString()  + "," + project.getArtifactId();
                     outputStrs.add(outputStr);
                 }
 
