@@ -142,7 +142,7 @@ do
     cd /home/awshi2
     rm -rf /home/awshi2/$slug-$shortSha
     continue
-  done
+  fi
 
   # Not sure if the mvn-test.log and mvn-test-time.log is even needed anymore. if not can skip the next line
   { time -p timeout 1h /home/awshi2/apache-maven/bin/mvn test  -fn -B |& tee -a /home/awshi2/$slug-$shortSha/mvn-test.log ;} 2> /home/awshi2/$slug-$shortSha/mvn-test-time.log
