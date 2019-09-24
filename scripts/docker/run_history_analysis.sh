@@ -56,7 +56,7 @@ cp get-test-file.log ${RESULTSDIR}
 echo "" > /home/awshi2/commits.log
 
 # testFile=$(grep "$fullTestName" $(find /home/awshi2/${slug} -name test-to-file.csv) | head -1 | cut -d"," -f2)
-# find -name test-to-file.csv | xargs cat > ${RESULTSDIR}/test-to-file.csv
+find . -name test-to-file.csv | xargs cat > ./test-to-file.csv
 
 # Output warning if test suite contains multiple tests with same name
 numTestName=$(grep "$fullTestName" /home/awshi2/$slug/test-to-file.csv | wc -l | tr -d '[:space:]')
@@ -120,6 +120,8 @@ do
   /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
   timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file.log
+
+  find . -name test-to-file.csv | xargs cat > ./test-to-file.csv
 
   [ -f get-test-file.log ] && mv get-test-file.log ${REVRESULTSDIR}
   [ -f test-to-file.csv ] && mv test-to-file.csv ${REVRESULTSDIR}
