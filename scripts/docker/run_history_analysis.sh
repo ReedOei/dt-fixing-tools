@@ -123,8 +123,8 @@ do
 
   find . -name test-to-file.csv | xargs cat > ./test-to-file.csv
 
-  [ -f get-test-file.log ] && mv get-test-file.log ${REVRESULTSDIR}
-  [ -f test-to-file.csv ] && mv test-to-file.csv ${REVRESULTSDIR}
+  cp get-test-file.log ${REVRESULTSDIR}
+  cp test-to-file.csv ${REVRESULTSDIR}
 
   foundTest=$(grep -R "$testName" test-to-file.csv | wc -l | tr -d '[:space:]')
   moduleNameRev=$(grep "$fullTestName" ./test-to-file.csv | head -1 | cut -d"," -f3)
@@ -137,7 +137,7 @@ do
   then
     echo "Test not in this revision ($longSha)" >> /home/awshi2/commits.log
 
-    [ -f mvn-test.log ] && mv mvn-test.log ${REVRESULTSDIR}
+    cp mvn-test.log ${REVRESULTSDIR}
 
     ((i=i+1))
     cd /home/awshi2
@@ -162,16 +162,16 @@ do
       echo "First commit where test is flaky:" >> /home/awshi2/commits.log
       echo $longSha >> /home/awshi2/commits.log
 
-      [ -f mvn-test.log ] && mv mvn-test.log ${REVRESULTSDIR}
-      [ -f mvn-test-time.log ] && mv mvn-test-time.log ${REVRESULTSDIR}
+      cp mvn-test.log ${REVRESULTSDIR}
+      cp mvn-test-time.log ${REVRESULTSDIR}
       break
     else 
       echo "DTs were found in revision ($longSha) but not matching $fullTestName" >> /home/awshi2/commits.log
     fi
   fi
 
-  [ -f mvn-test.log ] && mv mvn-test.log ${REVRESULTSDIR}
-  [ -f mvn-test-time.log ] && mv mvn-test-time.log ${REVRESULTSDIR}
+  cp mvn-test.log ${REVRESULTSDIR}
+  cp mvn-test-time.log ${REVRESULTSDIR}
 
   cd /home/awshi2
   rm -rf /home/awshi2/$slug-$shortSha        
@@ -179,7 +179,7 @@ do
 
 done
 
-mv /home/awshi2/commits.log ${RESULTSDIR}
+cp /home/awshi2/commits.log ${RESULTSDIR}
 
 echo "*******************REED************************"
 echo "Finished run_history_analysis.sh"
