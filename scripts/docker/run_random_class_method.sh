@@ -72,7 +72,7 @@ date
 
 if [[ $moduleName == "" ]]; then
   timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee random_class_method.log
-else 
+# else 
   # Run iDFlakies just on a specific module
 fi
 
