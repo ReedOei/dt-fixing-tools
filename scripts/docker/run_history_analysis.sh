@@ -50,6 +50,8 @@ mkdir -p ${RESULTSDIR}
 # Step 1 : Run the entire test suite and save all tests' file
 timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file.log
 
+sleep 15m
+
 cp get-test-file.log ${RESULTSDIR}
 
 # Step 2 : Get file for specific test name
@@ -126,7 +128,6 @@ do
   [ -f get-test-file.log ] && mv get-test-file.log ${REVRESULTSDIR}
   [ -f test-to-file.csv ] && mv test-to-file.csv ${REVRESULTSDIR}
 
-
   foundTest=$(grep -R "$testName" test-to-file.csv | wc -l | tr -d '[:space:]')
   moduleNameRev=$(grep "$fullTestName" ./test-to-file.csv | head -1 | cut -d"," -f3)
   if [[ "$foundTest" -gt "1" ]];
@@ -184,5 +185,3 @@ mv /home/awshi2/commits.log ${RESULTSDIR}
 echo "*******************REED************************"
 echo "Finished run_history_analysis.sh"
 date
-
-sleep 15m
