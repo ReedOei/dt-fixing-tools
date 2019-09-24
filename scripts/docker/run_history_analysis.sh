@@ -133,7 +133,8 @@ do
     echo "Warning: Multiple tests with same name found in this revision ($longSha). Choosing first one to proceed." >> /home/awshi2/commits.log
     grep "$fullTestName" ./test-to-file.csv >> /home/awshi2/commits.log
     echo "" >> /home/awshi2/commits.log
-  elif [[ "$foundTest" -eq "0" ]]
+  elif [[ "$foundTest" -eq "0" ]];
+  then
     echo "Test not in this revision ($longSha)" >> /home/awshi2/commits.log
 
     [ -f mvn-test.log ] && mv mvn-test.log ${REVRESULTSDIR}
