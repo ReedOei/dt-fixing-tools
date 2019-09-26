@@ -70,10 +70,21 @@ echo "*******************REED************************"
 echo "Running testplugin for randomizemethods"
 date
 
-if [[ $moduleName == "" ]]; then
-  timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee random_class_method.log
-# else 
-  # Run iDFlakies just on a specific module
+didRunSpecificModule=false
+if [[ $moduleName != "" ]]; then
+  if [ -d "$moduleName" ]; then
+    # Run iDFlakies just on a specific module
+    cd $moduleName
+    didRunSpecificModule=true
+  fi
+fi
+
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee random_class_method.log
+
+if [[ "$didRunSpecificModule" = true ]];
+then 
+  mv random_class_method.log ../
+  cd ../
 fi
 
 # Run the plugin, random class only
