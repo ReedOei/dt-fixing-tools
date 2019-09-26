@@ -10,6 +10,7 @@ import edu.illinois.cs.dt.tools.utility.MD5;
 
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public class DependentTest {
@@ -73,5 +74,23 @@ public class DependentTest {
 
     public boolean verify(final Runner runner, final Path path) {
         return intended.verify(name, runner, path) && revealed.verify(name, runner, path);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (o == this) return true;
+        if (!(o instanceof DependentTest)) {
+            return false;
+        }
+        DependentTest user = (DependentTest) o;
+        return name.equals(user.name);
+//        && Objects.equals(intended, user.intended) &&
+//                Objects.equals(revealed, user.revealed);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 }

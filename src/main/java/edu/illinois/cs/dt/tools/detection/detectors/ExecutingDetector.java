@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -101,15 +102,16 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
 
         private int i = 0;
 
-        private final List<DependentTest> result = new ArrayList<>();
+        private final LinkedHashSet<DependentTest> result = new LinkedHashSet<>();
+        private final List<DependentTest> resultList = new ArrayList<>();
 
         @Override
         public boolean hasNext() {
-            while (i < rounds && result.isEmpty()) {
+            while (i < rounds && resultList.isEmpty()) {
                 generate();
             }
 
-            return !result.isEmpty();
+            return !resultList.isEmpty();
         }
 
         private DetectionRound generateDetectionRound() {
@@ -150,17 +152,26 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
             final double totalElapsed = (System.currentTimeMillis() - origStartTimeMs) / 1000.0;
             final double estimate = elapsed / (i + 1) * (rounds - i - 1) / 1000;
 
-            if (!round.filteredTests().dts().isEmpty()) {
-                System.out.print(String.format("\r[INFO] Found %d tests in round %d of %d (%.1f seconds elapsed (%.1f total), %.1f seconds remaining).\n",
-                        round.filteredTests().size(), i + 1, rounds, elapsed / 1000, totalElapsed, estimate));
-                result.addAll(round.filteredTests().dts());
-                i = 0;
-                startTimeMs = System.currentTimeMillis();
-            } else {
-                System.out.print(String.format("\r[INFO] Found %d tests in round %d of %d (%.1f seconds elapsed (%.1f total), %.1f seconds remaining)",
-                        round.filteredTests().size(), i + 1, rounds, elapsed / 1000, totalElapsed, estimate));
-                i++;
+//            if (!round.filteredTests().dts().isEmpty()) {
+//                System.out.println(String.format("\r[INFO] Found %d tests in round %d of %d (%.1f seconds elapsed (%.1f total), %.1f seconds remaining).",
+//                        round.filteredTests().size(), i + 1, rounds, elapsed / 1000, totalElapsed, estimate));
+//                result.addAll(round.filteredTests().dts());
+//                i = 0;
+//                startTimeMs = System.currentTimeMillis();
+//            } else {
+
+            for (DependentTest dt : round.unfilteredTests().dts()) {
+                if (!result.contains(dt)) {
+                    result.add(dt);
+                    resultList.add(dt);
+                }
             }
+
+            System.out.println(String.format("\r[INFO] Found %d flaky tests total. Currently in " +
+                                                     "round %d of %d (%.1f seconds elapsed (%.1f total), %.1f seconds remaining)",
+                    result.size(), i + 1, rounds, elapsed / 1000, totalElapsed, estimate));
+            i++;
+//            }
 
             absoluteRound.incrementAndGet();
         }
@@ -168,7 +179,7 @@ public abstract class ExecutingDetector implements Detector, VerbosePrinter {
         @Override
         public DependentTest next() {
             if (hasNext()) {
-                return result.remove(0);
+                return resultList.remove(0);
             } else {
                 return null;
             }
