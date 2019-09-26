@@ -138,7 +138,13 @@ do
     echo "" >> /home/awshi2/commits.log
   elif [[ "$foundTest" -eq "0" ]];
   then
-    echo "Test not in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log
+    isTestToFileEmpty=$(cat test-to-file.csv)
+    if [[ $isTestToFileEmpty != "" ]];
+    then
+      echo "Test not in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log
+    else 
+      echo "Could not generate test-to-file.csv in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log      
+    fi
 
     cp mvn-test.log ${REVRESULTSDIR}
 
