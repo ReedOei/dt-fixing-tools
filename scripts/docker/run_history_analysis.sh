@@ -129,12 +129,12 @@ do
   cp get-test-file.log ${REVRESULTSDIR}
   cp test-to-file.csv ${REVRESULTSDIR}
 
-  foundTest=$(grep -R "$className.$testName" test-to-file.csv | wc -l | tr -d '[:space:]')
-  moduleNameRev=$(grep "$className.$testName" ./test-to-file.csv | head -1 | cut -d"," -f3)
+  foundTest=$(grep -R "$className.$testName," test-to-file.csv | wc -l | tr -d '[:space:]')
+  moduleNameRev=$(grep "$className.$testName," ./test-to-file.csv | head -1 | cut -d"," -f3)
   if [[ "$foundTest" -gt "1" ]];
   then 
     echo "Warning: Multiple tests with same name found in $i / $maxCommits revision ($longSha). Choosing first one to proceed." >> /home/awshi2/commits.log
-    grep "$className.$testName" ./test-to-file.csv >> /home/awshi2/commits.log
+    grep "$className.$testName," ./test-to-file.csv >> /home/awshi2/commits.log
     echo "" >> /home/awshi2/commits.log
   elif [[ "$foundTest" -eq "0" ]];
   then
@@ -165,7 +165,7 @@ do
   if [[ $(cat $files | wc -l) = "0" ]]; then
     echo "No DTs found in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log
   else
-    foundFlakyCommit=$(grep "$className.$testName" $files)
+    foundFlakyCommit=$(grep "$className.$testName$" $files)
     if [[ $foundFlakyCommit != "" ]];
     then
       echo "First commit where test is flaky ($i / $maxCommits):" >> /home/awshi2/commits.log
