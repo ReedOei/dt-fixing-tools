@@ -79,10 +79,10 @@ if [[ $moduleName != "" ]]; then
   fi
 fi
 
-timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee random_class_method.log
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee random_class_method.log
 
 if [[ "$didRunSpecificModule" = true ]];
-then 
+then
   mv random_class_method.log ../
   cd ../
 fi

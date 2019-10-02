@@ -63,7 +63,7 @@ mv -f test-to-file-temp.csv test-to-file.csv
 # Output warning if test suite contains multiple tests with same name
 numTestName=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv | wc -l | tr -d '[:space:]')
 if [[ "$numTestName" -gt "1" ]];
-then 
+then
   echo "Warning: Multiple tests with same name found. Choosing first one to proceed." >> /home/awshi2/commits.log
   grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv >> /home/awshi2/commits.log
   echo "" >> /home/awshi2/commits.log
@@ -89,7 +89,7 @@ i=1
 
 # loop until we've found the earliest commit that reveals this flaky test
 while [[ $foundFlakyCommit == "" ]];
-do 
+do
   if [[ $i == $maxCommits ]];
   then
     echo "At latest commit already. Number of commits including latest: $maxCommits" >> /home/awshi2/commits.log
@@ -108,7 +108,7 @@ do
 
   # If not empty, then there exist class file that matches $className and contains $testName
   # foundTest=$(grep -R "$testName" . | cut -d':' -f1 | grep "$className")
-  # if [[ $foundTest == "" ]]; 
+  # if [[ $foundTest == "" ]];
   # then
   #   echo "Test not in this revision ($longSha)" >> /home/awshi2/commits.log
   #   ((i=i+1))
@@ -117,7 +117,7 @@ do
   #   continue
   # fi
 
-  timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests -fn -B |& tee /home/awshi2/$slug-$shortSha/mvn-test.log 
+  timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests -fn -B |& tee /home/awshi2/$slug-$shortSha/mvn-test.log
 
   /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
@@ -132,7 +132,7 @@ do
   foundTest=$(grep -R "$className.$testName," test-to-file.csv | wc -l | tr -d '[:space:]')
   moduleNameRev=$(grep "$className.$testName," ./test-to-file.csv | head -1 | cut -d"," -f3)
   if [[ "$foundTest" -gt "1" ]];
-  then 
+  then
     echo "Warning: Multiple tests with same name found in $i / $maxCommits revision ($longSha). Choosing first one to proceed." >> /home/awshi2/commits.log
     grep "$className.$testName," ./test-to-file.csv >> /home/awshi2/commits.log
     echo "" >> /home/awshi2/commits.log
@@ -142,8 +142,8 @@ do
     if [[ $isTestToFileEmpty != "" ]];
     then
       echo "Test not in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log
-    else 
-      echo "Could not generate test-to-file.csv in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log      
+    else
+      echo "Could not generate test-to-file.csv in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log
     fi
 
     cp mvn-test.log ${REVRESULTSDIR}
@@ -174,7 +174,7 @@ do
       cp mvn-test.log ${REVRESULTSDIR}
       cp mvn-test-time.log ${REVRESULTSDIR}
       break
-    else 
+    else
       echo "DTs were found in $i / $maxCommits revision ($longSha) but not matching $fullTestName" >> /home/awshi2/commits.log
     fi
   fi
@@ -183,7 +183,7 @@ do
   cp mvn-test-time.log ${REVRESULTSDIR}
 
   cd /home/awshi2
-  rm -rf /home/awshi2/$slug-$shortSha        
+  rm -rf /home/awshi2/$slug-$shortSha
   ((i=i+1))
 
 done
