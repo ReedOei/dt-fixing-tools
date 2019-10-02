@@ -70,6 +70,12 @@ then
   echo "Warning: Multiple tests with same name found. Choosing first one to proceed." >> /home/awshi2/commits.log
   grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv >> /home/awshi2/commits.log
   echo "" >> /home/awshi2/commits.log
+elif [[ "$numTestName" -eq "0" ]];
+then
+    echo "Warning: Cannot find $fullTestName in iDFlakies commit. Please check test-to-file.csv. Possible bug in GetTestFilePlugin?" >> /home/awshi2/commits.log
+    cp /home/awshi2/commits.log ${RESULTSDIR}
+    cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
+    exit
 fi
 
 testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv | head -1)
