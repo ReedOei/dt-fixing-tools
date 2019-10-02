@@ -40,7 +40,10 @@ cd /home/awshi2/${slug}
 # Run the plugin, get module test times
 echo "*******************REED************************"
 echo "Running the history analysis tools"
-git rev-parse HEAD
+
+idflakiesSha=$( git rev-parse HEAD )
+echo $idflakiesSha
+
 date
 
 MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmaven.javadoc.skip=true"
@@ -61,7 +64,7 @@ cp get-test-file.log ${RESULTSDIR}
 echo "" > /home/awshi2/commits.log
 
 # Redirect to a different name in case the test-to-file.csv is already in .
-# This is necessary because cat cannot read and redirect output to the same file 
+# This is necessary because cat cannot read and redirect output to the same file
 find . -name test-to-file.csv | xargs cat > ./test-to-file-temp.csv
 mv -f test-to-file-temp.csv test-to-file.csv
 
@@ -95,13 +98,17 @@ i=1
 # loop until we've found the earliest commit that reveals this flaky test
 while [[ $foundFlakyCommit == "" ]];
 do
-  if [[ $i == $maxCommits ]];
+  if [[ $i > ($maxCommits + 1) ]];
   then
     echo "At latest commit already. Number of commits including latest: $maxCommits" >> /home/awshi2/commits.log
     break
+  elif [[ $i == ($maxCommits + 1) ]];
+  then
+      longSha=$idflakiesSha
+  else
+      longSha=$(echo $commits | cut -d" " -f$i | rev)
   fi
 
-  longSha=$(echo $commits | cut -d" " -f$i | rev)
   shortSha=${longSha:0:7}
 
   REVRESULTSDIR=$RESULTSDIR/$shortSha
@@ -109,7 +116,7 @@ do
 
   # Step 5 : Clone project again with that commit
   cd /home/awshi2/
-  git clone /home/awshi2/$slug $slug-$shortSha && cd $slug-$shortSha && git checkout $longSha 
+  git clone /home/awshi2/$slug $slug-$shortSha && cd $slug-$shortSha && git checkout $longSha
 
   # If not empty, then there exist class file that matches $className and contains $testName
   # foundTest=$(grep -R "$testName" . | cut -d':' -f1 | grep "$className")
