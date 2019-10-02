@@ -76,8 +76,8 @@ moduleName=$(echo $testInfo | cut -d"," -f3)
 cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
 # Step 3 : Get all commits for specific test file
-maxCommits=$(git log --follow -p $testFile | grep 'commit ' | wc -l | tr -d '[:space:]')
-rawCommits=$(git log --follow -p $testFile | grep 'commit ')
+maxCommits=$(git log --follow $testFile | grep '^commit ' | wc -l | tr -d '[:space:]')
+rawCommits=$(git log --follow $testFile | grep '^commit ')
 commits=$(echo ${rawCommits//commit/""} | rev)
 echo "latest to oldest commits (total $maxCommits):" > /home/awshi2/commits.log
 echo $commits | rev >> /home/awshi2/commits.log
