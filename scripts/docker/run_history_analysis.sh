@@ -104,7 +104,7 @@ do
 
   # Step 5 : Clone project again with that commit
   cd /home/awshi2/
-  git clone https://github.com/$slug $slug-$shortSha && cd $slug-$shortSha && git checkout $longSha 
+  git clone /home/awshi2/$slug $slug-$shortSha && cd $slug-$shortSha && git checkout $longSha 
 
   # If not empty, then there exist class file that matches $className and contains $testName
   # foundTest=$(grep -R "$testName" . | cut -d':' -f1 | grep "$className")
