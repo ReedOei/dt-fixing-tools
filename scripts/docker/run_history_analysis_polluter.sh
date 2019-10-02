@@ -22,9 +22,9 @@ timeout=$3
 
 victimPolluter=$4
 
-fullPolluterName=$( cut -d'|' -f 2 $victimPolluter )
+fullPolluterName=$( cut -d'-' -f 2 $victimPolluter )
 
-fullTestName=$( cut -d'|' -f 1 $victimPolluter )
+fullTestName=$( cut -d'-' -f 1 $victimPolluter )
 fullClassName=$( echo ${fullTestName} | rev | cut -d . -f 2- | rev )
 className=$( echo ${fullClassName} | rev | cut -d . -f 1 | rev )
 testName=$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )
