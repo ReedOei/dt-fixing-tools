@@ -93,11 +93,11 @@ i=1
 # loop until we've found the earliest commit that reveals this flaky test
 while [[ $foundFlakyCommit == "" ]];
 do
-  if [[ $i > ($maxCommits + 1) ]];
+  if [[ $i > $(($maxCommits + 1)) ]];
   then
     echo "At latest commit already. Number of commits including latest: $maxCommits" >> /home/awshi2/commits.log
     break
-  elif [[ $i == ($maxCommits + 1) ]];
+  elif [[ $i == $(($maxCommits + 1)) ]];
   then
       longSha=$idflakiesSha
   else
