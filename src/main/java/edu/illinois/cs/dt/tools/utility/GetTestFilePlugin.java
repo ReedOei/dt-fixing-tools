@@ -16,12 +16,14 @@ import com.reedoei.testrunner.mavenplugin.TestPlugin;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
 import com.reedoei.testrunner.runner.Runner;
 import com.reedoei.testrunner.runner.RunnerFactory;
+import com.reedoei.testrunner.testobjects.TestLocator;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.DetectorPlugin;
 import edu.illinois.cs.dt.tools.fixer.JavaMethod;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.project.MavenProject;
 import scala.Option;
+import scala.collection.JavaConverters;
 
 /**
  * Created by winglam on 9/18/19.
@@ -63,7 +65,7 @@ public class GetTestFilePlugin extends TestPlugin {
                                 DetectorPlugin.getOriginalOrder(project));
                 }
 
-                final List<String> tests = DetectorPlugin.getOriginalOrder(project);
+                final List<String> tests = JavaConverters.bufferAsJavaList(TestLocator.tests(project).toBuffer());
 
                 List<String> outputStrs = new ArrayList<>();
                 for (String test : tests) {
@@ -73,7 +75,7 @@ public class GetTestFilePlugin extends TestPlugin {
                         continue;
                     }
                     JavaMethod javaMethod = javaMethodOpt.get();
-                    final String outputStr = test + "," + javaMethod.javaFile().path().toString()  + "," + project.getArtifactId();
+                    final String outputStr = test + "," + javaMethod.javaFile().path().toString()  + "," + project.getBasedir().getAbsolutePath();
                     outputStrs.add(outputStr);
                 }
 
