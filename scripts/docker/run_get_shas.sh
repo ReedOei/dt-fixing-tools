@@ -53,7 +53,7 @@ if [[ $file_name == $className ]];
 then
   echo "First commit does contain likely test file." >> /home/awshi2/commits.log
   count=$(($(git rev-list --count $first..$idflakiesSha) - 1))
-  echo "Number of commits between first ($first) and iDFlakies ($idflakiesSha) commit: $count"
+  echo "Number of commits between first ($first) and iDFlakies ($idflakiesSha) commit: $count" >> /home/awshi2/commits.log
 else
   echo "First commit does not contain likely test file." >> /home/awshi2/commits.log
   echo "File name found is $file_name while className is $className" >> /home/awshi2/commits.log
