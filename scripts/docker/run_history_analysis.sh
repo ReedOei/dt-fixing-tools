@@ -86,25 +86,25 @@ cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
 # Step 3 : Get all commits for specific test file
 maxCommits=$(git log --follow $testFile | grep '^commit ' | wc -l | tr -d '[:space:]')
+maxCommitsWithiDFlakiesCommit=$(($maxCommits + 1))
 rawCommits=$(git log --follow $testFile | grep '^commit ')
 commits=$(echo ${rawCommits//commit/""} | rev)
-echo "latest to oldest commits (total $maxCommits):" > /home/awshi2/commits.log
+echo "latest to oldest commits (total $maxCommitsWithiDFlakiesCommit):" > /home/awshi2/commits.log
 echo $commits | rev >> /home/awshi2/commits.log
 
 # Step 4 : Get an earlier commit
 foundFlakyCommit=""
 i=1
 
-
 # loop until we've found the earliest commit that reveals this flaky test
 while [[ $foundFlakyCommit == "" ]];
 do
-  echo "Running revision $i / $maxCommits." >> /home/awshi2/commits.log
-  if [[ $i > $(($maxCommits + 1)) ]];
+  echo "Running revision $i / $maxCommitsWithiDFlakiesCommit." >> /home/awshi2/commits.log
+  if [[ $i > $maxCommitsWithiDFlakiesCommit ]];
   then
-    echo "At latest commit already. Number of commits including latest: $maxCommits" >> /home/awshi2/commits.log
+    echo "At latest commit already. Number of commits including latest: $maxCommitsWithiDFlakiesCommit" >> /home/awshi2/commits.log
     break
-  elif [[ $i == $(($maxCommits + 1)) ]];
+  elif [[ $i == $maxCommitsWithiDFlakiesCommit ]];
   then
       longSha=$idflakiesSha
   else
@@ -147,7 +147,7 @@ do
   moduleNameRev=$(grep "$className.$testName," ./test-to-file.csv | head -1 | cut -d"," -f3)
   if [[ "$foundTest" -gt "1" ]];
   then
-    echo "Warning: Multiple tests with same name found in $i / $maxCommits revision ($longSha). Choosing first one to proceed." >> /home/awshi2/commits.log
+    echo "Warning: Multiple tests with same name found in $i / $maxCommitsWithiDFlakiesCommit revision ($longSha). Choosing first one to proceed." >> /home/awshi2/commits.log
     grep "$className.$testName," ./test-to-file.csv >> /home/awshi2/commits.log
     echo "" >> /home/awshi2/commits.log
   elif [[ "$foundTest" -eq "0" ]];
@@ -155,14 +155,14 @@ do
     isTestToFileEmpty=$(cat test-to-file.csv)
     if [[ $isTestToFileEmpty != "" ]];
     then
-      echo "Test not in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log
+      echo "Test not in $i / $maxCommitsWithiDFlakiesCommit revision ($longSha)" >> /home/awshi2/commits.log
     else
-      echo "Could not generate test-to-file.csv in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log
+      echo "Could not generate test-to-file.csv in $i / $maxCommitsWithiDFlakiesCommit revision ($longSha)" >> /home/awshi2/commits.log
     fi
 
     cp mvn-test.log ${REVRESULTSDIR}
 
-    ((i=i+1))
+    i=$(( $i + 1 ))
     cd /home/awshi2
     rm -rf /home/awshi2/$slug-$shortSha
     continue
@@ -177,19 +177,19 @@ do
   # Step 7 : Check whether iDFlakies found flaky tests
   files=$(find /home/awshi2/$slug-$shortSha/ -name list.txt)
   if [[ $(cat $files | wc -l) = "0" ]]; then
-    echo "No DTs found in $i / $maxCommits revision ($longSha)" >> /home/awshi2/commits.log
+    echo "No DTs found in $i / $maxCommitsWithiDFlakiesCommit revision ($longSha)" >> /home/awshi2/commits.log
   else
     foundFlakyCommit=$(grep "$className.$testName$" $files)
     if [[ $foundFlakyCommit != "" ]];
     then
-      echo "First commit where test is flaky ($i / $maxCommits):" >> /home/awshi2/commits.log
+      echo "First commit where test is flaky ($i / $maxCommitsWithiDFlakiesCommit):" >> /home/awshi2/commits.log
       echo $longSha >> /home/awshi2/commits.log
 
       cp mvn-test.log ${REVRESULTSDIR}
       cp mvn-test-time.log ${REVRESULTSDIR}
       break
     else
-      echo "DTs were found in $i / $maxCommits revision ($longSha) but not matching $fullTestName" >> /home/awshi2/commits.log
+      echo "DTs were found in $i / $maxCommitsWithiDFlakiesCommit revision ($longSha) but not matching $fullTestName" >> /home/awshi2/commits.log
     fi
   fi
 
@@ -198,7 +198,7 @@ do
 
   cd /home/awshi2
   rm -rf /home/awshi2/$slug-$shortSha
-  ((i=i+1))
+  i=$(( $i + 1 ))
 
 done
 
