@@ -100,11 +100,11 @@ i=1
 while [[ $foundFlakyCommit == "" ]];
 do
   echo "Running revision $i / $maxCommitsWithiDFlakiesCommit." >> /home/awshi2/commits.log
-  if [[ $i > $maxCommitsWithiDFlakiesCommit ]];
+  if [[ $i -gt $maxCommitsWithiDFlakiesCommit ]];
   then
     echo "At latest commit already. Number of commits including latest: $maxCommitsWithiDFlakiesCommit" >> /home/awshi2/commits.log
     break
-  elif [[ $i == $maxCommitsWithiDFlakiesCommit ]];
+  elif [[ $i -eq $maxCommitsWithiDFlakiesCommit ]];
   then
       longSha=$idflakiesSha
   else
