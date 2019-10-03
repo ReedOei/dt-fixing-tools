@@ -99,7 +99,7 @@ i=1
 # loop until we've found the earliest commit that reveals this flaky test
 while [[ $foundFlakyCommit == "" ]];
 do
-  echo "Running revision $i / $maxCommits."
+  echo "Running revision $i / $maxCommits." >> /home/awshi2/commits.log
   if [[ $i > $(($maxCommits + 1)) ]];
   then
     echo "At latest commit already. Number of commits including latest: $maxCommits" >> /home/awshi2/commits.log
