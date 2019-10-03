@@ -22,7 +22,7 @@ timeout=$3
 fullTestName=$4
 fullClassName=$( echo ${fullTestName} | rev | cut -d . -f 2- | rev )
 className=$( echo ${fullClassName} | rev | cut -d . -f 1 | rev )
-testName="$( echo ${fullTestName} | rev | cut -d . -f 1 | rev ) *( *)"
+testName="$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )\s*\(\s*\)"
 
 
 # Incorporate tooling into the project, using Java XML parsing
