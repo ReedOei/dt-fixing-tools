@@ -22,7 +22,7 @@ timeout=$3
 fullTestName=$4
 fullClassName=$( echo ${fullTestName} | rev | cut -d . -f 2- | rev )
 className=$( echo ${fullClassName} | rev | cut -d . -f 1 | rev )
-testName=$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )
+testName="$( echo ${fullTestName} | rev | cut -d . -f 1 | rev ) *( *)"
 
 
 # Incorporate tooling into the project, using Java XML parsing
@@ -44,7 +44,7 @@ RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 
 
-first=$(git log -G ${testName} --pretty=%H  | tail -1)
+first=$(git log -G "${testName}" --pretty=%H  | tail -1)
 file_name=$(git show ${first} | egrep "^\\+\+\+|${testName}" | grep -B1 "${testName}" | head -1 | rev | cut -b6- | cut -f1 -d/ | rev)
 
 echo "Suspected first commit is $first" > /home/awshi2/commits.log
