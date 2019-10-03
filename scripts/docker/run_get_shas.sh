@@ -43,24 +43,7 @@ MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmave
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 
-
-for first in $(git log -G "${testName}" --pretty=%H  | tac); do
-file_name=$(git show ${first} | egrep "^\\+\+\+|${testName}" | grep -B1 "${testName}" | head -1 | rev | cut -b6- | cut -f1 -d/ | rev)
-
-echo "Suspected first commit is $first" > /home/awshi2/commits.log
-
-if [[ $file_name == $className ]];
-then
-  echo "First commit does contain likely test file." >> /home/awshi2/commits.log
-  count=$(($(git rev-list --count $first..$idflakiesSha) - 1))
-  echo "Number of commits between first ($first) and iDFlakies ($idflakiesSha) commit: $count" >> /home/awshi2/commits.log
-  break
-else
-  echo "First commit does not contain likely test file." >> /home/awshi2/commits.log
-  echo "File name found is $file_name while className is $className" >> /home/awshi2/commits.log
-  # git show ${first} >> /home/awshi2/commits.log
-fi
-done
+su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/s.sh /home/awshi2/commits.log ${testName} ${className} ${idflakiesSha}"
 
 cp /home/awshi2/commits.log ${RESULTSDIR}
 
