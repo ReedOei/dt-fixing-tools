@@ -19,7 +19,12 @@ fi
 slug=$1
 rounds=$2
 timeout=$3
-fullTestName=$4
+
+victimPolluter=$4
+
+fullPolluterName=$( echo $victimPolluter | cut -d'-' -f 2 )
+
+fullTestName=$( echo $victimPolluter | cut -d'-' -f 1 )
 fullClassName=$( echo ${fullTestName} | rev | cut -d . -f 2- | rev )
 className=$( echo ${fullClassName} | rev | cut -d . -f 1 | rev )
 testName=$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )
@@ -64,21 +69,15 @@ find . -name test-to-file.csv | xargs cat > ./test-to-file-temp.csv
 mv -f test-to-file-temp.csv test-to-file.csv
 
 # Output warning if test suite contains multiple tests with same name
-numTestName=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv | wc -l | tr -d '[:space:]')
+numTestName=$(grep "$fullPolluterName," /home/awshi2/$slug/test-to-file.csv | wc -l | tr -d '[:space:]')
 if [[ "$numTestName" -gt "1" ]];
 then
   echo "Warning: Multiple tests with same name found. Choosing first one to proceed." >> /home/awshi2/commits.log
-  grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv >> /home/awshi2/commits.log
+  grep "$fullPolluterName," /home/awshi2/$slug/test-to-file.csv >> /home/awshi2/commits.log
   echo "" >> /home/awshi2/commits.log
-elif [[ "$numTestName" -eq "0" ]];
-then
-    echo "Warning: Cannot find $fullTestName in iDFlakies commit. Please check test-to-file.csv. Possible bug in GetTestFilePlugin?" >> /home/awshi2/commits.log
-    cp /home/awshi2/commits.log ${RESULTSDIR}
-    cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
-    exit
 fi
 
-testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv | head -1)
+testInfo=$(grep "$fullPolluterName," /home/awshi2/$slug/test-to-file.csv | head -1)
 testFile=$(echo $testInfo | cut -d"," -f2)
 moduleName=$(echo $testInfo | cut -d"," -f3)
 
