@@ -3,7 +3,9 @@ testName=$2
 className=$3
 idflakiesSha=$4
 
-echo "" > $outputFile
+echo "testName: $testName" > $outputFile
+echo "className: $className" >> $outputFile
+echo "idflakiesSha: $idflakiesSha" >> $outputFile
 
 for first in $(git log -G "${testName}" --pretty=%H  | tac); do
   file_names=$(git show ${first} | egrep "^\\+\+\+|${testName}" | grep -B1 "${testName}" | egrep "^\+\+\+" | rev | cut -b6- | cut -f1 -d/ | rev)
