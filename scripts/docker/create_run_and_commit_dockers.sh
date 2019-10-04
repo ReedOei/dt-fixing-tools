@@ -64,11 +64,10 @@ for line in $(cat ${projfile}); do
     if [ $? == 1 ]; then
         echo "${image} NOT BUILT PROPERLY, LIKELY TESTS FAILED"
     else
-        docker run -t -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash -x /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout} ${testName} "${script}" "${scriptArgs}"
-	for c in $(docker -a -f "ancestor=${image}" "exited=0" -q); do
-	    docker commit $c;
-	    docker rm $c;
-	done
+	randomName=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+        docker run -t --name ${randomName} -v ${SCRIPT_DIR}:/Scratch ${image} /bin/bash -x /Scratch/run_experiment.sh ${slug} ${rounds} ${timeout} ${testName} "${script}" "${scriptArgs}"
+	docker commit ${randomName};
+	docker rm ${randomName};
      fi
 done
 
