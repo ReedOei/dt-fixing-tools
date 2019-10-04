@@ -56,6 +56,10 @@ mv -f test-to-file-temp.csv test-to-file.csv
 
 cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
+
+# Step 6 : Run iDFlakies on that commit
+/home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ""
+
 echo "*******************REED************************"
 echo "Finished run_get_test_files.sh"
 date
