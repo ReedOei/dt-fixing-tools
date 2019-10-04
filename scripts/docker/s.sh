@@ -18,7 +18,8 @@ for first in $(git log -G "${testName}" --pretty=%H  | tac); do
     break
   else
     echo "First commit does not contain likely test file." >> $outputFile
-    echo "File name found is $file_name while className is $className" >> $outputFile
+    echo "Expected className is $className, while file names found are:" >> $outputFile
+    echo $file_names >> $outputFile
     # git show ${first} >> /home/awshi2/commits.log
   fi
 done
