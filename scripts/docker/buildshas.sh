@@ -18,7 +18,7 @@ sha=$2
 git clone ${repo} /home/awshi2/${sha}
 cd /home/awshi2/$sha
 timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests -fn -B |& tee /home/awshi2/mvn-install-${sha}.log
-slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
+slug=$(echo ${repo} | rev | cut -d'/' -f1-2 | rev)
 modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
 [ -d /Scratch/${modifiedslug}=${sha}_build_output ] || mkdir /Scratch/${modifiedslug}=${sha}_build_output
 cp /home/awshi2/mvn-install-${sha}.log /Scratch/${modifiedslug}=${sha}_build_output/
