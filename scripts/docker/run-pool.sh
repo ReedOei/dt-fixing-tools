@@ -10,6 +10,8 @@ if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]]; then
     exit
 fi
 
+date
+
 PROCESS_NUM="$5"
 
 if [[ -z "$PROCESS_NUM" ]]; then
@@ -18,3 +20,4 @@ fi
 
 find "$1" -maxdepth 1 -type f -name "*.csv" | xargs -P"$PROCESS_NUM" -I{} bash run-project-pool.sh {} "$2" "$3" "$4" "$6"
 
+date
