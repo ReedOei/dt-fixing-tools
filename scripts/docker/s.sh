@@ -3,12 +3,14 @@ testName=$2
 className=$3
 idflakiesSha=$4
 
+echo "" > $outputFile
+
 for first in $(git log -G "${testName}" --pretty=%H  | tac); do
-  file_name=$(git show ${first} | egrep "^\\+\+\+|${testName}" | grep -B1 "${testName}" | head -1 | rev | cut -b6- | cut -f1 -d/ | rev)
+  file_names=$(git show ${first} | egrep "^\\+\+\+|${testName}" | grep -B1 "${testName}" | egrep "^\+\+\+" | rev | cut -b6- | cut -f1 -d/ | rev)
 
-  echo "Suspected first commit is $first" > $outputFile
+  echo "Suspected first commit is $first" >> $outputFile
 
-  if [[ $file_name == $className ]];
+  if [[ $file_names =~ $className ]];
   then
     echo "First commit does contain likely test file." >> $outputFile
     count=$(($(git rev-list --count $first..$idflakiesSha) - 1))
