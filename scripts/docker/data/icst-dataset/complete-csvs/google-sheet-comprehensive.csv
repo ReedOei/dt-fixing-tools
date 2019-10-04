@@ -1,4 +1,3 @@
-URL,SHA,Test Count,Module Name,Test Name,Category,Version
 https://github.com/Activiti/Activiti,b11f757a48600e53aaf3fcb7a3ba1ece6c463cb4,42,Activiti-activiti-spring-boot-starter,org.activiti.spring.boot.tasks.TaskRuntimeClaimReleaseTest.aCreateStandaloneTaskForGroup,OD,Comprehensive
 https://github.com/Activiti/Activiti,b11f757a48600e53aaf3fcb7a3ba1ece6c463cb4,42,Activiti-activiti-spring-boot-starter,org.activiti.spring.boot.tasks.TaskRuntimeClaimReleaseTest.bClaimAndRelease,OD,Comprehensive
 https://github.com/Activiti/Activiti,b11f757a48600e53aaf3fcb7a3ba1ece6c463cb4,42,Activiti-activiti-spring-boot-starter,org.activiti.spring.boot.tasks.TaskRuntimeClaimReleaseTest.eCreateStandaloneTaskAndClaimAndReleaseUnAuthorized,OD,Comprehensive
@@ -305,4 +304,3 @@ https://github.com/wildfly/wildfly,b19048b72669fc0e96665b1b125dc1fda21f5993,82,w
 https://github.com/wildfly/wildfly,b19048b72669fc0e96665b1b125dc1fda21f5993,82,wildfly-naming,org.jboss.as.naming.subsystem.NamingSubsystemTestCase.testSubsystem,OD,Comprehensive
 https://github.com/wro4j/wro4j,185ab607f1d649ca38b4a772831ee754cd4649fb,283,wro4j-wro4j-extensions,ro.isdc.wro.extensions.processor.TestBourbonCssProcessor.shouldBeThreadSafe,NO,Comprehensive
 https://github.com/wro4j/wro4j,185ab607f1d649ca38b4a772831ee754cd4649fb,283,wro4j-wro4j-extensions,ro.isdc.wro.extensions.processor.TestRubySassCssProcessor.shouldBeThreadSafeWhenInitializingProcessor,NO,Comprehensive
-1,,,,,,

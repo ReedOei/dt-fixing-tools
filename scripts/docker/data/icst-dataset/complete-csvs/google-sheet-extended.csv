@@ -1,4 +1,3 @@
-URL,SHA,Test Count,Module Name,Test Name,Category,Version
 https://github.com/alien4cloud/alien4cloud,eb57d0feca6c37e0a4aafc3feef494e43e02ecda,14,alien4cloud-alien4cloud-security,alien4cloud.security.LdapAuthenticationProviderTest.testLdapUserImport,OD,Extended
 https://github.com/apache/nifi-registry,f1e5aef7bef7d4f5ec89b2347e6a6c7e78aa589c,15,nifi-registry-nifi-registry-core-nifi-registry-web-api,org.apache.nifi.registry.security.authorization.ResourceAuthorizationFilterSpec.secure requests to an unguarded resource are allowed without an authorization check,SKIP,Extended
 https://github.com/apereo/java-cas-client,574b74fa64e4c95bda00ff41d06d358684a0b2e6,154,java-cas-client-cas-client-core,org.jasig.cas.client.validation.AssertionImplTests.testAssertionValidity,NO,Extended
@@ -115,4 +114,3 @@ https://github.com/wso2/balana,9088b3a079ac227a10d07707f571cc5b205dca98,24,balan
 https://github.com/wso2/carbon-apimgt,a82213e40e7e6aa529341fdd1d1c3de776949e64,2,carbon-apimgt-analyzer-modules-org.wso2.carbon.apimgt.throttling.siddhi.extension,org.wso2.carbon.apimgt.throttling.siddhi.extension.ThrottleTimeBatchWindowTestCase.throttleTimeWindowBatchTest1,NO,Extended
 https://github.com/zalando/riptide,8277e11fc069d8e24df0d233ef2577cc75659b75,10,riptide-riptide-backup,org.zalando.riptide.backup.BackupRequestPluginTest.shouldUseBackupRequest,NO,Extended
 https://github.com/zalando/riptide,8277e11fc069d8e24df0d233ef2577cc75659b75,33,riptide-riptide-failsafe,org.zalando.riptide.failsafe.RetryAfterDelayFunctionTest.shouldRetryOnDemandWithDynamicDelay,NO,Extended
-1,,,,,,
