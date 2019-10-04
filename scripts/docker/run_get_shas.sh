@@ -43,7 +43,7 @@ MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmave
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 
-su - awshi2 -c "/home/awshi2/dt-fixing-tools/scripts/docker/s.sh /home/awshi2/commits.log ${testName} ${className} ${idflakiesSha}"
+/home/awshi2/dt-fixing-tools/scripts/docker/s.sh /home/awshi2/commits.log ${testName} ${className} ${idflakiesSha}
 
 cp /home/awshi2/commits.log ${RESULTSDIR}
 
