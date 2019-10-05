@@ -46,17 +46,19 @@ for line in $(cat ${projfile}); do
     slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
     sha=$(echo ${line} | cut -d',' -f2)
     testName=$(echo ${line} | cut -d',' -f3)
-    ./create_dockerfile.sh ${slug} ${sha}
 
     # Build the Docker image if does not exist
     modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
-    image=detector-${modifiedslug}:latest
+    modifiedslug_with_sha=$modifiedslug-$sha
+    ./create_dockerfile.sh ${slug} ${sha} ${modifiedslug_with_sha}
+
+    image=detector-${modifiedslug_with_sha}:latest
     docker inspect ${image} > /dev/null 2>&1
     if [ $? == 1 ]; then
         echo "*******************REED************************"
         echo "Building docker image for project"
         date
-        bash build_docker_image.sh ${image} ${modifiedslug}
+        bash build_docker_image.sh ${image} ${modifiedslug_with_sha}
     fi
 
     # Run the Docker image if it exists
