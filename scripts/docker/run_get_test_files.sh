@@ -41,6 +41,9 @@ MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmave
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 
+mv mvn-test-time.log ${RESULTSDIR}
+mv mvn-test.log ${RESULTSDIR}
+
 # Incorporate tooling into the project, using Java XML parsing
 /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 

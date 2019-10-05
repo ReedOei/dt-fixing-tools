@@ -49,7 +49,8 @@ for line in $(cat ${projfile}); do
 
     # Build the Docker image if does not exist
     modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
-    modifiedslug_with_sha=$modifiedslug-$sha
+    short_sha=${sha:0:7}
+    modifiedslug_with_sha=$modifiedslug-$short_sha
     ./create_dockerfile.sh ${slug} ${sha} ${modifiedslug_with_sha}
 
     image=detector-${modifiedslug_with_sha}:latest
