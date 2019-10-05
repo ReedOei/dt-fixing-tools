@@ -11,6 +11,11 @@ for line in $(cat $test_to_first_sha_file); do
     test_name=$(echo $line | cut -d, -f 1)
     new_sha=$(echo $line | cut -d, -f 2)
     file_path=$(grep ",$test_name," $input_dir/* -l | tail -n 1)
+    if [[ $file_path == "" ]];
+    then
+        continue
+    fi
+
 
     file_content=$(cat $file_path)
     url=$(cat $file_path | cut -d, -f 1)
