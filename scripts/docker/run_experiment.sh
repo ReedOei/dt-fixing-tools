@@ -67,7 +67,7 @@ else
     folder_name=${modifiedslug}-${short_sha}=${testName}_output
 fi
 
-output_dir=/Scratch/$folder_name/
+output_dir=/Scratch/$folder_name
 echo "$line" > $output_dir/input.csv
 
 cp -r /home/awshi2/output/ $output_dir
