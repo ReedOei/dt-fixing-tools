@@ -7,7 +7,6 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
-import edu.illinois.cs.dt.tools.analysis.data.SameClassPackageCounter;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
@@ -128,6 +127,9 @@ public class Analysis extends StandardMain {
         insertUnfinishedTests(results.resolve("manual-data/unfinished-tests"));
         insertSeparateJVMTests(results.resolve("manual-data/separate-jvm-tests"));
 
+        insertFSSubjTestRaw(results.resolve("manual-data/fs-subj-test-raw.csv"));
+        insertFSCommitOrderTests(results.resolve("manual-data/fs-test-to-first-sha.csv"));
+
         insertFullSubjectList(subjectList);
         insertSubjectLOC(subjectListLOC);
 
@@ -157,6 +159,61 @@ public class Analysis extends StandardMain {
                     .param(testName)
                     .insertSingleRow();
         }
+    }
+
+    private void insertFSSubjTestRaw(final Path path) throws SQLException, IOException {
+        // File originates from combining data/icst-dataset/only-flaky/individual_split/split_by_test/comprehensive.csv
+        // and data/icst-dataset/only-flaky/individual_split/split_by_test/extended.csv
+        for (final String line : Files.readAllLines(path)) {
+            String[] lineArr = line.split(",");
+
+            if (lineArr.length != 5) {
+                continue;
+            }
+
+            String url = lineArr[0];
+            final String slug = new URL(url).getPath().substring(1);
+            String commitSha = lineArr[1];
+            String testName = lineArr[2];
+            String module = lineArr[3];
+            String dataset = lineArr[4];
+
+            sqlite.statement(SQLStatements.INSERT_FS_SUBJ_TEST_RAW)
+                    .param(slug)
+                    .param(commitSha)
+                    .param(testName)
+                    .param(module)
+                    .param(dataset)
+                    .insertSingleRow();
+
+            insertCommitOrderTestsHelp(testName, commitSha, "-1");
+        }
+    }
+
+    private void insertFSCommitOrderTests(final Path path) throws SQLException, IOException {
+        // File originates from docker/create_first_commit_csvs.sh
+        for (final String line : Files.readAllLines(path)) {
+            String[] lineArr = line.split(",");
+
+            if (lineArr.length != 3) {
+                continue;
+            }
+
+            String testName = lineArr[0];
+            String commitSha = lineArr[1];
+            String orderNum = lineArr[2];
+
+            insertCommitOrderTestsHelp(testName, commitSha, orderNum);
+        }
+    }
+
+    private void insertCommitOrderTestsHelp(final String testName, final String commitSha, final String orderNum) throws SQLException, IOException {
+        // orderNum: Number of commits inbetween commitSha and the iDFlakies sha; -1 means this is the iDFlakies sha
+        sqlite.statement(SQLStatements.INSERT_FS_TESTS_COMMIT_NUM)
+                .param(commitSha)
+                .param(testName)
+                .param(orderNum)
+                .insertSingleRow();
     }
 
     private void insertPRTests(final Path path) throws SQLException, IOException {
