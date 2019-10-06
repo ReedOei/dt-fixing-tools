@@ -389,7 +389,7 @@ public class Analysis extends StandardMain {
             System.out.println("[WARNING] Parent is null!");
             return;
         }
-        final String parentStr = parent.toString();
+        final String parentStr = parent.getFileName().toString();
 
 
         final String name = path.getFileName().toString();
@@ -944,7 +944,7 @@ public class Analysis extends StandardMain {
         }
 
         if (path.getFileName().toString().endsWith("_output")) {
-            return path.getFileName();
+            return path;
         } else {
             return findParent(path.getParent());
         }
