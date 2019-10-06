@@ -1,0 +1,1 @@
+https://github.com/apache/hadoop,022bf783aa89c1c81374ebef5dba2df95b7563b5,org.apache.hadoop.yarn.server.timelineservice.storage.TestHBaseTimelineStorageEntities.testWriteEntityToHBase,hadoop-hadoop-yarn-project-hadoop-yarn-hadoop-yarn-server-hadoop-yarn-server-timelineservice-hbase-tests
