@@ -60,8 +60,16 @@ su - awshi2 -c "$script_to_run ${slug} ${rounds} ${timeout} ${testName} ${script
 
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)
 modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
-output_dir=/Scratch/${modifiedslug}-${short_sha}=${testName}_output/
-cp -r /home/awshi2/output/ $output_dir
+
+if [[ $testName == "" ]]; then
+    folder_name=${modifiedslug}-${short_sha}=_output
+else
+    folder_name=${modifiedslug}-${short_sha}=${testName}_output
+fi
+
+output_dir=/Scratch/$folder_name/
 echo "$line" > $output_dir/input.csv
-chown -R $(id -u):$(id -g) /Scratch/${modifiedslug}=${testName}_output/
-chmod -R 777 /Scratch/${modifiedslug}=${testName}_output/
+
+cp -r /home/awshi2/output/ $output_dir
+chown -R $(id -u):$(id -g) $output_dir
+chmod -R 777 $output_dir
