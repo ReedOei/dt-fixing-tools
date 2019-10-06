@@ -210,8 +210,8 @@ public class Analysis extends StandardMain {
     private void insertCommitOrderTestsHelp(final String testName, final String commitSha, final String orderNum) throws SQLException, IOException {
         // orderNum: Number of commits inbetween commitSha and the iDFlakies sha; -1 means this is the iDFlakies sha
         sqlite.statement(SQLStatements.INSERT_FS_TESTS_COMMIT_NUM)
-                .param(commitSha)
                 .param(testName)
+                .param(commitSha)
                 .param(orderNum)
                 .insertSingleRow();
     }
