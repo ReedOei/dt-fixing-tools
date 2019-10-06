@@ -333,10 +333,12 @@ public class Analysis extends StandardMain {
 
     private void insertFSFileLocation(final String slug, final String commitSha, final Path fileLocPath) throws SQLException, IOException {
         if (!Files.exists(fileLocPath)) {
+            System.out.println("[WARNING] Cannot find file location at: " + fileLocPath.toString());
             return;
         }
 
         if (!filesAdded.add(fileLocPath)) {
+            System.out.println("[INFO] Already inserted file location for: " + slug);
             return;
         }
 
