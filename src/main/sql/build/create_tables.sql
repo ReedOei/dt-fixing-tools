@@ -119,6 +119,7 @@ create table detection_round
   round_type text not null,
   round_number integer not null,
   round_time real not null,
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(unfiltered_id) references flaky_test_list(flaky_test_list_id),
@@ -158,6 +159,7 @@ create table verify_round
   test_name text not null,
   expected_result text not null,
   result text not null,
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(round_number) references detection_round(round_number),
@@ -228,6 +230,7 @@ create table flaky_test_failures
   flaky_type text not null check(flaky_type in ('NO', 'OD')),
   failures integer not null,
   rounds integer not null,
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(test_name) references original_order(test_name)

@@ -7,10 +7,12 @@ insert into verify_round
   verify_round_number,
   test_name,
   expected_result,
-  result
+  result,
+  commit_sha
 )
 values
 (
+  ?,
   ?,
   ?,
   ?,

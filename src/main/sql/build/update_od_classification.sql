@@ -405,12 +405,12 @@ create temporary table temp3
 );
 
 insert into temp3
-select subject_name, round_type, count(*) as n
+select subject_name, round_type, commit_sha, count(*) as n
 from detection_round
-group by subject_name, round_type;
+group by subject_name, round_type, commit_sha;
 
 insert into flaky_test_failures
-select i.subject_name, i.test_name, i.round_type, i.flaky_type, failures, rounds
+select i.subject_name, i.test_name, i.round_type, i.flaky_type, failures, rounds, t.commit_sha
 from
 (
   select subject_name, t2.test_name, t2.round_type, t2.flaky_type, count(distinct detection_round_id) as failures
@@ -419,9 +419,9 @@ from
 ) i
 inner join
 (
-  select subject_name, round_type, sum(n) as rounds
+  select subject_name, round_type, commit_sha, sum(n) as rounds
   from temp3 t3
-  group by subject_name, round_type
+  group by subject_name, round_type, commit_sha
 ) t on i.round_type = t.round_type and i.subject_name = t.subject_name;
 
 insert into detection_round_failures

@@ -412,23 +412,23 @@ public class Analysis extends StandardMain {
             !FileUtil.readFile(path.resolve("error")).contains(NoPassingOrderException.class.getSimpleName())) {
 //            insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
 
-            insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(name, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(name, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(name, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
 
-            insertVerificationResults(name, "smart-shuffle-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "smart-shuffle-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "reverse-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "reverse-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(name, "smart-shuffle-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "smart-shuffle-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "reverse-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "reverse-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
 
             insertMinimizedResults(name, path.resolve(MinimizerPathManager.MINIMIZED));
             insertStaticFieldInfo(path, TracerMode.TRACK);
@@ -1023,7 +1023,8 @@ public class Analysis extends StandardMain {
                 .executeUpdate();
     }
 
-    private void insertDetectionResults(final String name, final String roundType, final Path path) throws IOException {
+    private void insertDetectionResults(final String name, final String roundType, final Path path,
+                                        final String commitSha) throws IOException {
         final Path detectionResults = path.resolve(roundType);
 
         if (!Files.exists(detectionResults)) {
@@ -1041,7 +1042,7 @@ public class Analysis extends StandardMain {
 
             try {
                 final DetectionRound round = new Gson().fromJson(FileUtil.readFile(p), DetectionRound.class);
-                insertDetectionRound(name, roundType, roundNumber, round);
+                insertDetectionRound(name, roundType, roundNumber, round, commitSha);
             } catch (IOException | SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -1049,7 +1050,8 @@ public class Analysis extends StandardMain {
     }
 
     private void insertDetectionRound(final String name, final String roundType,
-                                       final int roundNumber, final DetectionRound round)
+                                      final int roundNumber, final DetectionRound round,
+                                      final String commitSha)
             throws IOException, SQLException {
         if (round == null) {
             return;
@@ -1066,6 +1068,7 @@ public class Analysis extends StandardMain {
                 .param(roundType)
                 .param(roundNumber)
                 .param((float) round.roundTime())
+                .param(commitSha)
                 .insertSingleRow();
 
         // Might occur when using old results
@@ -1103,7 +1106,8 @@ public class Analysis extends StandardMain {
                 .insertSingleRow();
     }
 
-    private void insertVerificationResults(final String name, final String roundType, final Path basePath) throws IOException {
+    private void insertVerificationResults(final String name, final String roundType, final Path basePath,
+                                           final String commitSha) throws IOException {
         final Path verificationResults = basePath.resolve(roundType);
 
         if (!Files.isDirectory(verificationResults)) {
@@ -1116,14 +1120,15 @@ public class Analysis extends StandardMain {
 
         paths.forEach(p -> {
             try {
-                insertVerificationRound(name, roundType, roundNumber(p.getFileName().toString()), p);
+                insertVerificationRound(name, roundType, roundNumber(p.getFileName().toString()), p, commitSha);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
     }
 
-    private void insertVerificationRound(final String name, final String roundType, final int roundNumber, final Path p) throws IOException {
+    private void insertVerificationRound(final String name, final String roundType, final int roundNumber,
+                                         final Path p, final String commitSha) throws IOException {
         listFiles(p).forEach(verificationStep -> {
             final String filename = verificationStep.getFileName().toString();
             final String[] split = filename.split("-");
@@ -1144,6 +1149,7 @@ public class Analysis extends StandardMain {
                         .param(testName)
                         .param(String.valueOf(result))
                         .param(String.valueOf(testRunResult.results().get(testName).result()))
+                        .param(commitSha)
                         .executeUpdate();
 
                 insertTestRunResult(name, testRunResult);

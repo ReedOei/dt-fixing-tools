@@ -5,10 +5,12 @@ insert into detection_round
   filtered_id,
   round_type,
   round_number,
-  round_time
+  round_time,
+  commit_sha
 )
 values
 (
+  ?,
   ?,
   ?,
   ?,
