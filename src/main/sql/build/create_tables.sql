@@ -39,6 +39,24 @@ create table pr_tests
   pr_link text not null
 );
 
+create table fs_subj_test_raw
+(
+  id integer primary key,
+  slug text not null,
+  commit_sha text not null,
+  test_name text not null,
+  module text not null,
+  dataset text not null
+);
+
+create table fs_test_commit_order
+(
+  id integer primary key,
+  test_name text not null,
+  commit_sha text not null,
+  order_num integer not null
+);
+
 create table unfinished_tests
 (
   id integer primary key,
