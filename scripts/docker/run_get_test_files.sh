@@ -41,9 +41,6 @@ MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmave
 RESULTSDIR=/home/awshi2/output/
 mkdir -p ${RESULTSDIR}
 
-mv mvn-test-time.log ${RESULTSDIR}
-mv mvn-test.log ${RESULTSDIR}
-
 # Incorporate tooling into the project, using Java XML parsing
 /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
@@ -62,6 +59,9 @@ cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
 # Step 6 : Run iDFlakies on that commit
 /home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ""
+
+mv mvn-test-time.log ${RESULTSDIR}
+mv mvn-test.log ${RESULTSDIR}
 
 echo "*******************REED************************"
 echo "Finished run_get_test_files.sh"
