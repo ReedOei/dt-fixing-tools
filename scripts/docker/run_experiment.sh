@@ -68,7 +68,7 @@ else
 fi
 
 output_dir=/Scratch/$folder_name
-echo "$line" > $output_dir/input.csv
+echo "$line" > /home/awshi2/output/input.csv
 
 cp -r /home/awshi2/output/ $output_dir
 chown -R $(id -u):$(id -g) $output_dir

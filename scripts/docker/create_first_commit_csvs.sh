@@ -10,6 +10,8 @@ mkdir -p $output_dir
 for line in $(cat $test_to_first_sha_file); do
     test_name=$(echo $line | cut -d, -f 1)
     new_sha=$(echo $line | cut -d, -f 2)
+    short_sha=${new_sha:0:7}
+
     file_path=$(grep ",$test_name," $input_dir/* -l | tail -n 1)
     if [[ $file_path == "" ]];
     then
@@ -23,7 +25,12 @@ for line in $(cat $test_to_first_sha_file); do
 
     new_content="$url,$new_sha,$rest"
 
-    file_name=$(echo $file_path | rev | cut -d/ -f 1 | rev)
+    old_file_name=$(echo $file_path | rev | cut -d/ -f 1 | rev)
+    proj_name=$(echo $old_file_name | cut -d'=' -f 1 | rev | cut -d'-' -f 2- | rev)
+    rest_name=$(echo $old_file_name | cut -d'=' -f 2-)
+
+    file_name=$proj_name-$short_sha-$rest_name
+
     new_file_path="$output_dir/$file_name"
     echo $new_content > $new_file_path
     echo "Created file: $new_file_path"
