@@ -47,10 +47,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -85,6 +87,7 @@ public class Analysis extends StandardMain {
     private final int maxTestRuns;
     private final Path subjectList;
     private final Path subjectListLOC;
+    private final Set<Path> filesAdded;
 
     private Analysis(final String[] args) throws SQLException {
         super(args);
@@ -94,6 +97,7 @@ public class Analysis extends StandardMain {
         this.subjectList = Paths.get(getArgRequired("subjectList")).toAbsolutePath();
         this.subjectListLOC = Paths.get(getArgRequired("subjectListLoc")).toAbsolutePath();
         this.maxTestRuns = getArg("max-test-runs").map(Integer::parseInt).orElse(0);
+        filesAdded = new HashSet<>();
     }
 
     public static void main(final String[] args) {
@@ -327,16 +331,71 @@ public class Analysis extends StandardMain {
         System.out.println();
     }
 
+    private void insertFSFileLocation(final String slug, final String commitSha, final Path fileLocPath) throws SQLException, IOException {
+        if (!Files.exists(fileLocPath)) {
+            return;
+        }
+
+        if (!filesAdded.add(fileLocPath)) {
+            return;
+        }
+
+        System.out.println("[INFO] Inserting file location for: " + slug);
+
+        for (final String line : Files.readAllLines(fileLocPath)) {
+            String[] lineArr = line.split(",");
+
+            if (lineArr.length != 3) {
+                continue;
+            }
+
+            String testName = lineArr[0];
+            // Remove /home/awshi2/ from all paths
+            String fileLoc = lineArr[1].substring(13);
+            String moduleLoc = lineArr[2].substring(13);
+
+            sqlite.statement(SQLStatements.INSERT_FS_FILE_LOC)
+                    .param(testName)
+                    .param(commitSha)
+                    .param(fileLoc)
+                    .param(moduleLoc)
+                    .insertSingleRow();
+        }
+    }
+
+    private String GetInputCSVSha(final String slug, final Path fileLocPath) throws SQLException, IOException {
+        if (!Files.exists(fileLocPath)) {
+            return "";
+        }
+
+        System.out.println("[INFO] Getting input CSV for module: " + slug);
+
+        String line = Files.readAllLines(fileLocPath).get(0);
+        String[] lineArr = line.split(",");
+
+        if (lineArr.length < 2) {
+            return "";
+        }
+
+        return lineArr[1];
+    }
+
     private void insertResults(final Path path) throws IOException, SQLException {
-        final String parent = findParent(path);
+        final Path parent = findParent(path);
 
         if (parent == null) {
             System.out.println("[WARNING] Parent is null!");
             return;
         }
+        final String parentStr = parent.toString();
+
 
         final String name = path.getFileName().toString();
-        final String slug = parent.substring(0, parent.indexOf('_')).replace('.', '/');
+        final String slug = parentStr.substring(0, parentStr.indexOf('_')).replace('.', '/');
+
+        final String commitSha = GetInputCSVSha(name, parent.resolve("input.csv"));
+
+        insertFSFileLocation(slug, commitSha, parent.resolve("test-to-file.csv"));
 
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
@@ -877,13 +936,13 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private String findParent(final Path path) {
+    private Path findParent(final Path path) {
         if (path == null || path.getFileName() == null) {
             return null;
         }
 
         if (path.getFileName().toString().endsWith("_output")) {
-            return path.getFileName().toString();
+            return path.getFileName();
         } else {
             return findParent(path.getParent());
         }
