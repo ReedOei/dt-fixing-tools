@@ -401,6 +401,7 @@ create temporary table temp3
 (
   subject_name,
   round_type,
+  commit_sha,
   n
 );
 
