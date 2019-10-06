@@ -1,1 +1,0 @@
-https://github.com/spring-cloud/spring-cloud-aws,9256c5b11c98c865ec78961a5ea204c29ce45d63,org.springframework.cloud.aws.cache.config.xml.CacheBeanDefinitionParserTest.parseInternal_cacheConfigWithExpiration_returnsConfiguredCacheThatRespectExpiration,spring-cloud-aws-spring-cloud-aws-context
