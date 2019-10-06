@@ -1,1 +1,0 @@
-https://github.com/apache/nifi-registry,f1e5aef7bef7d4f5ec89b2347e6a6c7e78aa589c,15,nifi-registry-nifi-registry-core-nifi-registry-web-api,org.apache.nifi.registry.security.authorization.ResourceAuthorizationFilterSpec.secure requests to an unguarded resource are allowed without an authorization check,SKIP,Extended
