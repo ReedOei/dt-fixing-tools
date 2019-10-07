@@ -126,7 +126,8 @@ public class Analysis extends StandardMain {
 
         Files.find(results,
                    Integer.MAX_VALUE,
-                   (filePath, fileAttr) -> fileAttr.isDirectory() && filePath.getFileName().toString().endsWith("_output"))
+                   (filePath, fileAttr) -> fileAttr.isDirectory() && filePath.getFileName().toString().endsWith("_output")
+                        && !filePath.equals(results))
                 .forEach(parent -> {
                     try {
                         insertFSExperiment(parent);
