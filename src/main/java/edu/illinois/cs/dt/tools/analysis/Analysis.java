@@ -124,6 +124,17 @@ public class Analysis extends StandardMain {
     protected void run() throws Exception {
         createTables();
 
+        Files.find(results,
+                   Integer.MAX_VALUE,
+                   (filePath, fileAttr) -> fileAttr.isDirectory() && filePath.getFileName().toString().endsWith("_output"))
+                .forEach(parent -> {
+                    try {
+                        insertFSExperiment(parent);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
         insertNOTests(results.resolve("manual-data/no-tests"));
         insertPRTests(results.resolve("manual-data/pr-tests"));
         insertFixMethodOrderTests(results.resolve("manual-data/fixed-method-order-tests"));
@@ -151,17 +162,6 @@ public class Analysis extends StandardMain {
                 throw new RuntimeException(e);
             }
         }
-
-        Files.find(results,
-                   Integer.MAX_VALUE,
-                   (filePath, fileAttr) -> fileAttr.isDirectory() && filePath.getFileName().toString().endsWith("_output"))
-                .forEach(parent -> {
-                    try {
-                        insertFSExperiment(parent);
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
 
         runPostSetup();
 
@@ -388,7 +388,10 @@ public class Analysis extends StandardMain {
             System.out.println("[INFO] Already inserted experiment info for: " + parent.toString());
             return;
         }
+
         final String parentStr = parent.getFileName().toString();
+
+        System.out.println("[INFO] Inserting experiment info for: " + parentStr);
 
         final String[] parentStrAr = parentStr.split("=");
         final String testNamePart = parentStrAr[1];
@@ -399,8 +402,6 @@ public class Analysis extends StandardMain {
         final String shortSha = slugNamePart.substring(slugNamePart.lastIndexOf('-') + 1);
 
         final String testName = testNamePart.substring(0, testNamePart.lastIndexOf('_'));
-
-        System.out.println("[INFO] Inserting experiment info for: " + slug);
 
         sqlite.statement(SQLStatements.INSERT_FS_EXPERIMENT)
                 .param(slug)
