@@ -368,19 +368,19 @@ public class Analysis extends StandardMain {
     private void insertFSExperiment(final String slug, final String name, final String commitSha,
                                     final String testName, final Path parent) throws SQLException, IOException {
         if (!Files.exists(parent)) {
-            System.out.println("[WARNING] Cannot find parent at: " + parent.toString());
+            System.out.println("[WARNING] Cannot find parent for experiment info at: " + parent.toString());
             return;
         }
 
         if (!filesAdded.add(parent)) {
-            System.out.println("[INFO] Already inserted parent for: " + slug);
+            System.out.println("[INFO] Already inserted experiment info for: " + slug);
             return;
         }
 
-        System.out.println("[INFO] Inserting run location for: " + slug);
+        System.out.println("[INFO] Inserting experiment info for: " + slug);
 
 
-        sqlite.statement(SQLStatements.INSERT_FS_FILE_LOC)
+        sqlite.statement(SQLStatements.INSERT_FS_EXPERIMENT)
                 .param(slug)
                 .param(name)
                 .param(testName)
