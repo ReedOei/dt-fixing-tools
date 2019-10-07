@@ -7,7 +7,6 @@ import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.StandardMain;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
-import edu.illinois.cs.dt.tools.analysis.data.SameClassPackageCounter;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
@@ -48,10 +47,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -86,6 +87,7 @@ public class Analysis extends StandardMain {
     private final int maxTestRuns;
     private final Path subjectList;
     private final Path subjectListLOC;
+    private final Set<Path> filesAdded;
 
     private Analysis(final String[] args) throws SQLException {
         super(args);
@@ -95,6 +97,7 @@ public class Analysis extends StandardMain {
         this.subjectList = Paths.get(getArgRequired("subjectList")).toAbsolutePath();
         this.subjectListLOC = Paths.get(getArgRequired("subjectListLoc")).toAbsolutePath();
         this.maxTestRuns = getArg("max-test-runs").map(Integer::parseInt).orElse(0);
+        filesAdded = new HashSet<>();
     }
 
     public static void main(final String[] args) {
@@ -121,12 +124,27 @@ public class Analysis extends StandardMain {
     protected void run() throws Exception {
         createTables();
 
+        Files.find(results,
+                   Integer.MAX_VALUE,
+                   (filePath, fileAttr) -> fileAttr.isDirectory() && filePath.getFileName().toString().endsWith("_output")
+                        && !filePath.equals(results))
+                .forEach(parent -> {
+                    try {
+                        insertFSExperiment(parent);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
         insertNOTests(results.resolve("manual-data/no-tests"));
         insertPRTests(results.resolve("manual-data/pr-tests"));
         insertFixMethodOrderTests(results.resolve("manual-data/fixed-method-order-tests"));
         insertIncompatibleTests(results.resolve("manual-data/incompatible-tests"));
         insertUnfinishedTests(results.resolve("manual-data/unfinished-tests"));
         insertSeparateJVMTests(results.resolve("manual-data/separate-jvm-tests"));
+
+        insertFSSubjTestRaw(results.resolve("manual-data/fs-subj-test-raw.csv"));
+        insertFSCommitOrderTests(results.resolve("manual-data/fs-test-to-first-sha.csv"));
 
         insertFullSubjectList(subjectList);
         insertSubjectLOC(subjectListLOC);
@@ -157,6 +175,63 @@ public class Analysis extends StandardMain {
                     .param(testName)
                     .insertSingleRow();
         }
+    }
+
+    private void insertFSSubjTestRaw(final Path path) throws SQLException, IOException {
+        // File originates from combining data/icst-dataset/only-flaky/individual_split/split_by_test/comprehensive.csv
+        // and data/icst-dataset/only-flaky/individual_split/split_by_test/extended.csv
+        for (final String line : Files.readAllLines(path)) {
+            String[] lineArr = line.split(",");
+
+            if (lineArr.length != 5) {
+                continue;
+            }
+
+            String url = lineArr[0];
+            final String slug = new URL(url).getPath().substring(1);
+            String commitSha = lineArr[1];
+            String testName = lineArr[2];
+            String module = lineArr[3];
+            String dataset = lineArr[4];
+
+            sqlite.statement(SQLStatements.INSERT_FS_SUBJ_TEST_RAW)
+                    .param(slug)
+                    .param(commitSha)
+                    .param(testName)
+                    .param(module)
+                    .param(dataset)
+                    .insertSingleRow();
+
+            insertCommitOrderTestsHelp(testName, commitSha, "-1");
+        }
+    }
+
+    private void insertFSCommitOrderTests(final Path path) throws SQLException, IOException {
+        // File originates from docker/create_first_commit_csvs.sh
+        for (final String line : Files.readAllLines(path)) {
+            String[] lineArr = line.split(",");
+
+            if (lineArr.length != 3) {
+                continue;
+            }
+
+            String testName = lineArr[0];
+            String commitSha = lineArr[1];
+            String orderNum = lineArr[2];
+
+            insertCommitOrderTestsHelp(testName, commitSha, orderNum);
+        }
+    }
+
+    private void insertCommitOrderTestsHelp(final String testName, final String commitSha, final String orderNum) throws SQLException, IOException {
+        // orderNum: Number of commits inbetween commitSha and the iDFlakies sha; -1 means this is the iDFlakies sha
+        final String shortSha = commitSha.substring(0,7);
+        sqlite.statement(SQLStatements.INSERT_FS_TESTS_COMMIT_NUM)
+                .param(testName)
+                .param(commitSha)
+                .param(orderNum)
+                .param(shortSha)
+                .insertSingleRow();
     }
 
     private void insertPRTests(final Path path) throws SQLException, IOException {
@@ -270,23 +345,118 @@ public class Analysis extends StandardMain {
         System.out.println();
     }
 
+    private void insertFSFileLocation(final String slug, final String commitSha, final Path fileLocPath) throws SQLException, IOException {
+        if (!Files.exists(fileLocPath)) {
+            System.out.println("[WARNING] Cannot find file location at: " + fileLocPath.toString());
+            return;
+        }
+
+        if (!filesAdded.add(fileLocPath)) {
+            System.out.println("[INFO] Already inserted file location for: " + slug);
+            return;
+        }
+
+        System.out.println("[INFO] Inserting file location for: " + slug);
+
+        for (final String line : Files.readAllLines(fileLocPath)) {
+            String[] lineArr = line.split(",");
+
+            if (lineArr.length != 3) {
+                continue;
+            }
+
+            String testName = lineArr[0];
+            // Remove /home/awshi2/ from all paths
+            String fileLoc = lineArr[1].substring(13);
+            String moduleLoc = lineArr[2].substring(13);
+
+            sqlite.statement(SQLStatements.INSERT_FS_FILE_LOC)
+                    .param(testName)
+                    .param(commitSha)
+                    .param(fileLoc)
+                    .param(moduleLoc)
+                    .insertSingleRow();
+        }
+    }
+
+    private void insertFSExperiment(final Path parent) throws SQLException {
+        if (!Files.exists(parent)) {
+            System.out.println("[WARNING] Cannot find parent for experiment info at: " + parent.toString());
+            return;
+        }
+
+        if (!filesAdded.add(parent)) {
+            System.out.println("[INFO] Already inserted experiment info for: " + parent.toString());
+            return;
+        }
+
+        final String parentStr = parent.getFileName().toString();
+
+        System.out.println("[INFO] Inserting experiment info for: " + parentStr);
+
+        final String[] parentStrAr = parentStr.split("=");
+        final String testNamePart = parentStrAr[1];
+        final String slugNamePart = parentStrAr[0];
+
+        //final String slug = parentStr.substring(0, parentStr.indexOf('_')).replace('.', '/');
+        final String slug = slugNamePart.substring(0, slugNamePart.lastIndexOf('-')).replace('.', '/');
+        final String shortSha = slugNamePart.substring(slugNamePart.lastIndexOf('-') + 1);
+
+        final String testName = testNamePart.substring(0, testNamePart.lastIndexOf('_'));
+
+        sqlite.statement(SQLStatements.INSERT_FS_EXPERIMENT)
+                .param(slug)
+                .param(testName)
+                .param(shortSha)
+                .insertSingleRow();
+    }
+
+    private String GetInputCSVSha(final String slug, final Path fileLocPath) throws SQLException, IOException {
+        if (!Files.exists(fileLocPath)) {
+            return "";
+        }
+
+        System.out.println("[INFO] Getting input CSV for module: " + slug);
+
+        String line = Files.readAllLines(fileLocPath).get(0);
+        String[] lineArr = line.split(",");
+
+        if (lineArr.length < 2) {
+            return "";
+        }
+
+        return lineArr[1];
+    }
+
     private void insertResults(final Path path) throws IOException, SQLException {
-        final String parent = findParent(path);
+        final Path parent = findParent(path);
 
         if (parent == null) {
             System.out.println("[WARNING] Parent is null!");
             return;
         }
+        final String parentStr = parent.getFileName().toString();
 
-        final String name = path.getFileName().toString();
-        final String slug = parent.substring(0, parent.indexOf('_')).replace('.', '/');
+
+        final String moduleName = path.getFileName().toString();
+        final String[] parentStrAr = parentStr.split("=");
+        final String testNamePart = parentStrAr[1];
+        final String slugNamePart = parentStrAr[0];
+
+        //final String slug = parentStr.substring(0, parentStr.indexOf('_')).replace('.', '/');
+        final String slug = slugNamePart.substring(0, slugNamePart.lastIndexOf('-')).replace('.', '/');
+        final String testName = testNamePart.substring(0, testNamePart.lastIndexOf('_'));
+
+        final String commitSha = GetInputCSVSha(moduleName, parent.resolve("input.csv"));
+
+        insertFSFileLocation(slug, commitSha, parent.resolve("test-to-file.csv"));
 
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
-        insertOriginalOrder(name, path.resolve(DetectorPathManager.ORIGINAL_ORDER));
+        insertOriginalOrder(moduleName, path.resolve(DetectorPathManager.ORIGINAL_ORDER));
 
-        if (!sqlite.checkExists("subject", name)) {
-            insertSubject(name, slug, path);
+        if (!sqlite.checkExists("subject", moduleName)) {
+            insertSubject(moduleName, slug, path);
         }
 
         // If we got a no passing order exception, don't insert any of the other results
@@ -294,35 +464,35 @@ public class Analysis extends StandardMain {
             !FileUtil.readFile(path.resolve("error")).contains(NoPassingOrderException.class.getSimpleName())) {
 //            insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
 
-            insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertDetectionResults(name, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertDetectionResults(moduleName, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
 
-            insertVerificationResults(name, "smart-shuffle-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "smart-shuffle-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "reverse-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "reverse-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
-            insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS));
+            insertVerificationResults(moduleName, "smart-shuffle-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "smart-shuffle-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "reverse-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "reverse-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
 
-            insertMinimizedResults(name, path.resolve(MinimizerPathManager.MINIMIZED));
+            insertMinimizedResults(moduleName, path.resolve(MinimizerPathManager.MINIMIZED));
             insertStaticFieldInfo(path, TracerMode.TRACK);
             insertPollutedFields(path.resolve(PollutionPathManager.POLLUTION_DATA));
 
             insertRewriteResults(path.resolve(DiagnoserPathManager.DIAGNOSIS));
 
-            insertFixerResults(name, path.getParent().resolve(CleanerPathManager.FIXER_LOG), path.resolve(CleanerPathManager.FIXER));
+            insertFixerResults(moduleName, path.getParent().resolve(CleanerPathManager.FIXER_LOG), path.resolve(CleanerPathManager.FIXER));
 //            insertFieldDiffs(path.resolve(DiagnoserPathManager.DIFFS_PATH));
         }
 
-        System.out.println("[INFO] Finished " + name + " (" + slug + ")");
+        System.out.println("[INFO] Finished " + moduleName + " (" + slug + ")");
         System.out.println();
     }
 
@@ -820,13 +990,13 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private String findParent(final Path path) {
+    private Path findParent(final Path path) {
         if (path == null || path.getFileName() == null) {
             return null;
         }
 
         if (path.getFileName().toString().endsWith("_output")) {
-            return path.getFileName().toString();
+            return path;
         } else {
             return findParent(path.getParent());
         }
@@ -905,7 +1075,8 @@ public class Analysis extends StandardMain {
                 .executeUpdate();
     }
 
-    private void insertDetectionResults(final String name, final String roundType, final Path path) throws IOException {
+    private void insertDetectionResults(final String name, final String roundType, final Path path,
+                                        final String commitSha) throws IOException {
         final Path detectionResults = path.resolve(roundType);
 
         if (!Files.exists(detectionResults)) {
@@ -923,7 +1094,7 @@ public class Analysis extends StandardMain {
 
             try {
                 final DetectionRound round = new Gson().fromJson(FileUtil.readFile(p), DetectionRound.class);
-                insertDetectionRound(name, roundType, roundNumber, round);
+                insertDetectionRound(name, roundType, roundNumber, round, commitSha);
             } catch (IOException | SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -931,7 +1102,8 @@ public class Analysis extends StandardMain {
     }
 
     private void insertDetectionRound(final String name, final String roundType,
-                                       final int roundNumber, final DetectionRound round)
+                                      final int roundNumber, final DetectionRound round,
+                                      final String commitSha)
             throws IOException, SQLException {
         if (round == null) {
             return;
@@ -948,6 +1120,7 @@ public class Analysis extends StandardMain {
                 .param(roundType)
                 .param(roundNumber)
                 .param((float) round.roundTime())
+                .param(commitSha)
                 .insertSingleRow();
 
         // Might occur when using old results
@@ -985,7 +1158,8 @@ public class Analysis extends StandardMain {
                 .insertSingleRow();
     }
 
-    private void insertVerificationResults(final String name, final String roundType, final Path basePath) throws IOException {
+    private void insertVerificationResults(final String name, final String roundType, final Path basePath,
+                                           final String commitSha) throws IOException {
         final Path verificationResults = basePath.resolve(roundType);
 
         if (!Files.isDirectory(verificationResults)) {
@@ -998,14 +1172,15 @@ public class Analysis extends StandardMain {
 
         paths.forEach(p -> {
             try {
-                insertVerificationRound(name, roundType, roundNumber(p.getFileName().toString()), p);
+                insertVerificationRound(name, roundType, roundNumber(p.getFileName().toString()), p, commitSha);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
     }
 
-    private void insertVerificationRound(final String name, final String roundType, final int roundNumber, final Path p) throws IOException {
+    private void insertVerificationRound(final String name, final String roundType, final int roundNumber,
+                                         final Path p, final String commitSha) throws IOException {
         listFiles(p).forEach(verificationStep -> {
             final String filename = verificationStep.getFileName().toString();
             final String[] split = filename.split("-");
@@ -1026,6 +1201,7 @@ public class Analysis extends StandardMain {
                         .param(testName)
                         .param(String.valueOf(result))
                         .param(String.valueOf(testRunResult.results().get(testName).result()))
+                        .param(commitSha)
                         .executeUpdate();
 
                 insertTestRunResult(name, testRunResult);

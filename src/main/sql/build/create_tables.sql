@@ -39,6 +39,42 @@ create table pr_tests
   pr_link text not null
 );
 
+create table fs_subj_test_raw
+(
+  id integer primary key,
+  slug text not null,
+  commit_sha text not null,
+  test_name text not null,
+  module text not null,
+  dataset text not null
+);
+
+create table fs_test_commit_order
+(
+  id integer primary key,
+  test_name text not null,
+  commit_sha text not null,
+  order_num integer not null,
+  short_sha text not null
+);
+
+create table fs_file_loc
+(
+  id integer primary key,
+  test_name text not null,
+  commit_sha text not null,
+  file_loc text not null,
+  module_loc text not null
+);
+
+create table fs_experiment
+(
+  id integer primary key,
+  slug text not null,
+  test_name text not null,
+  short_sha text not null
+);
+
 create table unfinished_tests
 (
   id integer primary key,
@@ -92,6 +128,7 @@ create table detection_round
   round_type text not null,
   round_number integer not null,
   round_time real not null,
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(unfiltered_id) references flaky_test_list(flaky_test_list_id),
@@ -131,6 +168,7 @@ create table verify_round
   test_name text not null,
   expected_result text not null,
   result text not null,
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(round_number) references detection_round(round_number),
@@ -201,6 +239,7 @@ create table flaky_test_failures
   flaky_type text not null check(flaky_type in ('NO', 'OD')),
   failures integer not null,
   rounds integer not null,
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(test_name) references original_order(test_name)

@@ -14,5 +14,12 @@ fname="logs/$(basename $1 .csv)-log.txt"
 
 echo "Logging to $fname"
 bash create_and_run_dockers.sh $@ &> $fname
+
+DIRECTORY=$(basename $1 .csv)
+if [ -d "$DIRECTORY" ]; then
+    # Will enter here if $DIRECTORY exists, even if it contains spaces
+    yes | cp -rf $fname $DIRECTORY/
+fi
+
 echo "Finished running $fname"
 
