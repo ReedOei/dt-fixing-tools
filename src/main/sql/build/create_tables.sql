@@ -66,6 +66,15 @@ create table fs_file_loc
   module_loc text not null
 );
 
+create table fs_experiment
+(
+  id integer primary key,
+  slug text not null,
+  module_name text not null,
+  test_name text not null,
+  commit_sha text not null
+);
+
 create table unfinished_tests
 (
   id integer primary key,

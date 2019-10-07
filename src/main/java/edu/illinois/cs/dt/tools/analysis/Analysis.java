@@ -365,6 +365,29 @@ public class Analysis extends StandardMain {
         }
     }
 
+    private void insertFSExperiment(final String slug, final String name, final String commitSha,
+                                    final String testName, final Path parent) throws SQLException, IOException {
+        if (!Files.exists(parent)) {
+            System.out.println("[WARNING] Cannot find parent at: " + parent.toString());
+            return;
+        }
+
+        if (!filesAdded.add(parent)) {
+            System.out.println("[INFO] Already inserted parent for: " + slug);
+            return;
+        }
+
+        System.out.println("[INFO] Inserting run location for: " + slug);
+
+
+        sqlite.statement(SQLStatements.INSERT_FS_FILE_LOC)
+                .param(slug)
+                .param(name)
+                .param(testName)
+                .param(commitSha)
+                .insertSingleRow();
+    }
+
     private String GetInputCSVSha(final String slug, final Path fileLocPath) throws SQLException, IOException {
         if (!Files.exists(fileLocPath)) {
             return "";
@@ -392,19 +415,27 @@ public class Analysis extends StandardMain {
         final String parentStr = parent.getFileName().toString();
 
 
-        final String name = path.getFileName().toString();
-        final String slug = parentStr.substring(0, parentStr.indexOf('_')).replace('.', '/');
+        final String moduleName = path.getFileName().toString();
+        final String[] parentStrAr = parentStr.split("=");
+        final String testNamePart = parentStrAr[1];
+        final String slugNamePart = parentStrAr[0];
 
-        final String commitSha = GetInputCSVSha(name, parent.resolve("input.csv"));
+        //final String slug = parentStr.substring(0, parentStr.indexOf('_')).replace('.', '/');
+        final String slug = slugNamePart.substring(0, slugNamePart.lastIndexOf('_')).replace('.', '/');
+        final String testName = testNamePart.substring(0, testNamePart.lastIndexOf('_'));
+
+        final String commitSha = GetInputCSVSha(moduleName, parent.resolve("input.csv"));
+
+        insertFSExperiment(slug, moduleName, commitSha, testName, parent);
 
         insertFSFileLocation(slug, commitSha, parent.resolve("test-to-file.csv"));
 
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
-        insertOriginalOrder(name, path.resolve(DetectorPathManager.ORIGINAL_ORDER));
+        insertOriginalOrder(moduleName, path.resolve(DetectorPathManager.ORIGINAL_ORDER));
 
-        if (!sqlite.checkExists("subject", name)) {
-            insertSubject(name, slug, path);
+        if (!sqlite.checkExists("subject", moduleName)) {
+            insertSubject(moduleName, slug, path);
         }
 
         // If we got a no passing order exception, don't insert any of the other results
@@ -412,35 +443,35 @@ public class Analysis extends StandardMain {
             !FileUtil.readFile(path.resolve("error")).contains(NoPassingOrderException.class.getSimpleName())) {
 //            insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
 
-            insertDetectionResults(name, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(name, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(name, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(name, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(name, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(name, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
 
-            insertVerificationResults(name, "smart-shuffle-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "smart-shuffle-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "reverse-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "reverse-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertVerificationResults(name, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "smart-shuffle-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "smart-shuffle-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "random-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "random-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "reverse-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "reverse-class-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "random-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "random-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "reverse-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertVerificationResults(moduleName, "reverse-class-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
 
-            insertMinimizedResults(name, path.resolve(MinimizerPathManager.MINIMIZED));
+            insertMinimizedResults(moduleName, path.resolve(MinimizerPathManager.MINIMIZED));
             insertStaticFieldInfo(path, TracerMode.TRACK);
             insertPollutedFields(path.resolve(PollutionPathManager.POLLUTION_DATA));
 
             insertRewriteResults(path.resolve(DiagnoserPathManager.DIAGNOSIS));
 
-            insertFixerResults(name, path.getParent().resolve(CleanerPathManager.FIXER_LOG), path.resolve(CleanerPathManager.FIXER));
+            insertFixerResults(moduleName, path.getParent().resolve(CleanerPathManager.FIXER_LOG), path.resolve(CleanerPathManager.FIXER));
 //            insertFieldDiffs(path.resolve(DiagnoserPathManager.DIFFS_PATH));
         }
 
-        System.out.println("[INFO] Finished " + name + " (" + slug + ")");
+        System.out.println("[INFO] Finished " + moduleName + " (" + slug + ")");
         System.out.println();
     }
 
