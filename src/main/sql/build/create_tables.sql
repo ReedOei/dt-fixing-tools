@@ -55,7 +55,7 @@ create table fs_test_commit_order
   test_name text not null,
   commit_sha text not null,
   order_num integer not null,
-  short_sha integer not null
+  short_sha text not null
 );
 
 create table fs_file_loc
