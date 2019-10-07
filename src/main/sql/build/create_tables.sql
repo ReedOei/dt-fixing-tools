@@ -54,7 +54,8 @@ create table fs_test_commit_order
   id integer primary key,
   test_name text not null,
   commit_sha text not null,
-  order_num integer not null
+  order_num integer not null,
+  short_sha integer not null
 );
 
 create table fs_file_loc
@@ -70,9 +71,8 @@ create table fs_experiment
 (
   id integer primary key,
   slug text not null,
-  module_name text not null,
   test_name text not null,
-  commit_sha text not null
+  short_sha text not null
 );
 
 create table unfinished_tests

@@ -152,6 +152,17 @@ public class Analysis extends StandardMain {
             }
         }
 
+        Files.find(results,
+                   Integer.MAX_VALUE,
+                   (filePath, fileAttr) -> fileAttr.isDirectory() && filePath.getFileName().toString().endsWith("_output"))
+                .forEach(parent -> {
+                    try {
+                        insertFSExperiment(parent);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
         runPostSetup();
 
         sqlite.save();
@@ -213,10 +224,12 @@ public class Analysis extends StandardMain {
 
     private void insertCommitOrderTestsHelp(final String testName, final String commitSha, final String orderNum) throws SQLException, IOException {
         // orderNum: Number of commits inbetween commitSha and the iDFlakies sha; -1 means this is the iDFlakies sha
+        final String shortSha = commitSha.substring(0,8);
         sqlite.statement(SQLStatements.INSERT_FS_TESTS_COMMIT_NUM)
                 .param(testName)
                 .param(commitSha)
                 .param(orderNum)
+                .param(shortSha)
                 .insertSingleRow();
     }
 
@@ -365,26 +378,34 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private void insertFSExperiment(final String slug, final String name, final String commitSha,
-                                    final String testName, final Path parent) throws SQLException, IOException {
+    private void insertFSExperiment(final Path parent) throws SQLException {
         if (!Files.exists(parent)) {
             System.out.println("[WARNING] Cannot find parent for experiment info at: " + parent.toString());
             return;
         }
 
         if (!filesAdded.add(parent)) {
-            System.out.println("[INFO] Already inserted experiment info for: " + slug);
+            System.out.println("[INFO] Already inserted experiment info for: " + parent.toString());
             return;
         }
+        final String parentStr = parent.getFileName().toString();
+
+        final String[] parentStrAr = parentStr.split("=");
+        final String testNamePart = parentStrAr[1];
+        final String slugNamePart = parentStrAr[0];
+
+        //final String slug = parentStr.substring(0, parentStr.indexOf('_')).replace('.', '/');
+        final String slug = slugNamePart.substring(0, slugNamePart.lastIndexOf('-')).replace('.', '/');
+        final String shortSha = slugNamePart.substring(slugNamePart.lastIndexOf('-') + 1);
+
+        final String testName = testNamePart.substring(0, testNamePart.lastIndexOf('_'));
 
         System.out.println("[INFO] Inserting experiment info for: " + slug);
 
-
         sqlite.statement(SQLStatements.INSERT_FS_EXPERIMENT)
                 .param(slug)
-                .param(name)
                 .param(testName)
-                .param(commitSha)
+                .param(shortSha)
                 .insertSingleRow();
     }
 
@@ -425,8 +446,6 @@ public class Analysis extends StandardMain {
         final String testName = testNamePart.substring(0, testNamePart.lastIndexOf('_'));
 
         final String commitSha = GetInputCSVSha(moduleName, parent.resolve("input.csv"));
-
-        insertFSExperiment(slug, moduleName, commitSha, testName, parent);
 
         insertFSFileLocation(slug, commitSha, parent.resolve("test-to-file.csv"));
 
