@@ -421,7 +421,7 @@ public class Analysis extends StandardMain {
         final String slugNamePart = parentStrAr[0];
 
         //final String slug = parentStr.substring(0, parentStr.indexOf('_')).replace('.', '/');
-        final String slug = slugNamePart.substring(0, slugNamePart.lastIndexOf('_')).replace('.', '/');
+        final String slug = slugNamePart.substring(0, slugNamePart.lastIndexOf('-')).replace('.', '/');
         final String testName = testNamePart.substring(0, testNamePart.lastIndexOf('_'));
 
         final String commitSha = GetInputCSVSha(moduleName, parent.resolve("input.csv"));
