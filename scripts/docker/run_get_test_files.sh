@@ -56,9 +56,11 @@ mv -f test-to-file-temp.csv test-to-file.csv
 
 cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
+testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv | head -1)
+moduleName=$(echo $testInfo | cut -d"," -f3)
 
 # Step 6 : Run iDFlakies on that commit
-/home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ""
+/home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ${moduleName}
 
 mv mvn-test-time.log ${RESULTSDIR}
 mv mvn-test.log ${RESULTSDIR}
