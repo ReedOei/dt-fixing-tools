@@ -24,7 +24,7 @@ testName=$6
 short_sha=${sha:0:7}
 
 # If it's an absolute path, just use it
-if [[ "$7" =~ ^/* ]]; then
+if [[ "$7" =~ ^/ ]]; then
     script_to_run="$7"
 elif [[ -z "$7" ]]; then
     # The default is run_project.sh
