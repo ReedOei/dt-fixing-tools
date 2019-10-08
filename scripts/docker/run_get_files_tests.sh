@@ -62,7 +62,7 @@ mv -f test-to-file-temp.csv test-to-file.csv
 
 cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
-testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv | head -1)
+testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv)
 moduleName=$(echo $testInfo | cut -d"," -f3)
 echo "fullTestName is : $fullTestName"
 echo "testInfo is : $testInfo"
