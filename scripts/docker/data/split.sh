@@ -37,7 +37,7 @@ for line in $(cat ${projfile}); do
     if [[ $testName == "" ]] || [[ "$useTestName" == false ]]; then
         folder_name="${modifiedslug_with_sha}=_output"
     else
-        folder_name="${modifiedslug_with_sha}=${testName::-1}_output"
+        folder_name="${modifiedslug_with_sha}=${testName}_output"
     fi
 
     echo "$line" > individual-split/$folder_name.csv
