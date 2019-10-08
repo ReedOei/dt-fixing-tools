@@ -51,7 +51,7 @@ mkdir -p ${RESULTSDIR}
 /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
 # Step 1 : Run the entire test suite and save all tests' file
-timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file.log
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee get-test-file.log
 
 cp get-test-file.log ${RESULTSDIR}
 
@@ -64,6 +64,8 @@ cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
 testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv | head -1)
 moduleName=$(echo $testInfo | cut -d"," -f3)
+echo "testInfo is : $testInfo"
+echo "Module name is: $moduleName"
 
 # Step 6 : Run iDFlakies on that commit
 /home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ${moduleName}
