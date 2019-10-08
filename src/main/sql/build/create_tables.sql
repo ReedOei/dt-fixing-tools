@@ -72,7 +72,8 @@ create table fs_experiment
   id integer primary key,
   slug text not null,
   test_name text not null,
-  short_sha text not null
+  short_sha text not null,
+  test_file_is_empty integer not null
 );
 
 create table unfinished_tests

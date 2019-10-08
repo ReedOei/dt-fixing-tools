@@ -133,6 +133,8 @@ public class Analysis extends StandardMain {
                         insertFSExperiment(parent);
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 });
 
@@ -379,7 +381,7 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private void insertFSExperiment(final Path parent) throws SQLException {
+    private void insertFSExperiment(final Path parent) throws SQLException, IOException {
         if (!Files.exists(parent)) {
             System.out.println("[WARNING] Cannot find parent for experiment info at: " + parent.toString());
             return;
@@ -391,6 +393,13 @@ public class Analysis extends StandardMain {
         }
 
         final String parentStr = parent.getFileName().toString();
+
+        final Path testToFileCsv = parent.resolve("test-to-file.csv");
+
+        long testToFileIsEmpty = -1;
+        if (Files.isRegularFile(testToFileCsv)) {
+            testToFileIsEmpty = Files.size(testToFileCsv);
+        }
 
         System.out.println("[INFO] Inserting experiment info for: " + parentStr);
 
@@ -408,6 +417,7 @@ public class Analysis extends StandardMain {
                 .param(slug)
                 .param(testName)
                 .param(shortSha)
+                .param(testToFileIsEmpty)
                 .insertSingleRow();
     }
 
