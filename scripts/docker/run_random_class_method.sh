@@ -42,8 +42,6 @@ MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmave
 # Optional timeout... In practice our tools really shouldn't need 1hr to parse a project's surefire reports.
 timeout 1h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.ModuleTestTimePlugin -fn -B -e |& tee module_test_time.log
 
-echo "Module Name is : $moduleName"
-
 didRunSpecificModule=false
 if [[ $moduleName != "" ]]; then
     if [ -d "$moduleName" ]; then

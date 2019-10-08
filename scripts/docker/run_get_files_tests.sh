@@ -20,7 +20,7 @@ fi
 slug=$1
 rounds=$2
 timeout=$3
-fullTestName=${4::-1}
+fullTestName=$4
 fullClassName=$( echo ${fullTestName} | rev | cut -d . -f 2- | rev )
 className=$( echo ${fullClassName} | rev | cut -d . -f 1 | rev )
 testName=$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )
@@ -64,9 +64,6 @@ cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
 testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv)
 moduleName=$(echo $testInfo | cut -d"," -f3)
-echo "fullTestName is : $fullTestName"
-echo "testInfo is : $testInfo"
-echo "Module name is: $moduleName"
 
 # Step 6 : Run iDFlakies on that commit
 /home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ${moduleName}
