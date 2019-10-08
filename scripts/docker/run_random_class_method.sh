@@ -42,6 +42,18 @@ MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmave
 # Optional timeout... In practice our tools really shouldn't need 1hr to parse a project's surefire reports.
 timeout 1h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.ModuleTestTimePlugin -fn -B -e |& tee module_test_time.log
 
+echo "Module Name is : $moduleName"
+
+didRunSpecificModule=false
+if [[ $moduleName != "" ]]; then
+    if [ -d "$moduleName" ]; then
+        echo "Cding into module"
+        # Run iDFlakies just on a specific module
+        cd $moduleName
+        didRunSpecificModule=true
+    fi
+fi
+
 
 # Run the plugin, reversing the original order (reverse class and methods)
 echo "*******************REED************************"
@@ -71,15 +83,6 @@ timeout 4000s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIO
 echo "*******************REED************************"
 echo "Running testplugin for randomizemethods"
 date
-
-didRunSpecificModule=false
-if [[ $moduleName != "" ]]; then
-  if [ -d "$moduleName" ]; then
-    # Run iDFlakies just on a specific module
-    cd $moduleName
-    didRunSpecificModule=true
-  fi
-fi
 
 timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -fn -B -e |& tee random_class_method.log
 
