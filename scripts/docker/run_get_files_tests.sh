@@ -20,7 +20,7 @@ fi
 slug=$1
 rounds=$2
 timeout=$3
-fullTestName=$4
+fullTestName=${4::-1}
 fullClassName=$( echo ${fullTestName} | rev | cut -d . -f 2- | rev )
 className=$( echo ${fullClassName} | rev | cut -d . -f 1 | rev )
 testName=$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )
