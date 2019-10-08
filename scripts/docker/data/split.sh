@@ -16,6 +16,12 @@ git rev-parse HEAD
 date
 
 projfile=$1
+useTestName=$2
+
+if [[ $2 == "" ]]; then
+    useTestName=true
+fi
+
 
 mkdir -p "individual-split"
 
@@ -28,7 +34,7 @@ for line in $(cat ${projfile}); do
     short_sha=${sha:0:7}
     modifiedslug_with_sha="${modifiedslug}-${short_sha}"
 
-    if [[ $testName == "" ]]; then
+    if [[ $testName == "" ]] || [[ "$useTestName" == false ]]; then
         folder_name=${modifiedslug_with_sha}=_output
     else
         folder_name=${modifiedslug_with_sha}=${testName}_output
