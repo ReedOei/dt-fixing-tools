@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo "*******************REED************************"
-echo "Starting run_get_test_files.sh"
+echo "Starting run_get_files_projs.sh"
 
 date
 
@@ -56,15 +56,12 @@ mv -f test-to-file-temp.csv test-to-file.csv
 
 cp /home/awshi2/$slug/test-to-file.csv ${RESULTSDIR}
 
-testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv | head -1)
-moduleName=$(echo $testInfo | cut -d"," -f3)
-
 # Step 6 : Run iDFlakies on that commit
-/home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ${moduleName}
+/home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ""
 
 mv mvn-test-time.log ${RESULTSDIR}
 mv mvn-test.log ${RESULTSDIR}
 
 echo "*******************REED************************"
-echo "Finished run_get_test_files.sh"
+echo "Finished run_get_files_projs.sh"
 date
