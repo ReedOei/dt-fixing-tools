@@ -11,6 +11,8 @@ if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]]; then
     echo "arg1 - GitHub SLUG"
     echo "arg2 - Number of rounds"
     echo "arg3 - Timeout in seconds"
+    echo "arg4 - results directory"
+    echo "arg5 - module name"
     exit
 fi
 
