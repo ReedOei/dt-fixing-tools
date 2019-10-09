@@ -24,10 +24,11 @@ select dr.id as detection_round_id,
         else 'OD'
        end as flaky_type,
        ft.id as flaky_test_id,
-       ft.name as test_name
+       ft.name as test_name,
+       ft.commit_sha as commit_sha
 from flaky_test ft
-inner join flaky_test_list as ftl on ftl.flaky_test_id = ft.id
-inner join detection_round as dr on dr.unfiltered_id = ftl.flaky_test_list_id;
+inner join flaky_test_list as ftl on ftl.flaky_test_id = ft.id and ftl.commit_sha = ft.commit_sha
+inner join detection_round as dr on dr.unfiltered_id = ftl.flaky_test_list_id and ft.commit_sha = dr.commit_sha;
 
 create view filtered_flaky_tests as
 select dr.id as detection_round_id,
@@ -37,10 +38,11 @@ select dr.id as detection_round_id,
         else 'OD'
        end as flaky_type,
        ft.id as flaky_test_id,
-       ft.name as test_name
+       ft.name as test_name,
+       ft.commit_sha as commit_sha
 from flaky_test ft
-inner join flaky_test_list as ftl on ftl.flaky_test_id = ft.id
-inner join detection_round as dr on dr.filtered_id = ftl.flaky_test_list_id;
+inner join flaky_test_list as ftl on ftl.flaky_test_id = ft.id and ftl.commit_sha = ft.commit_sha
+inner join detection_round as dr on dr.filtered_id = ftl.flaky_test_list_id and ft.commit_sha = dr.commit_sha;
 
 create view confirmation_by_test as
 select cr.test_name,
@@ -49,9 +51,10 @@ select cr.test_name,
                  cr.failing_result = cr.failing_expected_result then 1
             else 0
            end) as confirmed_runs,
-       count(*) as total_runs
+       count(*) as total_runs,
+       commit_sha
 from confirmation_runs as cr
-group by cr.test_name;
+group by cr.test_name,commit_sha;
 
 create view fs_test_to_uniq_test as
 SELECT ftco.test_name as orig_test_name,ufv.commit_sha,ufv.module,ufv.test_name as uniq_test_name
@@ -74,9 +77,10 @@ select distinct uft.detection_round_id,
                   else uft.flaky_type
                 end as flaky_type,
                 uft.flaky_test_id,
-                uft.test_name
+                uft.test_name,
+                uft.commit_sha as commit_sha
 from unfiltered_flaky_tests as uft
-left join filtered_flaky_tests as fft on uft.test_name = fft.test_name and uft.subject_name = fft.subject_name;
+left join filtered_flaky_tests as fft on uft.test_name = fft.test_name and uft.subject_name = fft.subject_name and uft.commit_sha = fft.commit_sha;
 
 create view flaky_test_counts as
 select subject_name, flaky_type, count(distinct test_name) as number
@@ -114,40 +118,42 @@ select ftc.test_name, ftc.flaky_type,
               else 0
             end
            end) as confirmed_runs,
-     count(*) as total_runs
+     count(*) as total_runs,
+     ftc.commit_sha
 from flaky_test_classification as ftc
-inner join confirmation_runs as cr on ftc.test_name = cr.test_name
-group by ftc.test_name, ftc.flaky_type, cr.round_type;
+inner join confirmation_runs as cr on ftc.test_name = cr.test_name and ftc.commit_sha = cr.commit_sha
+group by ftc.test_name, ftc.flaky_type, cr.round_type, ftc.commit_sha;
 
 create view minimized_tests as
-select distinct subject_name, test_name
+select distinct subject_name, test_name,commit_sha
 from minimize_test_result;
 
 create view polluter_data_count as
 select mt.subject_name,
        mt.test_name,
        count(passing.num) as passing_count,
-       count(failing.num) as failing_count
+       count(failing.num) as failing_count,
+       mt.commit_sha
 from minimized_tests mt
 left join
 (
-    select mtr.test_name, mtr.expected_result, count(d.test_name) as num
+    select mtr.test_name, mtr.expected_result, count(d.test_name) as num, mtr.commit_sha
     from minimize_test_result mtr
-    left join polluter_data pd on mtr.id = pd.minimized_id
-    left join dependency d on d.polluter_data_id = pd.id
-    group by mtr.test_name, mtr.expected_result
+    left join polluter_data pd on mtr.id = pd.minimized_id and mtr.commit_sha = pd.commit_sha
+    left join dependency d on d.polluter_data_id = pd.id and mtr.commit_sha = d.commit_sha
+    group by mtr.test_name, mtr.expected_result, mtr.commit_sha
     having num > 0
-) passing on passing.test_name = mt.test_name and passing.expected_result = 'PASS'
+) passing on passing.test_name = mt.test_name and passing.expected_result = 'PASS' and passing.commit_sha = mtr.commit_sha
 left join
 (
-    select mtr.test_name, mtr.expected_result, count(d.test_name) as num
+    select mtr.test_name, mtr.expected_result, count(d.test_name) as num, mtr.commit_sha
     from minimize_test_result mtr
-    left join polluter_data pd on mtr.id = pd.minimized_id
-    left join dependency d on d.polluter_data_id = pd.id
-    group by mtr.test_name, mtr.expected_result
+    left join polluter_data pd on mtr.id = pd.minimized_id and mtr.commit_sha = pd.commit_sha
+    left join dependency d on d.polluter_data_id = pd.id and mtr.commit_sha = d.commit_sha
+    group by mtr.test_name, mtr.expected_result, mtr.commit_sha
     having num > 0
-) failing on failing.test_name = mt.test_name and failing.expected_result <> 'PASS'
-group by mt.subject_name, mt.test_name;
+) failing on failing.test_name = mt.test_name and failing.expected_result <> 'PASS' and failing.commit_sha = mtr.commit_sha
+group by mt.subject_name, mt.test_name, mt.commit_sha;
 
 create view od_classification as
 select pdc.test_name,
@@ -346,11 +352,13 @@ select p.test_name,
        p.expected_result,
        p.result,
        f.expected_result,
-       f.result
+       f.result,
+       p.commit_sha
 from verify_round p
 inner join verify_round f on p.test_name = f.test_name and
                              p.round_number = f.round_number and
-                             p.verify_round_number = f.verify_round_number
+                             p.verify_round_number = f.verify_round_number and
+                             p.commit_sha = f.commit_sha
 where p.expected_result = 'PASS' and f.expected_result <> 'PASS';
 
 insert into flaky_test_classification
@@ -359,7 +367,8 @@ select info.subject_name,
        case
          when info.flaky_runs > 0 then 'NO' -- If it was EVER NO, then we should consider it an NO test
         else 'OD'
-      end as flaky_type
+      end as flaky_type,
+      info.commit_sha
 from
 (
   select fti.subject_name,
@@ -370,12 +379,13 @@ from
     when ifnull(cbt.total_runs, 0) > 0 and cbt.confirmed_runs = cbt.total_runs then 0
     else 1
     end) as flaky_runs,
-  count(*) as total_runs
+  count(*) as total_runs,
+  fti.commit_sha as commit_sha
   from flaky_test_info as fti
-  left join confirmation_by_test as cbt on fti.test_name = cbt.test_name
-  group by fti.subject_name, fti.test_name
+  left join confirmation_by_test as cbt on fti.test_name = cbt.test_name and fti.commit_sha = cbt.commit_sha
+  group by fti.subject_name, fti.test_name, fti.commit_sha
 ) as info
-inner join original_order o on info.subject_name = o.subject_name and info.test_name = o.test_name;
+inner join original_order o on info.subject_name = o.subject_name and info.test_name = o.test_name and o.commit_sha = info.commit_sha;
 
 insert into num_rounds
 select subject_name, round_type, count(*) as number
@@ -387,13 +397,14 @@ create temporary table temp
   subject_name,
   round_type,
   test_name,
-  detection_round_id
+  detection_round_id,
+  commit_sha
 );
 
 insert into temp
-select fti.subject_name, dr.round_type, fti.test_name, dr.id
+select fti.subject_name, dr.round_type, fti.test_name, dr.id, fti.commit_sha
 from flaky_test_info fti
-inner join detection_round dr on fti.detection_round_id = dr.id;
+inner join detection_round dr on fti.detection_round_id = dr.id and fti.commit_sha = dr.commit_sha;
 
 create temporary table temp2
 (
@@ -401,13 +412,14 @@ create temporary table temp2
   round_type,
   flaky_type,
   test_name,
-  detection_round_id
+  detection_round_id,
+  commit_sha
 );
 
 insert into temp2
-select t.subject_name, t.round_type, ftc.flaky_type, t.test_name, t.detection_round_id
+select t.subject_name, t.round_type, ftc.flaky_type, t.test_name, t.detection_round_id, t.commit_sha
 from temp t
-inner join flaky_test_classification ftc on t.test_name = ftc.test_name;
+inner join flaky_test_classification ftc on t.test_name = ftc.test_name and ftc.commit_sha = t.commit_sha;
 
 create temporary table temp3
 (
@@ -426,23 +438,24 @@ insert into flaky_test_failures
 select i.subject_name, i.test_name, i.round_type, i.flaky_type, failures, rounds, t.commit_sha
 from
 (
-  select subject_name, t2.test_name, t2.round_type, t2.flaky_type, count(distinct detection_round_id) as failures
+  select subject_name, t2.test_name, t2.round_type, t2.flaky_type, count(distinct detection_round_id) as failures, t2.commit_sha
   from temp2 t2
-  group by t2.test_name, t2.round_type, t2.flaky_type
+  group by t2.test_name, t2.round_type, t2.flaky_type, t2.commit_sha
 ) i
 inner join
 (
   select subject_name, round_type, commit_sha, sum(n) as rounds
   from temp3 t3
   group by subject_name, round_type, commit_sha
-) t on i.round_type = t.round_type and i.subject_name = t.subject_name;
+) t on i.round_type = t.round_type and i.subject_name = t.subject_name and t.commit_sha = i.commit_sha;
 
 insert into detection_round_failures
 select dr.id, dr.round_type,
        sum(case when ftc.flaky_type = 'NO' then 1 else 0 end),
-       sum(case when ftc.flaky_type = 'OD' then 1 else 0 end)
+       sum(case when ftc.flaky_type = 'OD' then 1 else 0 end),
+       dr.commit_sha
 from detection_round dr
-left join flaky_test_list ftl on dr.unfiltered_id = ftl.flaky_test_list_id
-left join flaky_test ft on ftl.flaky_test_id = ft.id
-left join flaky_test_classification ftc on ft.name = ftc.test_name
-group by dr.id, dr.round_type;
+left join flaky_test_list ftl on dr.unfiltered_id = ftl.flaky_test_list_id and dr.commit_sha = ftl.commit_sha
+left join flaky_test ft on ftl.flaky_test_id = ft.id and ft.commit_sha = dr.commit_sha
+left join flaky_test_classification ftc on ft.name = ftc.test_name and ftc.commit_sha = dr.commit_sha
+group by dr.id, dr.round_type, dr.commit_sha;
