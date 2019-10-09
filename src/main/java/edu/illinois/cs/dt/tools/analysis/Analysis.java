@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.analysis;
 
 import com.google.gson.Gson;
+import com.opencsv.CSVParser;
 import com.opencsv.CSVReader;
 import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.eunomia.io.files.FileUtil;
@@ -9,6 +10,7 @@ import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
+import edu.illinois.cs.dt.tools.detection.DetectorPlugin;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
 import edu.illinois.cs.dt.tools.diagnosis.DiagnoserPathManager;
 import edu.illinois.cs.dt.tools.diagnosis.DiagnosisResult;
@@ -36,6 +38,7 @@ import edu.illinois.cs.dt.tools.utility.OperationTime;
 import edu.illinois.cs.dt.tools.utility.TimeManager;
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -182,8 +185,11 @@ public class Analysis extends StandardMain {
     private void insertFSSubjTestRaw(final Path path) throws SQLException, IOException {
         // File originates from combining data/icst-dataset/only-flaky/individual_split/split_by_test/comprehensive.csv
         // and data/icst-dataset/only-flaky/individual_split/split_by_test/extended.csv
-        for (final String line : Files.readAllLines(path)) {
-            String[] lineArr = line.split(",");
+
+        ListEx<ListEx<String>> csvContent = DetectorPlugin.csv(path);
+
+        for (ListEx<String> row : csvContent) {
+            String[] lineArr = (String[]) row.toArray();
 
             if (lineArr.length != 5) {
                 continue;

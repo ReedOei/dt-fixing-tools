@@ -48,7 +48,7 @@ public class DetectorPlugin extends TestPlugin {
     }
 
     // TODO: copy to eunomia
-    private static ListEx<ListEx<String>> csv(final Path path) throws IOException {
+    public static ListEx<ListEx<String>> csv(final Path path) throws IOException {
         try (final FileInputStream fis = new FileInputStream(path.toAbsolutePath().toString());
              final InputStreamReader isr = new InputStreamReader(fis);
              final CSVReader reader = new CSVReader(isr)) {
