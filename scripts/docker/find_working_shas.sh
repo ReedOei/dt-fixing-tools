@@ -60,7 +60,7 @@ while IFS= read -r currentSha; do
 	clean_and_incrementCounter
 	continue
     fi
-    timeout 1h /home/awshi2/apache-maven/bin/mvn clean compile -DskipTests -Dgpg.skip -B |& tee ${RESULTSDIR}${shortSha}-mvn-test.log
+    timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests ${MVNOPTIONS} -Dgpg.skip -B |& tee ${RESULTSDIR}${shortSha}-mvn-test.log
     if [[ "${PIPESTATUS[0]}" -ne 0 ]]; then
 	echo "${currentSha},${shaDistance},BUILD_FAIL" >>${buildResults}
 	clean_and_incrementCounter
@@ -69,6 +69,7 @@ while IFS= read -r currentSha; do
     echo "${currentSha},${shaDistance},BUILD_SUCCESS" >>${buildResults}
     /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
     timeout 1h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file-${shortSha}.log
+    ((commitsFound++))
     cp get-test-file-${shortSha}.log ${RESULTSDIR}
     [ $commitsFound -ge $commitsNeeded ] && { clean_and_incrementCounter; break; }
 done <${commitList}
