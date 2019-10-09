@@ -17,6 +17,6 @@ if [[ -z "$PROCESS_NUM" ]]; then
     PROCESS_NUM="4"
 fi
 
-find "$csvPath" -maxdepth 1 -type f -name "*.csv" | xargs -P"$PROCESS_NUM" -I{} bash run-project-pool.sh {} "$@"
+find "$csvPath" -maxdepth 1 -type f -name "*.csv" | xargs -P"$PROCESS_NUM" -I{} bash run-project-pool-sha-finding.sh {} "$@"
 
 date
