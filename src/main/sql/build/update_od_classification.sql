@@ -125,35 +125,34 @@ inner join confirmation_runs as cr on ftc.test_name = cr.test_name and ftc.commi
 group by ftc.test_name, ftc.flaky_type, cr.round_type, ftc.commit_sha;
 
 create view minimized_tests as
-select distinct subject_name, test_name,commit_sha
+select distinct subject_name, test_name
 from minimize_test_result;
 
 create view polluter_data_count as
 select mt.subject_name,
        mt.test_name,
        count(passing.num) as passing_count,
-       count(failing.num) as failing_count,
-       mt.commit_sha
+       count(failing.num) as failing_count
 from minimized_tests mt
 left join
 (
-    select mtr.test_name, mtr.expected_result, count(d.test_name) as num, mtr.commit_sha
+    select mtr.test_name, mtr.expected_result, count(d.test_name) as num
     from minimize_test_result mtr
-    left join polluter_data pd on mtr.id = pd.minimized_id and mtr.commit_sha = pd.commit_sha
-    left join dependency d on d.polluter_data_id = pd.id and mtr.commit_sha = d.commit_sha
-    group by mtr.test_name, mtr.expected_result, mtr.commit_sha
+    left join polluter_data pd on mtr.id = pd.minimized_id
+    left join dependency d on d.polluter_data_id = pd.id
+    group by mtr.test_name, mtr.expected_result
     having num > 0
-) passing on passing.test_name = mt.test_name and passing.expected_result = 'PASS' and passing.commit_sha = mtr.commit_sha
+) passing on passing.test_name = mt.test_name and passing.expected_result = 'PASS'
 left join
 (
-    select mtr.test_name, mtr.expected_result, count(d.test_name) as num, mtr.commit_sha
+    select mtr.test_name, mtr.expected_result, count(d.test_name) as num
     from minimize_test_result mtr
-    left join polluter_data pd on mtr.id = pd.minimized_id and mtr.commit_sha = pd.commit_sha
-    left join dependency d on d.polluter_data_id = pd.id and mtr.commit_sha = d.commit_sha
-    group by mtr.test_name, mtr.expected_result, mtr.commit_sha
+    left join polluter_data pd on mtr.id = pd.minimized_id
+    left join dependency d on d.polluter_data_id = pd.id
+    group by mtr.test_name, mtr.expected_result
     having num > 0
-) failing on failing.test_name = mt.test_name and failing.expected_result <> 'PASS' and failing.commit_sha = mtr.commit_sha
-group by mt.subject_name, mt.test_name, mt.commit_sha;
+) failing on failing.test_name = mt.test_name and failing.expected_result <> 'PASS'
+group by mt.subject_name, mt.test_name;
 
 create view od_classification as
 select pdc.test_name,
