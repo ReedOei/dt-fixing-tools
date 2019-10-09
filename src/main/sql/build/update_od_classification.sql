@@ -383,8 +383,8 @@ from
   from flaky_test_info as fti
   left join confirmation_by_test as cbt on fti.test_name = cbt.test_name and fti.commit_sha = cbt.commit_sha
   group by fti.subject_name, fti.test_name, fti.commit_sha
-) as info
-inner join original_order o on info.subject_name = o.subject_name and info.test_name = o.test_name and o.commit_sha = info.commit_sha;
+) as info;
+--inner join original_order o on info.subject_name = o.subject_name and info.test_name = o.test_name and o.commit_sha = info.commit_sha;
 
 insert into num_rounds
 select subject_name, round_type, count(*) as number
