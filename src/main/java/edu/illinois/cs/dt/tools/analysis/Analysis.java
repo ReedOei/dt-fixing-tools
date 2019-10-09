@@ -463,7 +463,7 @@ public class Analysis extends StandardMain {
 
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
-        insertOriginalOrder(moduleName, path.resolve(DetectorPathManager.ORIGINAL_ORDER));
+        insertOriginalOrder(moduleName, path.resolve(DetectorPathManager.ORIGINAL_ORDER), commitSha);
 
         if (!sqlite.checkExists("subject", moduleName)) {
             insertSubject(moduleName, slug, path);
@@ -506,7 +506,7 @@ public class Analysis extends StandardMain {
         System.out.println();
     }
 
-    private void insertOriginalOrder(final String subjectName, final Path originalOrderPath)
+    private void insertOriginalOrder(final String subjectName, final Path originalOrderPath, final String commitSha)
             throws SQLException, IOException {
         if (Files.exists(originalOrderPath)) {
             if (!sqlite.checkExists("original_order", "subject_name", subjectName)) {
@@ -523,7 +523,7 @@ public class Analysis extends StandardMain {
                             .param(originalOrder.get(i))
                             .param(testClass(originalOrder.get(i)))
                             .param(testClass(testClass(originalOrder.get(i))))
-                            .param(i).addBatch();
+                            .param(i).param(0).param(commitSha).addBatch();
                 }
 
                 statement.executeBatch();
@@ -1119,8 +1119,8 @@ public class Analysis extends StandardMain {
             return;
         }
 
-        final int unfilteredId = insertDependentTestList(round.unfilteredTests());
-        final int filteredId = insertDependentTestList(round.filteredTests());
+        final int unfilteredId = insertDependentTestList(round.unfilteredTests(), commitSha);
+        final int filteredId = insertDependentTestList(round.filteredTests(), commitSha);
 
         final int detectionRoundId =
                 sqlite.statement(SQLStatements.INSERT_DETECTION_ROUND)
@@ -1144,27 +1144,29 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private int insertDependentTestList(final DependentTestList dependentTestList) throws IOException, SQLException {
+    private int insertDependentTestList(final DependentTestList dependentTestList, final String commitSha) throws IOException, SQLException {
         final int index = dtListIndex;
         dtListIndex++;
 
         for (DependentTest dependentTest : dependentTestList.dts()) {
-            final int dependentTestId = insertDependentTest(dependentTest);
+            final int dependentTestId = insertDependentTest(dependentTest, commitSha);
 
             sqlite.statement(SQLStatements.INSERT_FLAKY_TEST_LIST)
                     .param(index)
                     .param(dependentTestId)
+                    .param(commitSha)
                     .executeUpdate();
         }
 
         return index;
     }
 
-    private int insertDependentTest(final DependentTest dependentTest) throws SQLException {
+    private int insertDependentTest(final DependentTest dependentTest, final String commitSha) throws SQLException {
         return sqlite.statement(SQLStatements.INSERT_FLAKY_TEST)
                 .param(dependentTest.name())
                 .param(dependentTest.intended().testRunId())
                 .param(dependentTest.revealed().testRunId())
+                .param(commitSha)
                 .insertSingleRow();
     }
 

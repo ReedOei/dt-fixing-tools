@@ -106,6 +106,7 @@ create table flaky_test
   name text not null,
   intended_id text not null,
   revealed_id text not null,
+  commit_sha text not null,
 
   foreign key(intended_id) references test_run_result(str_id),
   foreign key(revealed_id) references test_run_result(str_id)
@@ -116,6 +117,7 @@ create table flaky_test_list
   id integer primary key,
   flaky_test_list_id integer not null,
   flaky_test_id integer not null,
+  commit_sha text not null,
 
   foreign key(flaky_test_id) references flaky_test(id)
 );
@@ -186,6 +188,7 @@ create table confirmation_runs
   passing_result text not null,
   failing_expected_result text not null,
   failing_result text not null,
+  commit_sha text not null,
 
   foreign key(test_name) references original_order(test_name)
 );
@@ -209,6 +212,7 @@ create table original_order
   test_package text not null,
   order_index integer not null,
   fix_method_order integer not null default 0,
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name)
 );
@@ -227,6 +231,7 @@ create table flaky_test_classification
   subject_name text not null,
   test_name text not null,
   flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(test_name) references original_order(test_name)
@@ -252,6 +257,7 @@ create table detection_round_failures
   round_type text not null,
   no_found integer not null,
   od_found integer not null,
+  commit_sha text not null,
 
   foreign key(detection_round_id) references detection_round(id)
 );
