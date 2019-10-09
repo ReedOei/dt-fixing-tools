@@ -211,8 +211,8 @@ create table original_order
   test_class text not null,
   test_package text not null,
   order_index integer not null,
-  fix_method_order integer not null default 0,
   commit_sha text not null,
+  fix_method_order integer not null default 0,
 
   foreign key(subject_name) references subject(name)
 );

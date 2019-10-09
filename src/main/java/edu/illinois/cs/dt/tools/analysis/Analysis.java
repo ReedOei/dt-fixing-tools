@@ -523,7 +523,7 @@ public class Analysis extends StandardMain {
                             .param(originalOrder.get(i))
                             .param(testClass(originalOrder.get(i)))
                             .param(testClass(testClass(originalOrder.get(i))))
-                            .param(i).param(0).param(commitSha).addBatch();
+                            .param(i).param(commitSha).addBatch();
                 }
 
                 statement.executeBatch();
