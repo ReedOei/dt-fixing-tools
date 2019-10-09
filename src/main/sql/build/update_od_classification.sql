@@ -52,9 +52,9 @@ select cr.test_name,
             else 0
            end) as confirmed_runs,
        count(*) as total_runs,
-       commit_sha
+       cr.commit_sha
 from confirmation_runs as cr
-group by cr.test_name,commit_sha;
+group by cr.test_name,cr.commit_sha;
 
 create view fs_test_to_uniq_test as
 SELECT ftco.test_name as orig_test_name,ufv.commit_sha,ufv.module,ufv.test_name as uniq_test_name
