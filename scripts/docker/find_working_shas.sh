@@ -69,6 +69,7 @@ while IFS= read -r currentSha; do
     echo "${currentSha},${shaDistance},BUILD_SUCCESS" >>${buildResults}
     /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
     timeout 1h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file-${shortSha}.log
+    ((commitsFound++))
     cp get-test-file-${shortSha}.log ${RESULTSDIR}
     [ $commitsFound -ge $commitsNeeded ] && { clean_and_incrementCounter; break; }
 done <${commitList}
