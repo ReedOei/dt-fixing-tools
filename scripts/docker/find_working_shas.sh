@@ -60,7 +60,7 @@ while IFS= read -r currentSha; do
 	clean_and_incrementCounter
 	continue
     fi
-    timeout 1h /home/awshi2/apache-maven/bin/mvn clean compile -DskipTests -Dgpg.skip -B |& tee ${RESULTSDIR}${shortSha}-mvn-test.log
+    timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests ${MVNOPTIONS} -Dgpg.skip -B |& tee ${RESULTSDIR}${shortSha}-mvn-test.log
     if [[ "${PIPESTATUS[0]}" -ne 0 ]]; then
 	echo "${currentSha},${shaDistance},BUILD_FAIL" >>${buildResults}
 	clean_and_incrementCounter
