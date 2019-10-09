@@ -44,29 +44,35 @@ currentSha=$firstSha
 commitsFound=0
 entries=$(wc -l ${commitList} | cut -d' ' -f1)
 
+clean_and_incrementCounter()
+{
+    git clean -x -d -f
+    git checkout .
+    ((currentListIndex++))
+}
+
 while IFS= read -r currentSha; do
     shortSha=${currentSha:0:7}
     echo "$currentSha"
     echo "$shortSha"
     shaDistance=$(( ${entries} - ${currentListIndex} ))
     git checkout $currentSha
+    if [ -z $(find /etc -maxdepth 1 -iname pom.xml) ]; then
+	echo "${currentSha},${shaDistance},NO_POM" >>${buildResults}
+	clean_and_incrementCounter
+	continue
+    fi
     timeout 1h /home/awshi2/apache-maven/bin/mvn clean compile -DskipTests -Dgpg.skip -B |& tee ${RESULTSDIR}${shortSha}-mvn-test.log
     if [[ "${PIPESTATUS[0]}" -ne 0 ]]; then
 	echo "${currentSha},${shaDistance},BUILD_FAIL" >>${buildResults}
-	git clean -x -d -f
-	git checkout .
-	((currentListIndex++))
+	clean_and_incrementCounter
 	continue
     fi
     echo "${currentSha},${shaDistance},BUILD_SUCCESS" >>${buildResults}
     /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
     timeout 1h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -fn -B -e |& tee get-test-file-${shortSha}.log
     cp get-test-file-${shortSha}.log ${RESULTSDIR}
-    git clean -x -d -f
-    git checkout .
-    ((commitsFound++))
-    [ $commitsFound -ge $commitsNeeded ] && break
-    ((currentListIndex++))
+    [ $commitsFound -ge $commitsNeeded ] && { clean_and_incrementCounter; break; }
 done <${commitList}
 
 echo "*******************REED************************"
