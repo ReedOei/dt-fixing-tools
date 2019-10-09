@@ -189,7 +189,7 @@ public class Analysis extends StandardMain {
         ListEx<ListEx<String>> csvContent = DetectorPlugin.csv(path);
 
         for (ListEx<String> row : csvContent) {
-            String[] lineArr = (String[]) row.toArray();
+            String[] lineArr = row.toArray(new String[]{});
 
             if (lineArr.length != 5) {
                 continue;
