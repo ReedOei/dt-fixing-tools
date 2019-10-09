@@ -44,6 +44,6 @@ mvn install -DskipTests exec:java \
 
 # Now that we know the flaky tests, we want to mark whether they occurred in a class with @FixMethodOrder
 # They should have already all been downloaded above, so we just need to cd and check
-bash "$scripts_folder/update-fix-method-order.sh" "$database" "$subject_list"
+#bash "$scripts_folder/update-fix-method-order.sh" "$database" "$subject_list"
 
 cat "$scripts_folder/../src/main/sql/build/update_od_classification.sql" | sqlite3 "$database"
