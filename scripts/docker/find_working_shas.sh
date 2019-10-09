@@ -55,7 +55,7 @@ while IFS= read -r currentSha; do
     shortSha=${currentSha:0:7}
     shaDistance=$(( ${entries} - ${currentListIndex} ))
     git checkout $currentSha
-    if [ -z $(find /etc -maxdepth 1 -iname pom.xml) ]; then
+    if [ -z $(find -maxdepth 1 -iname pom.xml) ]; then
 	echo "${currentSha},${shaDistance},NO_POM" >>${buildResults}
 	clean_and_incrementCounter
 	continue
