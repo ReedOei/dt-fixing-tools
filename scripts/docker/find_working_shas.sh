@@ -53,8 +53,6 @@ clean_and_incrementCounter()
 
 while IFS= read -r currentSha; do
     shortSha=${currentSha:0:7}
-    echo "$currentSha"
-    echo "$shortSha"
     shaDistance=$(( ${entries} - ${currentListIndex} ))
     git checkout $currentSha
     if [ -z $(find /etc -maxdepth 1 -iname pom.xml) ]; then
