@@ -52,57 +52,62 @@ if [[ $moduleName != "" ]]; then
     fi
 fi
 
-
-# Run the plugin, reversing the original order (reverse class and methods)
-echo "*******************REED************************"
-echo "Running testplugin for reversing the original order"
-date
-
-timeout 4000s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=4000 -Ddt.randomize.rounds=1 -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -Ddetector.detector_type=reverse -fn -B -e |& tee reverse_original.log
-
-
-# Run the plugin, reversing the original order (reverse class)
-# echo "*******************REED************************"
-# echo "Running testplugin for reversing the class order"
-# date
-
-# timeout 4000s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=4000 -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=reverse-class -fn -B -e |& tee reverse_class.log
-
-
-# Run the plugin, original order
-# echo "*******************REED************************"
-# echo "Running testplugin for original"
-# date
-
-# timeout 3600s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=3600 -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=flaky -fn -B -e |& tee original.log
-
-
-# Run the plugin, random class first, method second
-echo "*******************REED************************"
-echo "Running testplugin for randomizemethods"
-date
-
-timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -fn -B -e |& tee random_class_method.log
-
 if [[ "$didRunSpecificModule" = true ]];
 then
-  mv random_class_method.log ../
-  cd ../
+    # Run the plugin, reversing the original order (reverse class and methods)
+    echo "*******************REED************************"
+    echo "Running testplugin for reversing the original order"
+    date
+
+    timeout 4000s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=4000 -Ddt.randomize.rounds=1 -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -Ddetector.detector_type=reverse -fn -B -e |& tee reverse_original.log
+
+
+    # Run the plugin, reversing the original order (reverse class)
+    # echo "*******************REED************************"
+    # echo "Running testplugin for reversing the class order"
+    # date
+
+    # timeout 4000s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=4000 -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=reverse-class -fn -B -e |& tee reverse_class.log
+
+
+    # Run the plugin, original order
+    # echo "*******************REED************************"
+    # echo "Running testplugin for original"
+    # date
+
+    # timeout 3600s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=3600 -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=flaky -fn -B -e |& tee original.log
+
+
+    # Run the plugin, random class first, method second
+    echo "*******************REED************************"
+    echo "Running testplugin for randomizemethods"
+    date
+
+    timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -fn -B -e |& tee random_class_method.log
+
+    if [[ "$didRunSpecificModule" = true ]];
+    then
+        mv random_class_method.log ../
+        cd ../
+    fi
+
+    # Run the plugin, random class only
+    # echo "*******************REED************************"
+    # echo "Running testplugin for randomizeclasses"
+    # date
+
+    # timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=${timeout} -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=random-class -fn -B -e |& tee random_class.log
+
+    # Run the smart-shuffle (every test runs first and last)
+    # echo "*******************REED************************"
+    # echo "Running testplugin for smart-shuffle"
+    # date
+
+    # timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=${timeout} -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=smart-shuffle -fn -B -e |& tee smart_shuffle.log
+
+else
+    echo "Did not find specific module to run. Terminating immediately to save time. Module given was $moduleName"
 fi
-
-# Run the plugin, random class only
-# echo "*******************REED************************"
-# echo "Running testplugin for randomizeclasses"
-# date
-
-# timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=${timeout} -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=random-class -fn -B -e |& tee random_class.log
-
-# Run the smart-shuffle (every test runs first and last)
-# echo "*******************REED************************"
-# echo "Running testplugin for smart-shuffle"
-# date
-
-# timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=${timeout} -Ddt.randomize.rounds=${rounds} -Ddetector.detector_type=smart-shuffle -fn -B -e |& tee smart_shuffle.log
 
 
 # Gather the results, put them up top
