@@ -22,7 +22,7 @@ timeout=$3
 fullTestName=$4
 fullClassName=$( echo ${fullTestName} | rev | cut -d . -f 2- | rev )
 className=$( echo ${fullClassName} | rev | cut -d . -f 1 | rev )
-testName="$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )\s*\(\s*\)"
+testName="$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )\s*\("
 
 
 # Incorporate tooling into the project, using Java XML parsing
@@ -46,6 +46,9 @@ mkdir -p ${RESULTSDIR}
 /home/awshi2/dt-fixing-tools/scripts/docker/s.sh /home/awshi2/commits.log ${testName} ${className} ${idflakiesSha}
 
 cp /home/awshi2/commits.log ${RESULTSDIR}
+
+mv mvn-test-time.log ${RESULTSDIR}
+mv mvn-test.log ${RESULTSDIR}
 
 echo "*******************REED************************"
 echo "Finished run_get_shas.sh"
