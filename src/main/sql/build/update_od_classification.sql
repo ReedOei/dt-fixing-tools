@@ -56,17 +56,22 @@ select cr.test_name,
 from confirmation_runs as cr
 group by cr.test_name,cr.commit_sha;
 
+create view fs_idflakies_vers_results as
+select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name, fstr.module from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha
+UNION
+select slug,commit_sha,test_name,module from fs_subj_test_raw;
+
 create view fs_test_to_uniq_test as
-SELECT ftco.test_name as orig_test_name,ufv.commit_sha,ufv.module,ufv.test_name as uniq_test_name
+SELECT ftco.test_name as orig_test_name,ufv.commit_sha,ufv.test_name as uniq_test_name
 FROM fs_test_commit_order ftco
 JOIN 
-  (SELECT ftco.commit_sha,fstr.module,ftco.test_name
-    FROM fs_subj_test_raw fstr
-    JOIN fs_test_commit_order ftco ON fstr.test_name = ftco.test_name 
+  (SELECT ftco.commit_sha,fivr.module,ftco.test_name
+    FROM fs_idflakies_vers_results fivr
+    JOIN fs_test_commit_order ftco ON fivr.test_name = ftco.test_name 
     WHERE ftco.order_num > -1 
-    GROUP BY ftco.commit_sha,fstr.module 
+    GROUP BY ftco.commit_sha,fivr.module 
     ORDER BY ftco.commit_sha) ufv ON ftco.commit_sha = ufv.commit_sha
-JOIN fs_subj_test_raw fstr ON fstr.test_name = ftco.test_name AND fstr.module = ufv.module;
+JOIN fs_idflakies_vers_results fivr ON fivr.test_name = ftco.test_name;
 
 create view flaky_test_info as
 select distinct uft.detection_round_id,
