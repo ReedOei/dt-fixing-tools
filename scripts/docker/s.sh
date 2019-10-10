@@ -1,13 +1,15 @@
 outputFile=$1
 testName=$2
+testNameWithParen="$testName\s*\("
 className=$3
 idflakiesSha=$4
 
 echo "testName: $testName" > $outputFile
 echo "className: $className" >> $outputFile
 echo "idflakiesSha: $idflakiesSha" >> $outputFile
+echo "commits to consider are: $(git log -G "${testNameWithParen}" --pretty=%H  | tac)" >> $outputFile
 
-for first in $(git log -G "${testName}" --pretty=%H  | tac); do
+for first in $(git log -G "${testNameWithParen}" --pretty=%H  | tac); do
   file_names=$(git show ${first} | egrep "^\\+\+\+|${testName}" | grep -B1 "${testName}" | egrep "^\+\+\+" | rev | cut -b6- | cut -f1 -d/ | rev)
 
   echo "Suspected first commit is $first" >> $outputFile
