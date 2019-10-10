@@ -38,7 +38,7 @@ shortSha=${firstSha:0:7}
 commitList=${RESULTSDIR}commitList-${shortSha}.txt
 buildResults=${RESULTSDIR}built-shas-${shortSha}.csv
 
-git log --reverse --pretty="format:%H" --ancestry-path ${firstSha}..${iDFlakiesSha} >${commitList}
+git log --reverse --pretty="format:%H" --ancestry-path ${firstSha}^..${iDFlakiesSha} >${commitList}
 currentListIndex=1
 currentSha=$firstSha
 commitsFound=0
@@ -54,13 +54,14 @@ clean_and_incrementCounter()
 while IFS= read -r currentSha; do
     shortSha=${currentSha:0:7}
     shaDistance=$(( ${entries} - ${currentListIndex} ))
-    git checkout $currentSha
+    git reset --hard $currentSha
+    git clean -x -d -f
     if [ -z $(find -maxdepth 1 -iname pom.xml) ]; then
 	echo "${currentSha},${shaDistance},NO_POM" >>${buildResults}
 	clean_and_incrementCounter
 	continue
     fi
-    timeout 1h /home/awshi2/apache-maven/bin/mvn clean install -DskipTests ${MVNOPTIONS} -Dgpg.skip -B |& tee ${RESULTSDIR}${shortSha}-mvn-test.log
+    timeout 1h /home/awshi2/apache-maven/bin/mvn clean compile -DskipTests ${MVNOPTIONS} -Dgpg.skip -B |& tee ${RESULTSDIR}${shortSha}-mvn-test.log
     if [[ "${PIPESTATUS[0]}" -ne 0 ]]; then
 	echo "${currentSha},${shaDistance},BUILD_FAIL" >>${buildResults}
 	clean_and_incrementCounter
