@@ -7,7 +7,7 @@ idflakiesSha=$4
 echo "testName: $testName" > $outputFile
 echo "className: $className" >> $outputFile
 echo "idflakiesSha: $idflakiesSha" >> $outputFile
-echo "commits to consider are: $(git log -G "${testNameWithParen}" --pretty=%H  | tac)"
+echo "commits to consider are: $(git log -G "${testNameWithParen}" --pretty=%H  | tac)" >> $outputFile
 
 for first in $(git log -G "${testNameWithParen}" --pretty=%H  | tac); do
   file_names=$(git show ${first} | egrep "^\\+\+\+|${testName}" | grep -B1 "${testName}" | egrep "^\+\+\+" | rev | cut -b6- | cut -f1 -d/ | rev)
