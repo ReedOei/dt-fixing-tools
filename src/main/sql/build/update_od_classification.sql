@@ -62,16 +62,17 @@ UNION
 select slug,commit_sha,test_name,module from fs_subj_test_raw;
 
 create view fs_test_to_uniq_test as
-SELECT ftco.test_name as orig_test_name,ufv.commit_sha,ufv.test_name as uniq_test_name
+SELECT ftco.test_name as orig_test_name,ufv.commit_sha,ufv.module,ufv.test_name as uniq_test_name
 FROM fs_test_commit_order ftco
 JOIN 
-  (SELECT ftco.commit_sha,fivr.module,ftco.test_name
-    FROM fs_idflakies_vers_results fivr
-    JOIN fs_test_commit_order ftco ON fivr.test_name = ftco.test_name 
+  (SELECT ftco.commit_sha,fstr.module,ftco.test_name
+    FROM fs_idflakies_vers_results fstr
+    JOIN fs_test_commit_order ftco ON fstr.test_name = ftco.test_name 
     WHERE ftco.order_num > -1 
-    GROUP BY ftco.commit_sha,fivr.module 
+    GROUP BY ftco.commit_sha,fstr.module 
     ORDER BY ftco.commit_sha) ufv ON ftco.commit_sha = ufv.commit_sha
-JOIN fs_idflakies_vers_results fivr ON fivr.test_name = ftco.test_name;
+JOIN fs_idflakies_vers_results fstr ON fstr.test_name = ftco.test_name AND fstr.module = ufv.module;
+
 
 create view flaky_test_info as
 select distinct uft.detection_round_id,
