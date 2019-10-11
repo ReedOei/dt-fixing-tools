@@ -1168,11 +1168,16 @@ public class Analysis extends StandardMain {
     }
 
     private int insertDependentTest(final DependentTest dependentTest, final String commitSha) throws SQLException {
+        String[] splitPeriod = dependentTest.name().split("\\.");
+        String className = splitPeriod[splitPeriod.length - 2];
+        String testName = splitPeriod[splitPeriod.length - 1];
+
         return sqlite.statement(SQLStatements.INSERT_FLAKY_TEST)
                 .param(dependentTest.name())
                 .param(dependentTest.intended().testRunId())
                 .param(dependentTest.revealed().testRunId())
                 .param(commitSha)
+                .param(className + "." + testName)
                 .insertSingleRow();
     }
 

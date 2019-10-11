@@ -107,6 +107,7 @@ create table flaky_test
   intended_id text not null,
   revealed_id text not null,
   commit_sha text not null,
+  class_test_name text not null,
 
   foreign key(intended_id) references test_run_result(str_id),
   foreign key(revealed_id) references test_run_result(str_id)
