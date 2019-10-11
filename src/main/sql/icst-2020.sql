@@ -122,6 +122,7 @@ select count(distinct ftf.test_name) from flaky_test_failures ftf join fs_test_c
 -- # of idflakies tests with first sha - 365
 select count() from fs_test_to_uniq_test;
 
+
 -- # of idflakies tests that we have a first sha for AND has ran through the pipeline - 346
 select count(distinct fttut.orig_test_name) from fs_test_to_uniq_test fttut join fs_experiment fe on fe.test_name = fttut.uniq_test_name  JOIN fs_test_commit_order ftco on ftco.commit_sha = fttut.commit_sha where ftco.order_num > -1;
 
@@ -137,11 +138,6 @@ FROM (
   SELECT distinct fe.short_sha,fe.test_name from fs_experiment fe join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha where ftco.order_num > -1
 );
 
--- Unique first sha possible for 365 flaky tests that we have first sha for - 175
-select count() from ( select distinct fttut.commit_sha,fttut.module from fs_test_to_uniq_test fttut ) ;
-
-select count() from ( select distinct ftco.short_sha,fttut.module from fs_test_to_uniq_test fttut join fs_test_commit_order ftco on ftco.commit_sha = fttut.commit_sha ) ;
-
 
 -- Unique first sha that still needs to be run to have run all 175 first shas - 13
 select distinct fstr.slug,fttut.commit_sha,fttut.uniq_test_name from fs_test_to_uniq_test fttut 
@@ -150,10 +146,41 @@ where (fttut.commit_sha,fttut.uniq_test_name) NOT IN (
   SELECT distinct ftco.commit_sha,fe.test_name from fs_experiment fe join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha where ftco.order_num > -1
 ) 
 
--- Unique first sha that compiles - 117
-select count(distinct fe.short_sha) from fs_experiment fe join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha where ftco.order_num > -1 and fe.test_file_is_empty > 0;
+-- Generates 922-missing-first-sha-exp.csv
+select count()
+FROM (
+  select distinct fivr.slug,fttut.commit_sha,fttut.uniq_test_name
+  from fs_test_to_uniq_test fttut 
+  join fs_test_commit_order ftco on ftco.commit_sha = fttut.commit_sha
+  join fs_idflakies_vers_results fivr on fivr.test_name = fttut.orig_test_name 
+  where ftco.order_num > -1
+  and (fttut.commit_sha,lower(fttut.module)) NOT IN (
+    select distinct ftco.commit_sha,lower(fttut.module) 
+    from fs_experiment fe 
+    join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha 
+    join fs_idflakies_vers_results fivr on fivr.test_name = ftco.test_name 
+    join fs_test_to_uniq_test fttut on fttut.commit_sha = ftco.commit_sha and fttut.orig_test_name = ftco.test_name
+    where ftco.order_num > -1
+  )
+  group by fttut.commit_sha,fttut.module
+);
 
-select distinct fe.short_sha,fe.test_name from fs_experiment fe join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha where ftco.order_num > -1 and fe.test_file_is_empty > 0;
+
+-- tests_found_in_first_sha.csv - 118 
+comm -12 <( cat first-sha-found-tests-982.csv | rev | cut -d'.' -f-2 | rev | sort -u ) <( cat tests_compiled-295.csv | rev | cut -d'.' -f-2 | rev | sort -u ) | wc -l
+
+-- 65 tests that were found from iDFlakies rerun and is flaky again in first sha
+comm -12 <( cat uniq-flaky-tests-from-idflakies-rerun.csv | rev | cut -d'.' -f-2 | rev | sort -u ) <(sort -u tests_found_in_first_sha-118.csv | tr -d '\r' ) | wc -l
+
+-- 129 tests that were found from iDFlakies and compiles
+comm -12 uniq-flaky-tests-from-idflakies-rerun.csv <(sort -u tests_compiled-295.csv | tr -d '\r' ) | wc -l
+
+-- Check whether any test name is mapped to multiple modules (bug in database if there is)
+select test_name,commit_sha,count(module) from fs_idflakies_vers_results group by test_name,commit_sha having count(module) > 1;
+
+
+-- 922 tests names of iDFlakies rerun 
+cat flaky-test-in-idflakies-rerun.csv  | cut -d',' -f 4 | sort -u > uniq-flaky-tests-from-idflakies-rerun.csv
 
 -- Unique first sha that finds FT
 SELECT count(distinct p.commit_sha)
@@ -168,8 +195,13 @@ FROM flaky_test_failures ftf
 JOIN fs_subj_test_raw fstr on fstr.test_name = ftf.test_name and ftf.commit_sha = fstr.commit_sha;
 
 
--- # of unique flaky tests found from first SHAs
+-- # of unique flaky tests found from first SHAs - 982 (first-sha-found-tests.csv)
 SELECT count(distinct ftf.test_name)
+FROM flaky_test_failures ftf
+JOIN fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
+WHERE ftco.order_num > -1;
+
+SELECT distinct ftf.test_name
 FROM flaky_test_failures ftf
 JOIN fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
 WHERE ftco.order_num > -1;
@@ -187,11 +219,25 @@ select count(distinct module) from fs_subj_test_raw;
 select count(distinct ftf.test_name) from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha;
 
 -- # of flaky tests union of iDFlakies ICST version and iDFlakies rerun
-select count()
+select count(distinct test_name)
 FROM ( 
 select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha
 UNION
 select slug,commit_sha,test_name from fs_subj_test_raw);
+
+select count()
+from (
+  select ftf.test_name, ftf.flaky_type,ftf.commit_sha
+  from (
+    select distinct test_name, commit_sha
+    FROM ( 
+    select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha
+    UNION
+    select slug,commit_sha,test_name from fs_subj_test_raw)
+  ) p
+  join flaky_test_failures ftf on ftf.test_name = p.test_name and ftf.commit_sha = p.commit_sha
+);
+
 
 -- # of flaky tests union of iDFlakies ICST version and iDFlakies rerun that we do not have first sha results for - 831
 select p.slug,p.commit_sha,p.test_name
