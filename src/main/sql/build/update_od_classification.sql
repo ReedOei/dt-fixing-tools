@@ -447,29 +447,8 @@ left join flaky_test ft on ftl.flaky_test_id = ft.id and ft.commit_sha = dr.comm
 left join flaky_test_classification ftc on ft.name = ftc.test_name and ftc.commit_sha = dr.commit_sha
 group by dr.id, dr.round_type, dr.commit_sha;
 
-create view fs_rq1_tests_found_in_first_sha_details as 
-select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha
-from flaky_test_failures ftf
-join fs_test_commit_order ftco on ftf.commit_sha = ftco.commit_sha
-join (
-  select distinct ft.name as test_name
-  from flaky_test ft
-  join (
-    select distinct ft.class_test_name,ft.name
-    from fs_rq1_tests_compiled p
-    join flaky_test ft on ft.name = p.test_name
-  ) p on p.class_test_name = ft.class_test_name
-) p on p.test_name = ftf.test_name
-where ftco.order_num > -1
-group by ftf.subject_name,ftf.test_name,ftf.flaky_type;
 
-create view fs_rq1_first_sha_flaky_info as
-select ftf.subject_name, ftf.test_name, ftf.round_type, ftf.flaky_type, ftf.failures, ftf.rounds, ftf.commit_sha
-from flaky_test_failures ftf
-join fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
-where ftco.order_num > -1;
-
--------
+------- Modules
 create view fs_rq1_modules_compiled as
 select distinct frm.commit_sha,frm.module 
 from fs_experiment_mapped fe 
@@ -491,7 +470,12 @@ join fs_test_commit_order ftco on ftco.commit_sha = fttut.commit_sha
 join fs_rq1_tests_with_first_sha fivr on fivr.test_name = fttut.orig_test_name 
 where ftco.order_num > -1;
 
--------
+------- Tests
+create view fs_tests_found_only_in_first_sha_mapping as
+select distinct fps.idf_test_name, fps.idf_sha, fps.idf_module, fps.first_test_name, fps.first_sha,fps.first_module
+from fs_prior_sha_to_idf_sha fps
+join fs_test_commit_order ftco on ftco.commit_sha = fps.first_sha and fps.idf_test_name = ftco.test_name;
+
 create view fs_prior_sha_to_idf_sha as
 select distinct fivr.test_name as idf_test_name, fivr.commit_sha as idf_sha, fivr.module as idf_module, ftf.test_name as first_test_name, ftf.commit_sha as first_sha, ftf.subject_name as first_module
 from fs_idflakies_vers_results fivr
@@ -500,17 +484,21 @@ join flaky_test_failures ftf on ftf.test_name = fit.new_test_name
 join fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
 where ftco.order_num > -1;
 
-create view fs_idf_to_first_test_name as
-select p.new_test_name,p.orig_test_name
-from (
-  select distinct ft.name as new_test_name, p.name as orig_test_name
+create view fs_rq1_tests_found_in_first_sha_details as 
+select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha
+from flaky_test_failures ftf
+join fs_test_commit_order ftco on ftf.commit_sha = ftco.commit_sha
+join (
+  select distinct ft.name as test_name
   from flaky_test ft
   join (
     select distinct ft.class_test_name,ft.name
     from fs_rq1_tests_compiled p
     join flaky_test ft on ft.name = p.test_name
   ) p on p.class_test_name = ft.class_test_name
-) p;
+) p on p.test_name = ftf.test_name
+where ftco.order_num > -1
+group by ftf.subject_name,ftf.test_name,ftf.flaky_type;
 
 create view fs_rq1_tests_compiled as
 select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds
@@ -535,7 +523,25 @@ JOIN flaky_test_failures ftf on ftf.test_name = fivr.test_name and fivr.commit_s
 WHERE ftco.order_num > -1
 group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
 
---------
+-------- etc
+create view fs_rq1_first_sha_flaky_info as
+select ftf.subject_name, ftf.test_name, ftf.round_type, ftf.flaky_type, ftf.failures, ftf.rounds, ftf.commit_sha
+from flaky_test_failures ftf
+join fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
+where ftco.order_num > -1;
+
+create view fs_idf_to_first_test_name as
+select p.new_test_name,p.orig_test_name
+from (
+  select distinct ft.name as new_test_name, p.name as orig_test_name
+  from flaky_test ft
+  join (
+    select distinct ft.class_test_name,ft.name
+    from fs_rq1_tests_compiled p
+    join flaky_test ft on ft.name = p.test_name
+  ) p on p.class_test_name = ft.class_test_name
+) p;
+
 create view fs_experiment_mapped as
 select fe.slug, fttut.uniq_test_name as test_name, fe.test_name as orig_test_name, fe.short_sha, fe.test_file_is_empty
 from fs_experiment fe
