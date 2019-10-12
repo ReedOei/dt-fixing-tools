@@ -478,20 +478,17 @@ where fe.test_file_is_empty > 0
 group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
 
 create view fs_rq1_modules_compiled as
-select distinct ftco.commit_sha,fttut.module 
+select distinct frm.commit_sha,frm.module 
 from fs_experiment fe 
-join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha 
-join fs_idflakies_vers_results fivr on fivr.test_name = ftco.test_name
-join fs_test_to_uniq_test fttut on fttut.commit_sha = ftco.commit_sha and fttut.orig_test_name = ftco.test_name
-where ftco.order_num > -1 and fe.test_file_is_empty > 0;
+join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha
+join fs_rq1_modules_with_first_sha frm on frm.commit_sha = ftco.commit_sha
+where fe.test_file_is_empty > 0;
 
 create view fs_rq1_modules_tried_compiling as
-select distinct ftco.commit_sha,fttut.module 
+select distinct frm.commit_sha,frm.module 
 from fs_experiment fe 
-join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha 
-join fs_idflakies_vers_results fivr on fivr.test_name = ftco.test_name 
-join fs_test_to_uniq_test fttut on fttut.commit_sha = ftco.commit_sha and fttut.orig_test_name = ftco.test_name
-where ftco.order_num > -1;
+join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha
+join fs_rq1_modules_with_first_sha frm on frm.commit_sha = ftco.commit_sha;
 
 create view fs_rq1_tests_tried_compiling as
 select distinct frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha,frt.failures,frt.rounds
@@ -527,20 +524,19 @@ from (
   ) p on p.class_test_name = ft.class_test_name
 ) p;
 
-create view fs_sha_mod_map as
-select distinct fivr.commit_sha as idflakies_sha, fivr.module as idflakies_module, ftco.commit_sha as first_sha, ftf.subject_name as first_sha_module
-from fs_idflakies_vers_results fivr
-join fs_test_commit_order ftco on fivr.test_name = ftco.test_name
-join flaky_test_failures ftf on ftf.commit_sha = ftco.commit_sha
-where ftco.order_num > -1;
+-- create view fs_sha_mod_map as
+-- select distinct fivr.commit_sha as idflakies_sha, fivr.module as idflakies_module, ftco.commit_sha as first_sha, ftf.subject_name as first_sha_module
+-- from fs_idflakies_vers_results fivr
+-- join fs_test_commit_order ftco on fivr.test_name = ftco.test_name
+-- join flaky_test_failures ftf on ftf.commit_sha = ftco.commit_sha
+-- where ftco.order_num > -1;
 
 create view fs_prior_sha_to_idf_sha as
 select distinct fivr.test_name as idf_test_name, fivr.commit_sha as idf_sha, fivr.module as idf_module, ftf.test_name as first_test_name, ftf.commit_sha as first_sha, ftf.subject_name as first_module
 from fs_idflakies_vers_results fivr
-join fs_sha_mod_map fsmm on fsmm.idflakies_sha = fivr.commit_sha and fsmm.idflakies_module = fivr.module
 join fs_idf_to_first_test_name fit on fit.orig_test_name = fivr.test_name
-join flaky_test_failures ftf on ftf.test_name = fit.new_test_name and fsmm.first_sha = ftf.commit_sha and fsmm.first_sha_module = ftf.subject_name
-join fs_test_commit_order ftco on ftco.test_name = fivr.test_name
+join flaky_test_failures ftf on ftf.test_name = fit.new_test_name
+join fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
 where ftco.order_num > -1;
 
 create view fs_first_sha_to_idf_sha as
