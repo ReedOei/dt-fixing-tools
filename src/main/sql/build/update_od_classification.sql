@@ -478,8 +478,9 @@ join flaky_test_failures_condensed ftf on ftf.subject_name = ftfo.first_module a
 join flaky_test_failures_condensed ftf2 on ftf2.subject_name = ftfo.idf_module and ftf2.test_name = ftfo.idf_test_name and ftf2.commit_sha = ftfo.idf_sha;
 
 create view flaky_test_failures_condensed as
-select ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type,sum(ftf.failures) as failures,sum(ftf.rounds) as rounds
+select ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type,sum(ftf.failures) as failures,sum(nr.number) as rounds
 from flaky_test_failures ftf
+join num_rounds nr on nr.commit_sha = ftf.commit_sha and nr.subject_name = ftf.subject_name
 group by ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type;
 
 create view fs_tests_found_only_in_first_sha_mapping as
