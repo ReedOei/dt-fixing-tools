@@ -469,14 +469,7 @@ from flaky_test_failures ftf
 join fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
 where ftco.order_num > -1;
 
-create view fs_rq1_tests_compiled as
-select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds
-from fs_rq1_tests_tried_compiling ftf
-join fs_test_to_uniq_test fttut on ftf.test_name = fttut.orig_test_name 
-join fs_experiment fe on fe.test_name = fttut.uniq_test_name
-where fe.test_file_is_empty > 0
-group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
-
+-------
 create view fs_rq1_modules_compiled as
 select distinct frm.commit_sha,frm.module 
 from fs_experiment fe 
@@ -490,13 +483,6 @@ from fs_experiment fe
 join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha
 join fs_rq1_modules_with_first_sha frm on frm.commit_sha = ftco.commit_sha;
 
-create view fs_rq1_tests_tried_compiling as
-select distinct frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha,frt.failures,frt.rounds
-from fs_rq1_tests_with_first_sha frt
-join fs_test_to_uniq_test fttut on frt.test_name = fttut.orig_test_name 
-join fs_experiment fe on fe.test_name = fttut.uniq_test_name
-group by frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha;
-
 create view fs_rq1_modules_with_first_sha as
 select distinct fttut.commit_sha,fttut.module 
 from fs_test_to_uniq_test fttut 
@@ -504,13 +490,14 @@ join fs_test_commit_order ftco on ftco.commit_sha = fttut.commit_sha
 join fs_idflakies_vers_results fivr on fivr.test_name = fttut.orig_test_name 
 where ftco.order_num > -1;
 
-create view fs_rq1_tests_with_first_sha as
-select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,SUM(ftf.failures) as failures,SUM(ftf.rounds) as rounds
-FROM fs_idflakies_vers_results fivr 
-JOIN fs_test_commit_order ftco on ftco.test_name = fivr.test_name
-JOIN flaky_test_failures ftf on ftf.test_name = fivr.test_name and fivr.commit_sha = ftf.commit_sha
-WHERE ftco.order_num > -1
-group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
+-------
+create view fs_prior_sha_to_idf_sha as
+select distinct fivr.test_name as idf_test_name, fivr.commit_sha as idf_sha, fivr.module as idf_module, ftf.test_name as first_test_name, ftf.commit_sha as first_sha, ftf.subject_name as first_module
+from fs_idflakies_vers_results fivr
+join fs_idf_to_first_test_name fit on fit.orig_test_name = fivr.test_name
+join flaky_test_failures ftf on ftf.test_name = fit.new_test_name
+join fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
+where ftco.order_num > -1;
 
 create view fs_idf_to_first_test_name as
 select p.new_test_name,p.orig_test_name
@@ -524,6 +511,34 @@ from (
   ) p on p.class_test_name = ft.class_test_name
 ) p;
 
+create view fs_rq1_tests_compiled as
+select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds
+from fs_rq1_tests_tried_compiling ftf
+join fs_test_to_uniq_test fttut on ftf.test_name = fttut.orig_test_name 
+join fs_experiment fe on fe.test_name = fttut.uniq_test_name
+where fe.test_file_is_empty > 0
+group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
+
+create view fs_rq1_tests_tried_compiling as
+select distinct frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha,frt.failures,frt.rounds
+from fs_rq1_tests_with_first_sha frt
+join fs_test_to_uniq_test fttut on frt.test_name = fttut.orig_test_name 
+join fs_experiment fe on fe.test_name = fttut.uniq_test_name
+group by frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha;
+
+create view fs_rq1_tests_with_first_sha as
+select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,SUM(ftf.failures) as failures,SUM(ftf.rounds) as rounds
+FROM fs_idflakies_vers_results fivr 
+JOIN fs_test_commit_order ftco on ftco.test_name = fivr.test_name
+JOIN flaky_test_failures ftf on ftf.test_name = fivr.test_name and fivr.commit_sha = ftf.commit_sha
+WHERE ftco.order_num > -1
+group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
+
+--------
+create view fs_idflakies_vers_results as
+select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name,ftf.subject_name as module from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha;
+
+
 -- create view fs_sha_mod_map as
 -- select distinct fivr.commit_sha as idflakies_sha, fivr.module as idflakies_module, ftco.commit_sha as first_sha, ftf.subject_name as first_sha_module
 -- from fs_idflakies_vers_results fivr
@@ -531,23 +546,12 @@ from (
 -- join flaky_test_failures ftf on ftf.commit_sha = ftco.commit_sha
 -- where ftco.order_num > -1;
 
-create view fs_prior_sha_to_idf_sha as
-select distinct fivr.test_name as idf_test_name, fivr.commit_sha as idf_sha, fivr.module as idf_module, ftf.test_name as first_test_name, ftf.commit_sha as first_sha, ftf.subject_name as first_module
-from fs_idflakies_vers_results fivr
-join fs_idf_to_first_test_name fit on fit.orig_test_name = fivr.test_name
-join flaky_test_failures ftf on ftf.test_name = fit.new_test_name
-join fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
-where ftco.order_num > -1;
-
 create view fs_first_sha_to_idf_sha as
 select distinct t.idf_test_name,t.idf_sha,t.idf_module,t.first_test_name,t.first_sha,t.first_module
 from fs_prior_sha_to_idf_sha t
 join fs_test_commit_order ftco on ftco.test_name = t.idf_test_name and ftco.commit_sha = t.first_sha;
 -- where idf_test_name != first_test_name
 -- where first_test_name like '%TestEntityWithIndicesForJSON.should_query_using_collection_index_fromJSON%'
-
-create view fs_idflakies_vers_results as
-select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name,ftf.subject_name as module from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha;
 
 create view fs_idflakies_vers_all_results as
 select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name, fstr.module from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha
