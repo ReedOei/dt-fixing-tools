@@ -479,9 +479,10 @@ where fe.test_file_is_empty > 0;
 
 create view fs_rq1_modules_tried_compiling as
 select distinct frm.commit_sha,frm.module 
-from fs_experiment_mapped fe 
-join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha
-join fs_rq1_modules_with_first_sha frm on frm.commit_sha = ftco.commit_sha;
+from fs_rq1_modules_with_first_sha frm
+join fs_test_to_uniq_test fttut on fttut.module = frm.module and frm.commit_sha = fttut.commit_sha
+join fs_experiment_mapped fe on fe.test_name = fttut.uniq_test_name
+join fs_test_commit_order ftco on ftco.short_sha = fe.short_sha and ftco.commit_sha = frm.commit_sha;
 
 create view fs_rq1_modules_with_first_sha as
 select distinct fttut.commit_sha,fttut.module 
