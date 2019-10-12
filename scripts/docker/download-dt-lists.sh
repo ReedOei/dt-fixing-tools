@@ -17,9 +17,8 @@ for pom_path in $(find -name "pom.xml"); do
     mkdir -p "$dir/.dtfixingtools/detection-results/"
     echo "[DOWNLOAD] Downloading $module_key to $dir/.dtfixingtools/detection-results/flaky-lists.json"
 
-    wget "http://mir.cs.illinois.edu/awshi2/dt-files/$testName-data/flaky-lists.json" -O "$dir/.dtfixingtools/detection-results/flaky-lists.json"
-    # wget "http://reedoei.com/files/${module_key}-flaky-lists.json" -O "$dir/.dtfixingtools/detection-results/flaky-lists.json"
+    cp for-minimizer/${testName}.json ${dir}/.dtfixingtools/detection-results/flaky-lists.json
 
-    wget "http://mir.cs.illinois.edu/awshi2/dt-files/$testName-data/original-order" -O "$dir/.dtfixingtools/original-order"
+    cp for-minimizer/${testName}-original ${dir}/.dtfixingtools/original-order
 done
 
