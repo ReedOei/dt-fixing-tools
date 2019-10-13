@@ -16,7 +16,7 @@ for first in $(git log -G "${testNameWithParen}" --pretty=%H  | tac); do
 
   firstShaTime=$(git log $first -n1 --date=raw --format="%ad" |cut -d' ' -f1)
   iDShaTime=$(git log $idflakiesSha -n1 --date=raw --format="%ad" |cut -d' ' -f1)
-  timeDiff=(( iDShaTime - firstShaTime ))
+  timeDiff=$(( iDShaTime - firstShaTime ))
   if [[ timeDiff -lt 0 ]]; then
       timeDiff="NEGATIVE"
   fi
