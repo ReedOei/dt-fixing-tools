@@ -478,9 +478,15 @@ join flaky_test_failures_condensed ftf on ftf.subject_name = ftfo.first_module a
 join flaky_test_failures_condensed ftf2 on ftf2.subject_name = ftfo.idf_module and ftf2.test_name = ftfo.idf_test_name and ftf2.commit_sha = ftfo.idf_sha;
 
 create view flaky_test_failures_condensed as
-select ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type,sum(ftf.failures) as failures,sum(nr.number) as rounds
+select ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type,sum(ftf.failures) as failures,nr.number as rounds
 from flaky_test_failures ftf
-join num_rounds nr on nr.commit_sha = ftf.commit_sha and nr.name = ftf.subject_name and ftf.round_type = nr.round_type
+join (
+  select distinct ftf.subject_name,ftf.commit_sha,sum(nr.number) as number 
+  from flaky_test_failures ftf
+  join num_rounds nr on nr.commit_sha = ftf.commit_sha and nr.name = ftf.subject_name
+  group by ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type,ftf.round_type
+) nr on nr.commit_sha = ftf.commit_sha and nr.subject_name = ftf.subject_name
+-- where ftf.subject_name like 'Achilles-integration-test-2_1'
 group by ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type;
 
 create view fs_tests_found_only_in_first_sha_mapping as
@@ -512,8 +518,15 @@ join (
 where ftco.order_num > -1
 group by ftf.subject_name,ftf.test_name,ftf.flaky_type;
 
+create view fs_rq1_tests_did_not_compile as
+select frtc.subject_name,frtc.commit_sha,frtc.test_name,frtc.flaky_type,frtc.failures,frtc.rounds,frtc.perc_fail 
+from fs_rq1_tests_compiled frtc 
+where frtc.test_name NOT IN (
+  select idf_test_name from fs_tests_found_only_in_first_sha_mapping
+) order by perc_fail desc;
+
 create view fs_rq1_tests_compiled as
-select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds
+select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds,ftf.perc_fail
 from fs_rq1_tests_tried_compiling ftf
 join fs_test_to_uniq_test fttut on ftf.test_name = fttut.orig_test_name 
 join fs_experiment_mapped fe on fe.test_name = fttut.uniq_test_name
@@ -521,19 +534,18 @@ where fe.test_file_is_empty > 0
 group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
 
 create view fs_rq1_tests_tried_compiling as
-select distinct frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha,frt.failures,frt.rounds
+select distinct frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha,frt.failures,frt.rounds,frt.perc_fail
 from fs_rq1_tests_with_first_sha frt
 join fs_test_to_uniq_test fttut on frt.test_name = fttut.orig_test_name 
 join fs_experiment_mapped fe on fe.test_name = fttut.uniq_test_name
 group by frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha;
 
 create view fs_rq1_tests_with_first_sha as
-select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,SUM(ftf.failures) as failures,SUM(ftf.rounds) as rounds
-FROM fs_idflakies_vers_results fivr 
-JOIN fs_test_commit_order ftco on ftco.test_name = fivr.test_name
-JOIN flaky_test_failures ftf on ftf.test_name = fivr.test_name and fivr.commit_sha = ftf.commit_sha
+select distinct ftf.slug as subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds,ftf.perc_fail
+FROM fs_idflakies_vers_results ftf 
+JOIN fs_test_commit_order ftco on ftco.test_name = ftf.test_name
 WHERE ftco.order_num > -1
-group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
+group by ftf.slug,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
 
 -------- etc
 create view fs_rq1_first_sha_flaky_info as
@@ -560,7 +572,14 @@ from fs_experiment fe
 join fs_test_to_uniq_test fttut on fttut.orig_test_name = fe.test_name;
 
 create view fs_idflakies_vers_results as
-select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name,ftf.subject_name as module from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha;
+select fivr.slug,ftf.subject_name as module,ftf.test_name,ftf.commit_sha,ftf.flaky_type,ftf.failures,ftf.rounds,(10000*ftf.failures)/ftf.rounds as perc_fail 
+from fs_idflakies_vers fivr 
+join flaky_test_failures_condensed ftf 
+where ftf.test_name = fivr.test_name and ftf.commit_sha = fivr.commit_sha;
+
+create view fs_idflakies_vers as
+select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name,ftf.subject_name as module 
+from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha;
 
 
 -- create view fs_sha_mod_map as
