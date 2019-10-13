@@ -471,7 +471,6 @@ select fe.slug, fttut.uniq_test_name as test_name, fe.test_name as orig_test_nam
 from fs_experiment fe
 join fs_test_to_uniq_test fttut on fttut.orig_test_name = fe.test_name;
 
-
 -- create view fs_sha_mod_map as
 -- select distinct fivr.commit_sha as idflakies_sha, fivr.module as idflakies_module, ftco.commit_sha as first_sha, ftf.subject_name as first_sha_module
 -- from fs_idflakies_vers_results fivr
@@ -503,13 +502,18 @@ create view flaky_test_failures_condensed as
 select ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type,sum(ftf.failures) as failures,nr.number as rounds
 from flaky_test_failures ftf
 join (
-  select distinct ftf.subject_name,ftf.commit_sha,sum(nr.number) as number 
+  select distinct ftf.subject_name,ftf.commit_sha,nr.number
   from flaky_test_failures ftf
-  join num_rounds nr on nr.commit_sha = ftf.commit_sha and nr.name = ftf.subject_name
+  join num_rounds_condensed nr on nr.commit_sha = ftf.commit_sha and nr.name = ftf.subject_name
   group by ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type,ftf.round_type
 ) nr on nr.commit_sha = ftf.commit_sha and nr.subject_name = ftf.subject_name
 -- where ftf.subject_name like 'Achilles-integration-test-2_1'
 group by ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type;
+
+create view num_rounds_condensed as
+select nr.commit_sha,nr.name,sum(nr.number) as number
+from num_rounds nr
+group by nr.commit_sha, nr.name;
 
 insert into fs_idflakies_vers_results
 select fivr.slug,ftf.subject_name as module,ftf.test_name,ftf.commit_sha,ftf.flaky_type,ftf.failures,ftf.rounds,(10000*ftf.failures)/ftf.rounds as perc_fail 
@@ -529,6 +533,23 @@ JOIN
     ORDER BY ftco.commit_sha) ufv ON ftco.commit_sha = ufv.commit_sha
 JOIN fs_idflakies_vers_results fivr ON fivr.test_name = ftco.test_name AND fivr.module = ufv.module;
 
+create view fs_idf_first_mapping as
+select distinct fivr.slug,fivr.test_name as idf_name, fivr.module as idf_module, fivr.commit_sha as idf_sha, fivr.flaky_type as idf_flaky_type,fivr.failures as idf_failures,fivr.rounds as idf_rounds,fivr.perc_fail as idf_perc_fail, fit.new_test_name as first_name, fut.module as first_module, fut.uniq_test_name as first_sha, fut.commit_sha as idf_uniq_name
+-- from fs_only_idflakies_vers_results fivr
+from fs_idflakies_vers_results fivr
+LEFT JOIN fs_test_to_uniq_test fttut on fivr.test_name = fttut.orig_test_name -- and fttut.module = fivr.module
+LEFT JOIN fs_uniq_test_to_fs_sha_mod fut on fut.commit_sha = fttut.uniq_test_name and fttut.commit_sha = fut.uniq_test_name
+LEFT JOIN fs_idf_to_first_test_name fit on fit.orig_test_name = fivr.test_name;
+
+create view fs_idf_first_mapping_first_round as
+select distinct fifm.slug, fifm.idf_name, fifm.idf_module, fifm.idf_sha, fifm.idf_flaky_type, fifm.idf_failures, fifm.idf_rounds, fifm.idf_perc_fail, fifm.first_name, fifm.first_module, fifm.first_sha, fifm.idf_uniq_name, nr.number as first_rounds 
+from fs_idf_first_mapping fifm 
+LEFT join num_rounds_condensed nr on nr.commit_sha = fifm.first_sha and nr.name = fifm.first_module;
+
+insert into fs_idflakies_vers_results_all
+select distinct fifm.slug, fifm.idf_name, fifm.idf_module, fifm.idf_sha, fifm.idf_flaky_type, fifm.idf_failures, fifm.idf_rounds, fifm.idf_perc_fail, fifm.first_name, fifm.first_module, fifm.first_sha, fifm.idf_uniq_name, ftf.flaky_type as first_flaky_type, ftf.failures as first_failures, fifm.first_rounds, (10000*ftf.failures)/fifm.first_rounds as first_perc_fail
+from fs_idf_first_mapping_first_round fifm 
+LEFT join flaky_test_failures_condensed ftf on ftf.test_name = fifm.first_name and ftf.commit_sha = fifm.first_sha and ftf.subject_name = fifm.first_module;
 
 
 ------- Modules
