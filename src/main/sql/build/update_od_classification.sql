@@ -533,14 +533,14 @@ join fs_experiment_mapped fe on fe.test_name = fttut.uniq_test_name
 where fe.test_file_is_empty > 0
 group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
 
-create view fs_rq1_tests_tried_compiling as
+insert into fs_rq1_tests_tried_compiling
 select distinct frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha,frt.failures,frt.rounds,frt.perc_fail
 from fs_rq1_tests_with_first_sha frt
 join fs_test_to_uniq_test fttut on frt.test_name = fttut.orig_test_name 
 join fs_experiment_mapped fe on fe.test_name = fttut.uniq_test_name
 group by frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha;
 
-create view fs_rq1_tests_with_first_sha as
+insert into fs_rq1_tests_with_first_sha
 select distinct ftf.slug as subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds,ftf.perc_fail
 FROM fs_idflakies_vers_results ftf 
 JOIN fs_test_commit_order ftco on ftco.test_name = ftf.test_name
@@ -571,15 +571,16 @@ select fe.slug, fttut.uniq_test_name as test_name, fe.test_name as orig_test_nam
 from fs_experiment fe
 join fs_test_to_uniq_test fttut on fttut.orig_test_name = fe.test_name;
 
-create view fs_idflakies_vers_results as
+insert into fs_idflakies_vers_results
 select fivr.slug,ftf.subject_name as module,ftf.test_name,ftf.commit_sha,ftf.flaky_type,ftf.failures,ftf.rounds,(10000*ftf.failures)/ftf.rounds as perc_fail 
 from fs_idflakies_vers fivr 
 join flaky_test_failures_condensed ftf 
 where ftf.test_name = fivr.test_name and ftf.commit_sha = fivr.commit_sha;
 
-create view fs_idflakies_vers as
+insert into fs_idflakies_vers
 select distinct fstr.slug as slug,fstr.commit_sha as commit_sha,ftf.test_name as test_name,ftf.subject_name as module 
-from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha;
+from flaky_test_failures ftf 
+join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha;
 
 
 -- create view fs_sha_mod_map as
@@ -604,7 +605,7 @@ select slug,commit_sha,test_name,module from fs_subj_test_raw;
 -- real only in idflakies rerun tests
 -- select count(distinct ftf.test_name) as test_name from flaky_test_failures ftf join fs_subj_test_raw fstr on fstr.commit_sha = ftf.commit_sha where ftf.test_name NOT IN (select fstr.test_name from fs_subj_test_raw fstr);
 
-create view fs_test_to_uniq_test as
+insert into fs_test_to_uniq_test
 SELECT ftco.test_name as orig_test_name,ufv.commit_sha,ufv.module,ufv.test_name as uniq_test_name
 FROM fs_test_commit_order ftco
 JOIN
