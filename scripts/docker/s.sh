@@ -25,9 +25,9 @@ for first in $(git log -G "${testNameWithParen}" --pretty=%H  | tac); do
   
   firstChangedFiles=$(git show $first --numstat --format=oneline | sed '1d ; /^\s*$/d' | wc -l)
   firstAddedLines=0
-  for n in $(git show $first --numstat --format=oneline | sed '1d ; /^\s*$/d' | cut -d' ' -f1); do ((firstAddedLines += $n)); done
+  for n in $(git show $first --numstat --format=oneline | sed -E '1d ; /^\s*$/d ; s/[[:blank:]]/ /g' | cut -d' ' -f1); do ((firstAddedLines += $n)); done
   firstRemovedLines=0
-  for n in $(git show $first --numstat --format=oneline | sed '1d ; /^\s*$/d' | cut -d' ' -f2); do ((firstRemovedLines += $n)); done
+  for n in $(git show $first --numstat --format=oneline | sed -E '1d ; /^\s*$/d ; s/[[:blank:]]/ /g' | cut -d' ' -f2); do ((firstRemovedLines += $n)); done
   echo "Files changed in first ($first) commit: $firstChangeFiles" >> $outputFile
   echo "Lines added in first ($first) commit: $firstAddedLines" >> $outputFile
   echo "Lines removed in first ($first) commit: $firstRemovedLines" >> $outputFile
