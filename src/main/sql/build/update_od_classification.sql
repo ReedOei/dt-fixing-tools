@@ -571,17 +571,7 @@ select fe.slug, fttut.uniq_test_name as test_name, fe.test_name as orig_test_nam
 from fs_experiment fe
 join fs_test_to_uniq_test fttut on fttut.orig_test_name = fe.test_name;
 
-insert into fs_idflakies_vers_results
-(
-  slug,
-  module,
-  test_name,
-  commit_sha,
-  flaky_type,
-  failures,
-  rounds,
-  perc_fail
-)
+create view fs_idflakies_vers_results as
 select fivr.slug,ftf.subject_name as module,ftf.test_name,ftf.commit_sha,ftf.flaky_type,ftf.failures,ftf.rounds,(10000*ftf.failures)/ftf.rounds as perc_fail 
 from fs_idflakies_vers fivr 
 join flaky_test_failures_condensed ftf 
