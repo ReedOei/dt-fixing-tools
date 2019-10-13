@@ -451,44 +451,6 @@ create table test_patch
   foreign key(test_name) references original_order(test_name)
 );
 
-create table fs_rq1_tests_tried_compiling
-(
-  subject_name text not null,
-  test_name text not null,
-  flaky_type text not null check(flaky_type in ('NO', 'OD')),
-  commit_sha text not null,
-  failures integer not null,
-  rounds integer not null,
-  perc_fail integer not null,
-  foreign key(test_name) references fs_rq1_tests_with_first_sha(test_name)
-);
-
-create table fs_rq1_tests_with_first_sha
-(
-  subject_name text not null,
-  test_name text not null,
-  flaky_type text not null check(flaky_type in ('NO', 'OD')),
-  commit_sha text not null,
-  failures integer not null,
-  rounds integer not null,
-  perc_fail integer not null,
-  foreign key(test_name) references fs_idflakies_vers_results(test_name)
-);
-
-create table fs_idflakies_vers_results
-(
-  slug text not null,
-  module text not null,
-  test_name text not null,
-  commit_sha text not null,
-  flaky_type text not null check(flaky_type in ('NO', 'OD')),
-  failures integer not null,
-  rounds integer not null,
-  perc_fail integer not null,
-
-  foreign key(test_name) references fs_idflakies_vers(test_name)
-);
-
 create table fs_idflakies_vers
 (
   slug text not null,
@@ -505,5 +467,43 @@ create table fs_test_to_uniq_test
   uniq_test_name text not null,
 
   foreign key(test_name) references fs_idflakies_vers(test_name)
+);
+
+create table fs_idflakies_vers_results
+(
+  slug text not null,
+  module text not null,
+  test_name text not null,
+  commit_sha text not null,
+  flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  failures integer not null,
+  rounds integer not null,
+  perc_fail integer not null,
+
+  foreign key(test_name) references fs_idflakies_vers(test_name)
+);
+
+create table fs_rq1_tests_with_first_sha
+(
+  subject_name text not null,
+  test_name text not null,
+  flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  commit_sha text not null,
+  failures integer not null,
+  rounds integer not null,
+  perc_fail integer not null,
+  foreign key(test_name) references fs_idflakies_vers_results(test_name)
+);
+
+create table fs_rq1_tests_tried_compiling
+(
+  subject_name text not null,
+  test_name text not null,
+  flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  commit_sha text not null,
+  failures integer not null,
+  rounds integer not null,
+  perc_fail integer not null,
+  foreign key(test_name) references fs_rq1_tests_with_first_sha(test_name)
 );
 
