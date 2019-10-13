@@ -7,6 +7,14 @@ create table subject_raw
   test_loc integer not null
 );
 
+create table fs_uniq_test_to_fs_sha_mod
+(
+  id integer primary key,    
+  module text not null,
+  uniq_test_name text not null,
+  commit_sha text not null
+);
+
 create table subject
 (
   name text primary key,

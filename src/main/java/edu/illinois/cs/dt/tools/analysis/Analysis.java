@@ -427,6 +427,7 @@ public class Analysis extends StandardMain {
                 .insertSingleRow();
     }
 
+
     private String GetInputCSVSha(final String slug, final Path fileLocPath) throws SQLException, IOException {
         if (!Files.exists(fileLocPath)) {
             return "";
@@ -480,12 +481,12 @@ public class Analysis extends StandardMain {
             !FileUtil.readFile(path.resolve("error")).contains(NoPassingOrderException.class.getSimpleName())) {
 //            insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
 
-            insertDetectionResults(moduleName, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
 
             insertVerificationResults(moduleName, "smart-shuffle-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
             insertVerificationResults(moduleName, "smart-shuffle-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
@@ -1092,7 +1093,7 @@ public class Analysis extends StandardMain {
     }
 
     private void insertDetectionResults(final String name, final String roundType, final Path path,
-                                        final String commitSha) throws IOException {
+                                        final String commitSha, final String uniqTestName) throws IOException {
         final Path detectionResults = path.resolve(roundType);
 
         if (!Files.exists(detectionResults)) {
@@ -1102,6 +1103,12 @@ public class Analysis extends StandardMain {
         final ListEx<Path> paths = listFiles(detectionResults);
         System.out.println("[INFO] Inserting " + roundType + " detection results for " + name
                 + " (" + paths.size() + " results)");
+
+        sqlite.statement(SQLStatements.INSERT_FS_UNIQ_TEST_TO_FS_SHA_MOD)
+                .param(name)
+                .param(commitSha)
+                .param(uniqTestName)
+                .insertSingleRow();
 
         for (int i = 0; Files.exists(detectionResults.resolve("round" + i + ".json")); i++) {
 
