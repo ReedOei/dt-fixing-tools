@@ -466,7 +466,7 @@ create table fs_test_to_uniq_test
   module text not null,
   uniq_test_name text not null,
 
-  foreign key(test_name) references fs_idflakies_vers(test_name)
+  foreign key(orig_test_name) references fs_idflakies_vers(test_name)
 );
 
 create table fs_idflakies_vers_results
