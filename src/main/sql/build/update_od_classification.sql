@@ -375,9 +375,9 @@ from
 --inner join original_order o on info.subject_name = o.subject_name and info.test_name = o.test_name and o.commit_sha = info.commit_sha;
 
 insert into num_rounds
-select subject_name, round_type, count(*) as number
+select subject_name, round_type, commit_sha, count(*) as number
 from detection_round
-group by subject_name, round_type;
+group by subject_name, round_type, commit_sha;
 
 create temporary table temp
 (
@@ -471,6 +471,18 @@ join fs_rq1_tests_with_first_sha fivr on fivr.test_name = fttut.orig_test_name
 where ftco.order_num > -1;
 
 ------- Tests
+create view fs_tests_found_only_in_first_sha_mapping_failures as
+select ftfo.idf_test_name, ftfo.idf_sha, ftfo.idf_module, ftf2.flaky_type as idf_flaky_type, CAST(ftf2.failures as integer) as idf_failures, CAST(ftf2.rounds as integer) as idf_rounds, ftfo.first_test_name, ftfo.first_sha,ftfo.first_module, ftf.flaky_type as first_flaky_type, CAST(ftf.failures as integer) as first_failures, CAST(ftf.rounds as integer) as first_rounds
+from fs_tests_found_only_in_first_sha_mapping ftfo
+join flaky_test_failures_condensed ftf on ftf.subject_name = ftfo.first_module and ftf.test_name = ftfo.first_test_name and ftf.commit_sha = ftfo.first_sha
+join flaky_test_failures_condensed ftf2 on ftf2.subject_name = ftfo.idf_module and ftf2.test_name = ftfo.idf_test_name and ftf2.commit_sha = ftfo.idf_sha;
+
+create view flaky_test_failures_condensed as
+select ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type,sum(ftf.failures) as failures,sum(nr.number) as rounds
+from flaky_test_failures ftf
+join num_rounds nr on nr.commit_sha = ftf.commit_sha and nr.name = ftf.subject_name and ftf.round_type = nr.round_type
+group by ftf.subject_name,ftf.test_name,ftf.commit_sha,ftf.flaky_type;
+
 create view fs_tests_found_only_in_first_sha_mapping as
 select distinct fps.idf_test_name, fps.idf_sha, fps.idf_module, fps.first_test_name, fps.first_sha,fps.first_module
 from fs_prior_sha_to_idf_sha fps

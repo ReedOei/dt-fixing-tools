@@ -222,6 +222,7 @@ create table num_rounds
 (
   name text not null,
   round_type text not null,
+  commit_sha text not null,
   number integer not null,
 
   foreign key(name) references subject(name)
