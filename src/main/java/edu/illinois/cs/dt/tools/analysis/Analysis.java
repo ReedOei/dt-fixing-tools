@@ -1093,7 +1093,7 @@ public class Analysis extends StandardMain {
     }
 
     private void insertDetectionResults(final String name, final String roundType, final Path path,
-                                        final String commitSha, final String uniqTestName) throws IOException {
+                                        final String commitSha, final String uniqTestName) throws IOException, SQLException {
         final Path detectionResults = path.resolve(roundType);
 
         if (!Files.exists(detectionResults)) {
