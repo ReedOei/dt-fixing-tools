@@ -519,14 +519,14 @@ where ftco.order_num > -1
 group by ftf.subject_name,ftf.test_name,ftf.flaky_type;
 
 create view fs_rq1_tests_did_not_compile as
-select frtc.subject_name,frtc.commit_sha,frtc.test_name,frtc.flaky_type,frtc.failures,frtc.rounds,frt.perc_fail 
+select frtc.subject_name,frtc.commit_sha,frtc.test_name,frtc.flaky_type,frtc.failures,frtc.rounds,frtc.perc_fail 
 from fs_rq1_tests_compiled frtc 
 where frtc.test_name NOT IN (
   select idf_test_name from fs_tests_found_only_in_first_sha_mapping
 ) order by perc_fail desc;
 
 create view fs_rq1_tests_compiled as
-select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds,frt.perc_fail
+select distinct ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds,ftf.perc_fail
 from fs_rq1_tests_tried_compiling ftf
 join fs_test_to_uniq_test fttut on ftf.test_name = fttut.orig_test_name 
 join fs_experiment_mapped fe on fe.test_name = fttut.uniq_test_name
