@@ -1,3 +1,15 @@
+create table fs_idflakies_vers_results
+(
+  slug text not null,
+  module text not null,
+  test_name text not null,
+  commit_sha text not null,
+  flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  failures integer not null,
+  rounds integer not null,
+  perc_fail integer not null,
+);
+
 create table subject_raw
 (
   slug text primary key,
