@@ -539,7 +539,7 @@ JOIN
 JOIN fs_idflakies_vers_results fivr ON fivr.test_name = ftco.test_name AND fivr.module = ufv.module;
 
 create view fs_idf_first_mapping as
-select distinct fivr.slug,fivr.test_name as idf_name, fivr.module as idf_module, fivr.commit_sha as idf_sha, fivr.flaky_type as idf_flaky_type,fivr.failures as idf_failures,fivr.rounds as idf_rounds,fivr.perc_fail as idf_perc_fail, fit.new_test_name as first_name, fut.module as first_module, fut.uniq_test_name as first_sha, fut.commit_sha as idf_uniq_name
+select distinct fivr.slug,fivr.test_name as idf_name, fivr.module as idf_module, fivr.commit_sha as idf_sha, fivr.flaky_type as idf_flaky_type,fivr.failures as idf_failures,fivr.rounds as idf_rounds,fivr.perc_fail as idf_perc_fail, fit.new_test_name as first_name, fut.module as first_module, fut.commit_sha as first_sha, fut.uniq_test_name as idf_uniq_name
 -- from fs_only_idflakies_vers_results fivr
 from fs_idflakies_vers_results fivr
 LEFT JOIN fs_test_to_uniq_test fttut on fivr.test_name = fttut.orig_test_name -- and fttut.module = fivr.module
