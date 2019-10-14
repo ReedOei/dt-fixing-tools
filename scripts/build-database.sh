@@ -12,6 +12,9 @@ if [[ $1 == "" ]] || [[ $2 == "" ]] || [[ $3 == "" ]] || [[ $4 == "" ]]; then
     exit
 fi
 
+echo "Building database"
+date
+
 results_folder="$1"
 database="$2"
 subject_list="$3"
@@ -47,3 +50,6 @@ mvn install -DskipTests exec:java \
 #bash "$scripts_folder/update-fix-method-order.sh" "$database" "$subject_list"
 
 cat "$scripts_folder/../src/main/sql/build/update_od_classification.sql" | sqlite3 "$database"
+
+echo "Done building database"
+date
