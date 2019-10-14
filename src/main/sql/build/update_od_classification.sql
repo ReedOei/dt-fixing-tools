@@ -448,6 +448,10 @@ left join flaky_test_classification ftc on ft.name = ftc.test_name and ftc.commi
 group by dr.id, dr.round_type, dr.commit_sha;
 
 -------- etc
+create view fs_module_map_no_dup as
+select distinct fmm.potential_module,fmm.module
+from fs_module_map fmm;
+
 create view fs_rq1_first_sha_flaky_info as
 select ftf.subject_name, ftf.test_name, ftf.round_type, ftf.flaky_type, ftf.failures, ftf.rounds, ftf.commit_sha
 from flaky_test_failures ftf

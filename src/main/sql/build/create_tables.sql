@@ -78,7 +78,7 @@ create table fs_file_loc
 
 create table fs_module_map
 (
-  potential_module text primary key,
+  potential_module text not null,
   module text not null
 );
 
