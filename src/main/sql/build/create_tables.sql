@@ -510,7 +510,7 @@ create table fs_idflakies_vers_results_all
   first_rounds integer not null,
   first_perc_fail integer not null,
 
-  foreign key(test_name) references fs_idflakies_vers_results(test_name)
+  foreign key(idf_name) references fs_idflakies_vers_results(test_name)
 );
 
 create table fs_rq1_tests_with_first_sha
