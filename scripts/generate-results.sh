@@ -16,12 +16,19 @@ rqNum=$2
 outputDir=rq$rqNum-results/
 mkdir -p $outputDir
 
+echo "Starting generate results"
+date
+
 for f in $(ls rq$rqNum-sql/*.sql); do
-    echo "Outputting to $outputDir$(echo $f | cut -d/ -f2 | rev | cut -d. -f2- | rev).csv"
-    sqlite3 -csv $database < $f > "$outputDir$(echo $f | cut -d/ -f2 | rev | cut -d. -f2- | rev).csv"
+    outputFile="$outputDir$(echo $f | cut -d/ -f2 | rev | cut -d. -f2- | rev).csv"
+    echo "Input: $f ==== Output: $outputFile"
+    sqlite3 -header -csv $database < $f > $outputFile
+    dos2unix $outputFile
 done
 
 wc -l $outputDir/*
 
 
+echo "Done generate results"
+date
 
