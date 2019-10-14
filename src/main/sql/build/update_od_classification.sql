@@ -421,12 +421,17 @@ select subject_name, round_type, commit_sha, count(*) as n
 from detection_round
 group by subject_name, round_type, commit_sha;
 
+create view fs_module_map_no_dup as
+select distinct fmm.potential_module,fmm.module
+from fs_module_map fmm;
+
 insert into flaky_test_failures
 select i.subject_name, i.test_name, i.round_type, i.flaky_type, failures, rounds, t.commit_sha
 from
 (
-  select subject_name, t2.test_name, t2.round_type, t2.flaky_type, count(distinct detection_round_id) as failures, t2.commit_sha
+  select fmm.module as subject_name, t2.test_name, t2.round_type, t2.flaky_type, count(distinct detection_round_id) as failures, t2.commit_sha
   from temp2 t2
+  join fs_module_map_no_dup fmm on subject_name = fmm.potential_module
   group by t2.test_name, t2.round_type, t2.flaky_type, t2.commit_sha
 ) i
 inner join
@@ -448,10 +453,6 @@ left join flaky_test_classification ftc on ft.name = ftc.test_name and ftc.commi
 group by dr.id, dr.round_type, dr.commit_sha;
 
 -------- etc
-create view fs_module_map_no_dup as
-select distinct fmm.potential_module,fmm.module
-from fs_module_map fmm;
-
 create view fs_rq1_first_sha_flaky_info as
 select ftf.subject_name, ftf.test_name, ftf.round_type, ftf.flaky_type, ftf.failures, ftf.rounds, ftf.commit_sha
 from flaky_test_failures ftf
