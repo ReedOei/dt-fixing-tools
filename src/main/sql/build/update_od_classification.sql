@@ -436,8 +436,9 @@ from
 ) i
 inner join
 (
-  select subject_name, round_type, commit_sha, sum(n) as rounds
+  select fmm.potential_module as subject_name, round_type, commit_sha, sum(n) as rounds
   from temp3 t3
+  join fs_module_map_no_dup fmm on subject_name = fmm.potential_module
   group by subject_name, round_type, commit_sha
 ) t on i.round_type = t.round_type and i.subject_name = t.subject_name and t.commit_sha = i.commit_sha;
 
@@ -538,12 +539,17 @@ JOIN
     ORDER BY ftco.commit_sha) ufv ON ftco.commit_sha = ufv.commit_sha
 JOIN fs_idflakies_vers_results fivr ON fivr.test_name = ftco.test_name AND fivr.module = ufv.module;
 
+create view fs_uniq_test_to_fs_sha_mod_mapped as
+select fmm.module, fut.uniq_test_name, fut.commit_sha
+from fs_uniq_test_to_fs_sha_mod fut
+join fs_module_map_no_dup fmm on fut.module = fmm.potential_module;
+
 create view fs_idf_first_mapping as
 select distinct fivr.slug,fivr.test_name as idf_name, fivr.module as idf_module, fivr.commit_sha as idf_sha, fivr.flaky_type as idf_flaky_type,fivr.failures as idf_failures,fivr.rounds as idf_rounds,fivr.perc_fail as idf_perc_fail, fit.new_test_name as first_name, fut.module as first_module, fut.commit_sha as first_sha, fut.uniq_test_name as idf_uniq_name
 -- from fs_only_idflakies_vers_results fivr
 from fs_idflakies_vers_results fivr
 LEFT JOIN fs_test_to_uniq_test fttut on fivr.test_name = fttut.orig_test_name -- and fttut.module = fivr.module
-LEFT JOIN fs_uniq_test_to_fs_sha_mod fut on fut.uniq_test_name = fttut.uniq_test_name and fttut.commit_sha = fut.commit_sha
+LEFT JOIN fs_uniq_test_to_fs_sha_mod_mapped fut on fut.uniq_test_name = fttut.uniq_test_name and fttut.commit_sha = fut.commit_sha
 LEFT JOIN fs_idf_to_first_test_name fit on fit.orig_test_name = fivr.test_name;
 
 create view fs_idf_first_mapping_first_round as
