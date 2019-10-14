@@ -497,7 +497,7 @@ create table fs_idflakies_vers_results_all
   idf_name text not null,
   idf_module text not null,
   idf_sha text not null,
-  idf_flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  idf_flaky_type text not null check(idf_flaky_type in ('NO', 'OD')),
   idf_failures integer not null,
   idf_rounds integer not null,
   idf_perc_fail integer not null,
@@ -505,12 +505,12 @@ create table fs_idflakies_vers_results_all
   first_module text not null,
   first_sha text not null,
   idf_uniq_name text not null,
-  first_flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  first_flaky_type text not null check(first_flaky_type in ('NO', 'OD')),
   first_failures integer not null,
   first_rounds integer not null,
   first_perc_fail integer not null,
 
-  foreign key(idf_name) references fs_idflakies_vers_results(test_name)
+  foreign key(idf_nameg) references fs_idflakies_vers_results(test_name)
 );
 
 create table fs_rq1_tests_with_first_sha
