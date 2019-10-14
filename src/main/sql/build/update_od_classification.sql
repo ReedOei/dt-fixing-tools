@@ -631,11 +631,10 @@ where fe.test_file_is_empty > 0
 group by ftf.subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
 
 insert into fs_rq1_tests_with_first_sha
-select distinct ftf.slug as subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds,ftf.perc_fail
+select ftf.slug as subject_name,ftf.test_name,ftf.flaky_type,ftf.commit_sha,ftf.failures,ftf.rounds,ftf.perc_fail
 FROM fs_idflakies_vers_results ftf 
 JOIN fs_test_commit_order ftco on ftco.test_name = ftf.test_name
-WHERE ftco.order_num > -1
-group by ftf.slug,ftf.test_name,ftf.flaky_type,ftf.commit_sha;
+WHERE ftco.order_num > -1;
 
 insert into fs_rq1_tests_tried_compiling
 select distinct frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha,frt.failures,frt.rounds,frt.perc_fail

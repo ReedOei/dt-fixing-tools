@@ -377,11 +377,9 @@ public class Analysis extends StandardMain {
             // Remove /home/awshi2/ from all paths
             String fileLoc = lineArr[1].substring(13);
             String moduleLoc = lineArr[2].substring(13);
-            String moduleLocNoSlash = moduleLoc.replace('/','-');
 
-            String[] moduleLocSplit = moduleLoc.split("/");
-            String subjName = moduleLocSplit[0];
-            String moduleName = moduleLocSplit[1];
+            String moduleLocNoSlash = moduleLoc.replace('/','-');
+            String moduleName = moduleLoc.substring(moduleLoc.indexOf("/") + 1);
 
             sqlite.statement(SQLStatements.INSERT_FS_FILE_LOC)
                     .param(testName)
