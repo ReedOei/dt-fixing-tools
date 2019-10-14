@@ -140,6 +140,7 @@ public class SQLStatements {
     public static final Path INSERT_UNFINISHED_TESTS = Paths.get("src/main/sql/build/insert_unfinished_tests.sql");
     public static final Path INSERT_PR_TESTS = Paths.get("src/main/sql/build/insert_pr_tests.sql");
     public static final Path INSERT_FS_FILE_LOC = Paths.get("src/main/sql/build/insert_fs_file_loc.sql");
+    public static final Path INSERT_FS_MODULE_MAP = Paths.get("src/main/sql/build/insert_fs_module_map.sql");
     public static final Path INSERT_FS_UNIQ_TEST_TO_FS_SHA_MOD = Paths.get("src/main/sql/build/insert_fs_uniq_test_to_fs_sha_mod.sql");
     public static final Path INSERT_FS_EXPERIMENT = Paths.get("src/main/sql/build/insert_fs_experiment.sql");
     public static final Path INSERT_FS_TESTS_COMMIT_NUM = Paths.get("src/main/sql/build/insert_fs_tests_commit_num.sql");

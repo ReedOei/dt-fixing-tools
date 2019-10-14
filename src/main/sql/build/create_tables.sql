@@ -72,8 +72,16 @@ create table fs_file_loc
   test_name text not null,
   commit_sha text not null,
   file_loc text not null,
-  module_loc text not null
+  module_loc text not null,
+  module text not null
 );
+
+create table fs_module_map
+(
+  potential_module text primary key,
+  module text not null
+);
+
 
 create table fs_experiment
 (
@@ -501,14 +509,14 @@ create table fs_idflakies_vers_results_all
   idf_failures integer not null,
   idf_rounds integer not null,
   idf_perc_fail integer not null,
-  first_name text not null,
-  first_module text not null,
-  first_sha text not null,
-  idf_uniq_name text not null,
-  first_flaky_type text not null check(first_flaky_type in ('NO', 'OD')),
-  first_failures integer not null,
-  first_rounds integer not null,
-  first_perc_fail integer not null,
+  first_name text,
+  first_module text,
+  first_sha text,
+  idf_uniq_name text,
+  first_flaky_type text check(first_flaky_type in ('NO', 'OD')),
+  first_failures integer,
+  first_rounds integer,
+  first_perc_fail integer,
 
   foreign key(idf_name) references fs_idflakies_vers_results(test_name)
 );

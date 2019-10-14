@@ -377,12 +377,27 @@ public class Analysis extends StandardMain {
             // Remove /home/awshi2/ from all paths
             String fileLoc = lineArr[1].substring(13);
             String moduleLoc = lineArr[2].substring(13);
+            String moduleLocNoSlash = moduleLoc.replace('/','-');
+
+            String[] moduleLocSplit = moduleLoc.split("/");
+            String subjName = moduleLocSplit[1];
+            String moduleName = moduleLocSplit[2];
 
             sqlite.statement(SQLStatements.INSERT_FS_FILE_LOC)
                     .param(testName)
                     .param(commitSha)
                     .param(fileLoc)
                     .param(moduleLoc)
+                    .param(moduleLocNoSlash)
+                    .insertSingleRow();
+
+            sqlite.statement(SQLStatements.INSERT_FS_MODULE_MAP)
+                    .param(moduleLocNoSlash)
+                    .param(moduleLocNoSlash)
+                    .insertSingleRow();
+            sqlite.statement(SQLStatements.INSERT_FS_MODULE_MAP)
+                    .param(moduleName)
+                    .param(moduleLocNoSlash)
                     .insertSingleRow();
         }
     }
@@ -1106,8 +1121,8 @@ public class Analysis extends StandardMain {
 
         sqlite.statement(SQLStatements.INSERT_FS_UNIQ_TEST_TO_FS_SHA_MOD)
                 .param(name)
-                .param(commitSha)
                 .param(uniqTestName)
+                .param(commitSha)
                 .insertSingleRow();
 
         for (int i = 0; Files.exists(detectionResults.resolve("round" + i + ".json")); i++) {

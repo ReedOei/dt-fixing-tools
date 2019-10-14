@@ -461,7 +461,7 @@ from (
   from flaky_test ft
   join (
     select distinct ft.class_test_name,ft.name
-    from fs_rq1_tests_compiled p
+    from fs_idflakies_vers p
     join flaky_test ft on ft.name = p.test_name
   ) p on p.class_test_name = ft.class_test_name
 ) p;
@@ -538,7 +538,7 @@ select distinct fivr.slug,fivr.test_name as idf_name, fivr.module as idf_module,
 -- from fs_only_idflakies_vers_results fivr
 from fs_idflakies_vers_results fivr
 LEFT JOIN fs_test_to_uniq_test fttut on fivr.test_name = fttut.orig_test_name -- and fttut.module = fivr.module
-LEFT JOIN fs_uniq_test_to_fs_sha_mod fut on fut.commit_sha = fttut.uniq_test_name and fttut.commit_sha = fut.uniq_test_name
+LEFT JOIN fs_uniq_test_to_fs_sha_mod fut on fut.uniq_test_name = fttut.uniq_test_name and fttut.commit_sha = fut.commit_sha
 LEFT JOIN fs_idf_to_first_test_name fit on fit.orig_test_name = fivr.test_name;
 
 create view fs_idf_first_mapping_first_round as
@@ -639,3 +639,7 @@ join fs_test_to_uniq_test fttut on frt.test_name = fttut.orig_test_name
 join fs_experiment_mapped fe on fe.test_name = fttut.uniq_test_name
 group by frt.subject_name,frt.test_name,frt.flaky_type,frt.commit_sha;
 
+
+------------ Removing specific tests from flaky test failures since this test did not run first sha to the best of our knowledge (it ran latest instead...)
+DELETE FROM flaky_test_failures
+WHERE test_name = 'org.springframework.data.ebean.repository.UserRepositoryIntegrationTest.deleteById';
