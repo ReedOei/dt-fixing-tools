@@ -379,7 +379,7 @@ public class Analysis extends StandardMain {
             String moduleLoc = lineArr[2].substring(13);
 
             String moduleLocNoSlash = moduleLoc.replace('/','-');
-            String moduleName = moduleLoc.substring(moduleLoc.indexOf("/") + 1);
+            String moduleName = moduleLoc.substring(moduleLoc.indexOf("/") + 1).replace('/','-');
 
             sqlite.statement(SQLStatements.INSERT_FS_FILE_LOC)
                     .param(testName)
