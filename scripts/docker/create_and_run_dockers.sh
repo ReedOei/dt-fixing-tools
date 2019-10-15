@@ -42,6 +42,7 @@ fi
 
 # For each project,sha, make a Docker image for it
 for line in $(cat ${projfile}); do
+    echo "Starting experiment for input: $line"
     # Create the corresponding Dockerfile
     slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
     sha=$(echo ${line} | cut -d',' -f2)

@@ -1,6 +1,7 @@
 package edu.illinois.cs.dt.tools.analysis;
 
 import com.google.gson.Gson;
+import com.opencsv.CSVParser;
 import com.opencsv.CSVReader;
 import com.reedoei.eunomia.collections.ListEx;
 import com.reedoei.eunomia.io.files.FileUtil;
@@ -9,6 +10,7 @@ import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import edu.illinois.cs.dt.tools.detection.DetectionRound;
 import edu.illinois.cs.dt.tools.detection.DetectorPathManager;
+import edu.illinois.cs.dt.tools.detection.DetectorPlugin;
 import edu.illinois.cs.dt.tools.detection.NoPassingOrderException;
 import edu.illinois.cs.dt.tools.diagnosis.DiagnoserPathManager;
 import edu.illinois.cs.dt.tools.diagnosis.DiagnosisResult;
@@ -36,6 +38,7 @@ import edu.illinois.cs.dt.tools.utility.OperationTime;
 import edu.illinois.cs.dt.tools.utility.TimeManager;
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -182,8 +185,11 @@ public class Analysis extends StandardMain {
     private void insertFSSubjTestRaw(final Path path) throws SQLException, IOException {
         // File originates from combining data/icst-dataset/only-flaky/individual_split/split_by_test/comprehensive.csv
         // and data/icst-dataset/only-flaky/individual_split/split_by_test/extended.csv
-        for (final String line : Files.readAllLines(path)) {
-            String[] lineArr = line.split(",");
+
+        ListEx<ListEx<String>> csvContent = DetectorPlugin.csv(path);
+
+        for (ListEx<String> row : csvContent) {
+            String[] lineArr = row.toArray(new String[]{});
 
             if (lineArr.length != 5) {
                 continue;
@@ -372,11 +378,24 @@ public class Analysis extends StandardMain {
             String fileLoc = lineArr[1].substring(13);
             String moduleLoc = lineArr[2].substring(13);
 
+            String moduleLocNoSlash = moduleLoc.replace('/','-');
+            String moduleName = moduleLoc.substring(moduleLoc.indexOf("/") + 1).replace('/','-');
+
             sqlite.statement(SQLStatements.INSERT_FS_FILE_LOC)
                     .param(testName)
                     .param(commitSha)
                     .param(fileLoc)
                     .param(moduleLoc)
+                    .param(moduleLocNoSlash)
+                    .insertSingleRow();
+
+            sqlite.statement(SQLStatements.INSERT_FS_MODULE_MAP)
+                    .param(moduleLocNoSlash)
+                    .param(moduleLocNoSlash)
+                    .insertSingleRow();
+            sqlite.statement(SQLStatements.INSERT_FS_MODULE_MAP)
+                    .param(moduleName)
+                    .param(moduleLocNoSlash)
                     .insertSingleRow();
         }
     }
@@ -421,6 +440,7 @@ public class Analysis extends StandardMain {
                 .insertSingleRow();
     }
 
+
     private String GetInputCSVSha(final String slug, final Path fileLocPath) throws SQLException, IOException {
         if (!Files.exists(fileLocPath)) {
             return "";
@@ -463,7 +483,7 @@ public class Analysis extends StandardMain {
 
         insertModuleTestTime(slug, path.resolve(DetectorPathManager.DETECTION_RESULTS).resolve("module-test-time.csv"));
 
-        insertOriginalOrder(moduleName, path.resolve(DetectorPathManager.ORIGINAL_ORDER));
+        insertOriginalOrder(moduleName, path.resolve(DetectorPathManager.ORIGINAL_ORDER), commitSha);
 
         if (!sqlite.checkExists("subject", moduleName)) {
             insertSubject(moduleName, slug, path);
@@ -474,12 +494,12 @@ public class Analysis extends StandardMain {
             !FileUtil.readFile(path.resolve("error")).contains(NoPassingOrderException.class.getSimpleName())) {
 //            insertTestRuns(name, path.resolve(RunnerPathManager.TEST_RUNS).resolve("results"));
 
-            insertDetectionResults(moduleName, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
-            insertDetectionResults(moduleName, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
+            insertDetectionResults(moduleName, "flaky", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "random", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "random-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "reverse", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "reverse-class", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
+            insertDetectionResults(moduleName, "smart-shuffle", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha, testName);
 
             insertVerificationResults(moduleName, "smart-shuffle-verify", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
             insertVerificationResults(moduleName, "smart-shuffle-confirmation-sampling", path.resolve(DetectorPathManager.DETECTION_RESULTS), commitSha);
@@ -506,7 +526,7 @@ public class Analysis extends StandardMain {
         System.out.println();
     }
 
-    private void insertOriginalOrder(final String subjectName, final Path originalOrderPath)
+    private void insertOriginalOrder(final String subjectName, final Path originalOrderPath, final String commitSha)
             throws SQLException, IOException {
         if (Files.exists(originalOrderPath)) {
             if (!sqlite.checkExists("original_order", "subject_name", subjectName)) {
@@ -523,7 +543,7 @@ public class Analysis extends StandardMain {
                             .param(originalOrder.get(i))
                             .param(testClass(originalOrder.get(i)))
                             .param(testClass(testClass(originalOrder.get(i))))
-                            .param(i).addBatch();
+                            .param(i).param(commitSha).addBatch();
                 }
 
                 statement.executeBatch();
@@ -1086,7 +1106,7 @@ public class Analysis extends StandardMain {
     }
 
     private void insertDetectionResults(final String name, final String roundType, final Path path,
-                                        final String commitSha) throws IOException {
+                                        final String commitSha, final String uniqTestName) throws IOException, SQLException {
         final Path detectionResults = path.resolve(roundType);
 
         if (!Files.exists(detectionResults)) {
@@ -1096,6 +1116,12 @@ public class Analysis extends StandardMain {
         final ListEx<Path> paths = listFiles(detectionResults);
         System.out.println("[INFO] Inserting " + roundType + " detection results for " + name
                 + " (" + paths.size() + " results)");
+
+        sqlite.statement(SQLStatements.INSERT_FS_UNIQ_TEST_TO_FS_SHA_MOD)
+                .param(name)
+                .param(uniqTestName)
+                .param(commitSha)
+                .insertSingleRow();
 
         for (int i = 0; Files.exists(detectionResults.resolve("round" + i + ".json")); i++) {
 
@@ -1119,8 +1145,8 @@ public class Analysis extends StandardMain {
             return;
         }
 
-        final int unfilteredId = insertDependentTestList(round.unfilteredTests());
-        final int filteredId = insertDependentTestList(round.filteredTests());
+        final int unfilteredId = insertDependentTestList(round.unfilteredTests(), commitSha);
+        final int filteredId = insertDependentTestList(round.filteredTests(), commitSha);
 
         final int detectionRoundId =
                 sqlite.statement(SQLStatements.INSERT_DETECTION_ROUND)
@@ -1144,27 +1170,34 @@ public class Analysis extends StandardMain {
         }
     }
 
-    private int insertDependentTestList(final DependentTestList dependentTestList) throws IOException, SQLException {
+    private int insertDependentTestList(final DependentTestList dependentTestList, final String commitSha) throws IOException, SQLException {
         final int index = dtListIndex;
         dtListIndex++;
 
         for (DependentTest dependentTest : dependentTestList.dts()) {
-            final int dependentTestId = insertDependentTest(dependentTest);
+            final int dependentTestId = insertDependentTest(dependentTest, commitSha);
 
             sqlite.statement(SQLStatements.INSERT_FLAKY_TEST_LIST)
                     .param(index)
                     .param(dependentTestId)
+                    .param(commitSha)
                     .executeUpdate();
         }
 
         return index;
     }
 
-    private int insertDependentTest(final DependentTest dependentTest) throws SQLException {
+    private int insertDependentTest(final DependentTest dependentTest, final String commitSha) throws SQLException {
+        String[] splitPeriod = dependentTest.name().split("\\.");
+        String className = splitPeriod[splitPeriod.length - 2];
+        String testName = splitPeriod[splitPeriod.length - 1];
+
         return sqlite.statement(SQLStatements.INSERT_FLAKY_TEST)
                 .param(dependentTest.name())
                 .param(dependentTest.intended().testRunId())
                 .param(dependentTest.revealed().testRunId())
+                .param(commitSha)
+                .param(className + "." + testName)
                 .insertSingleRow();
     }
 

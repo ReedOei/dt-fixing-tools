@@ -1,0 +1,2 @@
+select distinct ftf.commit_sha,ftf.subject_name
+from fs_rq1_tests_found_in_first_sha_details ftf;

@@ -1,0 +1,2 @@
+select distinct ftf.test_name
+from fs_rq1_tests_found_in_first_sha_details ftf;

@@ -4,10 +4,12 @@ insert into original_order
   test_name,
   test_class,
   test_package,
-  order_index
+  order_index,
+  commit_sha
 )
 values
 (
+  ?,
   ?,
   ?,
   ?,

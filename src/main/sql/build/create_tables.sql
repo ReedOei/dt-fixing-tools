@@ -7,6 +7,14 @@ create table subject_raw
   test_loc integer not null
 );
 
+create table fs_uniq_test_to_fs_sha_mod
+(
+  id integer primary key,    
+  module text not null,
+  uniq_test_name text not null,
+  commit_sha text not null
+);
+
 create table subject
 (
   name text primary key,
@@ -64,8 +72,16 @@ create table fs_file_loc
   test_name text not null,
   commit_sha text not null,
   file_loc text not null,
-  module_loc text not null
+  module_loc text not null,
+  module text not null
 );
+
+create table fs_module_map
+(
+  potential_module text not null,
+  module text not null
+);
+
 
 create table fs_experiment
 (
@@ -106,6 +122,8 @@ create table flaky_test
   name text not null,
   intended_id text not null,
   revealed_id text not null,
+  commit_sha text not null,
+  class_test_name text not null,
 
   foreign key(intended_id) references test_run_result(str_id),
   foreign key(revealed_id) references test_run_result(str_id)
@@ -116,6 +134,7 @@ create table flaky_test_list
   id integer primary key,
   flaky_test_list_id integer not null,
   flaky_test_id integer not null,
+  commit_sha text not null,
 
   foreign key(flaky_test_id) references flaky_test(id)
 );
@@ -186,6 +205,7 @@ create table confirmation_runs
   passing_result text not null,
   failing_expected_result text not null,
   failing_result text not null,
+  commit_sha text not null,
 
   foreign key(test_name) references original_order(test_name)
 );
@@ -208,6 +228,7 @@ create table original_order
   test_class text not null,
   test_package text not null,
   order_index integer not null,
+  commit_sha text not null,
   fix_method_order integer not null default 0,
 
   foreign key(subject_name) references subject(name)
@@ -217,6 +238,7 @@ create table num_rounds
 (
   name text not null,
   round_type text not null,
+  commit_sha text not null,
   number integer not null,
 
   foreign key(name) references subject(name)
@@ -227,6 +249,7 @@ create table flaky_test_classification
   subject_name text not null,
   test_name text not null,
   flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  commit_sha text not null,
 
   foreign key(subject_name) references subject(name),
   foreign key(test_name) references original_order(test_name)
@@ -252,6 +275,7 @@ create table detection_round_failures
   round_type text not null,
   no_found integer not null,
   od_found integer not null,
+  commit_sha text not null,
 
   foreign key(detection_round_id) references detection_round(id)
 );
@@ -442,3 +466,82 @@ create table test_patch
   foreign key(subject_name) references subject(name),
   foreign key(test_name) references original_order(test_name)
 );
+
+create table fs_idflakies_vers
+(
+  slug text not null,
+  commit_sha text not null,
+  test_name text primary key,
+  module text not null
+);
+
+create table fs_test_to_uniq_test
+(
+  orig_test_name text not null,
+  commit_sha text not null,
+  module text not null,
+  uniq_test_name text not null,
+
+  foreign key(orig_test_name) references fs_idflakies_vers(test_name)
+);
+
+create table fs_idflakies_vers_results
+(
+  slug text not null,
+  module text not null,
+  test_name text not null,
+  commit_sha text not null,
+  flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  failures integer not null,
+  rounds integer not null,
+  perc_fail integer not null,
+
+  foreign key(test_name) references fs_idflakies_vers(test_name)
+);
+
+create table fs_idflakies_vers_results_all
+(
+  slug text not null,
+  idf_name text not null,
+  idf_module text not null,
+  idf_sha text not null,
+  idf_flaky_type text not null check(idf_flaky_type in ('NO', 'OD')),
+  idf_failures integer not null,
+  idf_rounds integer not null,
+  idf_perc_fail integer not null,
+  first_name text,
+  first_module text,
+  first_sha text,
+  idf_uniq_name text,
+  first_flaky_type text check(first_flaky_type in ('NO', 'OD')),
+  first_failures integer,
+  first_rounds integer,
+  first_perc_fail integer,
+
+  foreign key(idf_name) references fs_idflakies_vers_results(test_name)
+);
+
+create table fs_rq1_tests_with_first_sha
+(
+  subject_name text not null,
+  test_name text not null,
+  flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  commit_sha text not null,
+  failures integer not null,
+  rounds integer not null,
+  perc_fail integer not null,
+  foreign key(test_name) references fs_idflakies_vers_results(test_name)
+);
+
+create table fs_rq1_tests_tried_compiling
+(
+  subject_name text not null,
+  test_name text not null,
+  flaky_type text not null check(flaky_type in ('NO', 'OD')),
+  commit_sha text not null,
+  failures integer not null,
+  rounds integer not null,
+  perc_fail integer not null,
+  foreign key(test_name) references fs_rq1_tests_with_first_sha(test_name)
+);
+
