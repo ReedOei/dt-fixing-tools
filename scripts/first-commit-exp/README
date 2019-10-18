@@ -1,0 +1,4 @@
+To generate the database used for the ICST 2020 submission and the 536-all-mapping.csv file, do the following.
+(1) Generate the database. Run: bash build-database.sh ../../complete_output/idflakies subject-info.db docker/data/full_list-ish.csv docker/data/full_subject_loc.csv
+(2) Once the database is generated, import the csv test-fs-mod-map-fixed.csv by running: .import test-fs-mod-map-fixed.csv fs_test_mod_map
+(3) To generate the 536-all-mapping.csv, run the following inside the database: select * from fs_idflakies_vers_results_all_filter;
