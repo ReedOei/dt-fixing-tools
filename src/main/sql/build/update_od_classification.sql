@@ -448,6 +448,12 @@ left join flaky_test_classification ftc on ft.name = ftc.test_name and ftc.commi
 group by dr.id, dr.round_type, dr.commit_sha;
 
 -------- etc
+create view fs_rq1_first_sha_flaky_info as
+select ftf.subject_name, ftf.test_name, ftf.round_type, ftf.flaky_type, ftf.failures, ftf.rounds, ftf.commit_sha
+from flaky_test_failures ftf
+join fs_test_commit_order ftco on ftco.commit_sha = ftf.commit_sha
+where ftco.order_num > -1;
+
 create view fs_idf_to_first_test_name as
 select p.new_test_name,p.orig_test_name
 from (
