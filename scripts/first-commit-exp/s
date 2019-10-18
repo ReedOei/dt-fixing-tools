@@ -1,0 +1,3 @@
+#### count the number of rounds per module
+cd /home/wing/complete_output/first-sha
+ls -d */*output | while read d ; do (echo == $d; cd $d; find -type d -maxdepth 1 -mindepth 1 | while read s; do echo $d/$s,$(cd $s; find -name 'round*json' | egrep 'random/|reverse/' | wc -l ); done ); done | grep -v ,0
