@@ -545,3 +545,11 @@ create table fs_rq1_tests_tried_compiling
   foreign key(test_name) references fs_rq1_tests_with_first_sha(test_name)
 );
 
+CREATE TABLE fs_test_mod_map (
+  "first_name" TEXT,
+  "short_sha" TEXT,
+  "module" TEXT
+);
+
+.import test-fs-mod-map.csv fs_test_mod_map
+

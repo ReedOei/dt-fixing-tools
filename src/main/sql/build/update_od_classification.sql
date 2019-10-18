@@ -562,6 +562,22 @@ select distinct fifm.slug, fifm.idf_name, fifm.idf_module, fifm.idf_sha, fifm.id
 from fs_idf_first_mapping_first_round fifm 
 LEFT join flaky_test_failures_condensed ftf on ftf.test_name = fifm.first_name and ftf.commit_sha = fifm.first_sha and ftf.subject_name = fifm.first_module;
 
+create view fs_idflakies_vers_results_all_filter as
+select distinct fifm.slug, fifm.idf_name, fifm.idf_module, fifm.idf_sha, fifm.idf_flaky_type, fifm.idf_failures, fifm.idf_rounds, fifm.idf_perc_fail, fifm.first_name, ffl.module as first_module, fifm.first_sha, fifm.idf_uniq_name, fifm.first_flaky_type, fifm.first_failures, fifm.first_rounds, fifm.first_perc_fail 
+from fs_idflakies_vers_results_all fifm 
+join fs_file_loc ffl on ffl.test_name = fifm.first_name and ffl.commit_sha = fifm.first_sha and ffl.module = fifm.first_module;
+
+-- create view fs_idflakies_vers_results_all_filter as
+-- select distinct fifm.slug, fifm.idf_name, fifm.idf_module, fifm.idf_sha, fifm.idf_flaky_type, fifm.idf_failures, fifm.idf_rounds, fifm.idf_perc_fail, fifm.first_name, fifm.first_module, fifm.first_sha, fifm.idf_uniq_name, fifm.first_flaky_type, fifm.first_failures, fifm.first_rounds, fifm.first_perc_fail
+-- from fs_idflakies_vers_results_all fifm 
+-- -- from fs_idflakies_vers_resultsA fifm 
+-- join fs_test_mod_map ftf on ftf.first_name = fifm.first_name and ftf.short_sha = substr(fifm.first_sha,1,7) and ftf.module = fifm.first_module;
+
+create view fs_idflakies_vers_results_all_filter2 as
+select distinct fifm.slug, fifm.idf_name, fifm.idf_module, fifm.idf_sha, fifm.idf_flaky_type, fifm.idf_failures, fifm.idf_rounds, fifm.idf_perc_fail, fifm.first_name, fifm.first_module, fifm.first_sha, fifm.idf_uniq_name, fifm.first_flaky_type, fifm.first_failures, fifm.first_rounds, fifm.first_perc_fail
+from fs_idflakies_vers_results_all fifm 
+-- from fs_idflakies_vers_resultsA fifm 
+join fs_test_mod_map ftf on ftf.first_name = fifm.first_name and ftf.short_sha = substr(fifm.first_sha,1,7) and fifm.first_module like '%' + ftf.module;
 
 ------- Modules
 create view fs_rq1_modules_compiled as
