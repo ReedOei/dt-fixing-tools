@@ -551,5 +551,5 @@ CREATE TABLE fs_test_mod_map (
   "module" TEXT
 );
 
-.import test-fs-mod-map.csv fs_test_mod_map
+
 
