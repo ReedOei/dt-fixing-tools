@@ -21,7 +21,6 @@ timeout=$3
 
 # Setup prolog stuff
 cd /home/awshi2/dt-fixing-tools/scripts/
-./setup
 
 # Incorporate tooling into the project, using Java XML parsing
 cd /home/awshi2/${slug}
