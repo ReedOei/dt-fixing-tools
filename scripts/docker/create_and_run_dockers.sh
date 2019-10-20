@@ -47,6 +47,9 @@ for line in $(cat ${projfile}); do
     slug=$(echo ${line} | cut -d',' -f1 | rev | cut -d'/' -f1-2 | rev)
     sha=$(echo ${line} | cut -d',' -f2)
     testName=$(echo ${line} | cut -d',' -f3)
+    if [ -z "$testName" ]; then
+	testName=-
+    fi
 
     # Build the Docker image if does not exist
     modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
