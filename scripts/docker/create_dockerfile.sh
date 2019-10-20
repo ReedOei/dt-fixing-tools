@@ -15,10 +15,9 @@ modifiedslug=$3
 
 # Starting with template Dockerfile, create custom Dockerfile for this one project
 #modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
-(
-    flock 815
-    
-)
+#(
+#    flock 815
+#)
 customdocker=${modifiedslug}_Dockerfile
 [ -f ${customdocker}-pipe ] && { cat <${customdocker}-pipe; >/dev/null; exit 0; }
 mkfifo ${customdocker}-pipe

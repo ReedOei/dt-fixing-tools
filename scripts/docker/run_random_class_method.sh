@@ -28,6 +28,8 @@ mkdir -p ${RESULTSDIR}
 
 moduleName=$5
 
+runAllIfNeeded=$6
+
 # Incorporate tooling into the project, using Java XML parsing
 cd /home/awshi2/${slug}
 
@@ -52,7 +54,7 @@ if [[ $moduleName != "" ]]; then
     fi
 fi
 
-if [[ "$didRunSpecificModule" = true ]];
+if [[ "$didRunSpecificModule" = true ]] || [[ "$runAllIfNeeded" = true ]];
 then
     # Run the plugin, reversing the original order (reverse class and methods)
     echo "*******************REED************************"
