@@ -89,8 +89,8 @@ then
 
     if [[ "$didRunSpecificModule" = true ]];
     then
-        mv random_class_method.log ../
-        cd ../
+        mv random_class_method.log /home/awshi2/${slug}/
+        cd /home/awshi2/${slug}/
     fi
 
     # Run the plugin, random class only
