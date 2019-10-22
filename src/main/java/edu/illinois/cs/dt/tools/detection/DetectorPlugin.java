@@ -154,13 +154,26 @@ public class DetectorPlugin extends TestPlugin {
         if (hasTimeout) {
             final Path timeCsv = DetectorPathManager.mvnTestTimeLog();
 
-            final double totalTime = readRealTime(timeCsv);
-            final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0); // 6 hours
+            if (Files.isReadable(timeCsv)) {
+                final double totalTime = readRealTime(timeCsv);
+                final double mainTimeout = Configuration.config().getProperty("detector.timeout", 6 * 3600.0); // 6 hours
+                if (mainTimeout != 0) {
+                    TestPluginPlugin.mojo().getLog().info("TIMEOUT_VALUE: Using a timeout of "
+                                                                  + mainTimeout + ", and that the total mvn test time is: " + totalTime);
 
-            TestPluginPlugin.mojo().getLog().info("TIMEOUT_VALUE: Using a timeout of "
-                    + mainTimeout + ", and that the total mvn test time is: " + totalTime);
-
-            timeoutRounds = (int) (mainTimeout / totalTime);
+                    timeoutRounds = (int) (mainTimeout / totalTime);
+                } else {
+                    timeoutRounds = roundNum;
+                    TestPluginPlugin.mojo().getLog().info("TIMEOUT_VALUE specified as 0. " +
+                                                                  "Ignoring timeout and using number of rounds.");
+                }
+            } else {
+                // Depending on the order in which the developers tell Maven to build modules, some projects like http-request
+                // may not be able to parse the mvn-test-time.log at the base module if other submodules are built first
+                timeoutRounds = roundNum;
+                TestPluginPlugin.mojo().getLog().info("TIMEOUT_VALUE specified but cannot " +
+                                                              "find read mvn-test-time.log at: " + timeCsv.toString());
+            }
         } else {
             timeoutRounds = roundNum;
         }
