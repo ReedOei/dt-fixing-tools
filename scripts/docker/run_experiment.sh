@@ -61,7 +61,7 @@ su - awshi2 -c "$script_to_run ${slug} ${rounds} ${timeout} ${testName} ${script
 # Change permissions of results and copy outside the Docker image (assume outside mounted under /Scratch)
 modifiedslug=$(echo ${slug} | sed 's;/;.;' | tr '[:upper:]' '[:lower:]')
 
-if [[ $testName == "" ]]; then
+if [[ $testName == "-" ]]; then
     folder_name=${modifiedslug}-${short_sha}=_output
 else
     folder_name=${modifiedslug}-${short_sha}=${testName}_output

@@ -27,19 +27,12 @@ testName=$( echo ${fullTestName} | rev | cut -d . -f 1 | rev )
 
 # Setup prolog stuff
 cd /home/awshi2/dt-fixing-tools/scripts/
-./setup
 
 # Incorporate tooling into the project, using Java XML parsing
 cd /home/awshi2/${slug}
 
-# Run the plugin, get module test times
-echo "*******************REED************************"
-echo "Running the get test files tools"
-
 idflakiesSha=$( git rev-parse HEAD )
 echo $idflakiesSha
-
-date
 
 MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmaven.javadoc.skip=true"
 
@@ -51,7 +44,16 @@ mkdir -p ${RESULTSDIR}
 /home/awshi2/dt-fixing-tools/scripts/docker/pom-modify/modify-project.sh .
 
 # Step 1 : Run the entire test suite and save all tests' file
+# Run the plugin, get test locations
+echo "*******************REED************************"
+echo "Running the get test files tools"
+date
+
 timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.GetTestFilePlugin -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -fn -B -e |& tee get-test-file.log
+
+echo "*******************REED************************"
+echo "Finished getting test files tools"
+date
 
 cp get-test-file.log ${RESULTSDIR}
 
@@ -66,7 +68,7 @@ testInfo=$(grep "$fullTestName," /home/awshi2/$slug/test-to-file.csv)
 moduleName=$(echo $testInfo | cut -d"," -f3)
 
 # Step 6 : Run iDFlakies on that commit
-/home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ${moduleName}
+/home/awshi2/dt-fixing-tools/scripts/docker/run_random_class_method.sh $slug ${rounds} ${timeout} ${RESULTSDIR} ${moduleName} "false"
 
 mv mvn-test-time.log ${RESULTSDIR}
 mv mvn-test.log ${RESULTSDIR}
