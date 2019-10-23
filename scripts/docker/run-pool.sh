@@ -35,6 +35,8 @@ for f in $(find "$1" -maxdepth 1 -type f -name "*.csv"); do
     fi
 done
 
-echo "$input_str" | xargs -I% -P"$PROCESS_NUM" -d' ' sh -c '{ if [ ! -z "%" ]; then csv=$(echo "%" | cut -d, -f1 ); waittime=$(echo "%" | cut -d, -f2 ); sleep $waittime ; bash run-project-pool.sh $csv "$2" "$3" "$4" "$6" ; fi; }'
+#echo "$input_str" | xargs -I% -P"$PROCESS_NUM" -d' ' bash -c 'if [ ! -z "%" ]; then csv=$(echo "%" | cut -d, -f1 ); waittime=$(echo "%" | cut -d, -f2 ); sleep $waittime ; bash test.sh $csv '"$2"' ; fi;'
+
+echo "$input_str" | xargs -I% -P"$PROCESS_NUM" -d' ' sh -c '{ if [ ! -z "%" ]; then csv=$(echo "%" | cut -d, -f1 ); waittime=$(echo "%" | cut -d, -f2 ); sleep $waittime ; bash run-project-pool.sh $csv '"$2"' '"$3"' '"$4"' '"$6"' ; fi; }'
 
 date
