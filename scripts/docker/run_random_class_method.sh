@@ -90,6 +90,7 @@ then
     if [[ "$didRunSpecificModule" = true ]];
     then
         mv random_class_method.log /home/awshi2/${slug}/
+        mv reverse_original.log /home/awshi2/${slug}/
         cd /home/awshi2/${slug}/
     fi
 
