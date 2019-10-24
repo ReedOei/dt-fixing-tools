@@ -1,0 +1,12 @@
+"'https://github.com/'||slug",first_sha,first_bp_fail
+https://github.com/doanduyhai/Achilles,d59f3389e81e215a998a43cc6cd2eb5518ab7eff,info.archinnov.achilles.it.TestEntityWithIndicesForJSON.should_query_using_collection_index_fromJSON
+https://github.com/doanduyhai/Achilles,ac85374d778ff1e9812de037ef24ba06ab0b05b8,info.archinnov.achilles.it.TestEntityWithSASIIndices.should_search_using_like_non_tokenizer
+https://github.com/Activiti/Activiti,7f54df3dcf9f8d2acbafb91d68f1c506b6bdb0f7,org.activiti.spring.boot.tasks.TaskRuntimeClaimReleaseTest.aCreateStandaloneTaskForGroup
+https://github.com/spring-projects/spring-boot,d50fe8874fa442cbd3ea380754e7b412a77aed9a,org.springframework.boot.actuate.autoconfigure.cloudfoundry.reactive.CloudFoundryWebFluxEndpointIntegrationTests.linksToOtherEndpointsWithFullAccess
+https://github.com/undertow-io/undertow,1ed0c16a46a741b9fab0e55efd42e22256d5ee43,io.undertow.websockets.jsr.test.extension.JsrWebsocketExtensionTestCase.testLongTextMessage
+https://github.com/wro4j/wro4j,464a497c0169fc92eabcb79b52867d9e7985fd95,ro.isdc.wro.http.handler.TestResourceWatcherRequestHandler.shouldNotAcceptRequest
+https://github.com/wro4j/wro4j,327857b5a5d11fb8acba51cb39726700abd3186a,ro.isdc.wro.manager.factory.TestConfigurableWroManagerFactory.shouldApplyNamingStrategyConcurrently
+https://github.com/wro4j/wro4j,96b2f43cef6223d8bb22f0d5cd5db931e50786b8,ro.isdc.wro.extensions.processor.TestBourbonCssProcessor.shouldBeThreadSafe
+https://github.com/wro4j/wro4j,a9d9adf6dd558ce0add828bd75493a69558ed566,ro.isdc.wro.extensions.processor.TestRubySassCssProcessor.shouldSucceedAfterAFailure
+https://github.com/wro4j/wro4j,6f862f80b93c08c34d0a15e081f135a5d1d0636f,ro.isdc.wro.extensions.processor.TestRubySassCssProcessor.shouldTestFromFolder
+https://github.com/wro4j/wro4j,e96a9e1d78ef7ff9c0b30675aa740001319216a5,ro.isdc.wro.extensions.processor.support.sass.TestRubySassEngine.shouldProcessValidNonAsciiSass
