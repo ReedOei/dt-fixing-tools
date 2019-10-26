@@ -1,0 +1,7 @@
+"'https://github.com/'||slug",first_sha,first_bp_fail
+https://github.com/kevinsawicki/http-request,bf07c2fb1c84637b32baabf292604f5dabb43433,com.github.kevinsawicki.http.HttpRequestTest.basicProxyAuthentication
+https://github.com/spring-projects/spring-boot,8d3803b82632bc911b85cf3e3e99b45a8fe84e00,org.springframework.boot.logging.java.JavaLoggingSystemTests.testCustomFormatter
+https://github.com/spring-projects/spring-boot,c347972729e3145359786fe2a6eb557f5f3ad2cf,org.springframework.boot.logging.log4j2.Log4J2LoggingSystemTests.loggingThatUsesJulIsCaptured
+https://github.com/spring-projects/spring-boot,9744d282991c8ac4c9e06200a9868d8531469603,org.springframework.boot.logging.logback.LogbackLoggingSystemTests.bridgeHandlerLifecycle
+https://github.com/spring-projects/spring-boot,9e88dced888b5f176573579a392ff65d94b61b0b,org.springframework.boot.devtools.env.DevToolPropertiesIntegrationTests.beanMethodPropertyConditionIsAffectedByDevToolProperties
+https://github.com/spring-projects/spring-boot,ac2609b5857727724709e7da793d82264bd6726d,org.springframework.boot.test.autoconfigure.web.servlet.mockmvc.WebMvcTestWebDriverIntegrationTests.shouldBeADifferentWebClient
