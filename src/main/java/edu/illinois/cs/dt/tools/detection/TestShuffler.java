@@ -30,7 +30,7 @@ public class TestShuffler {
     }
 
     private final HashMap<String, List<String>> classToMethods;
-    private long randomSeed = Long.parseLong(Configuration.config().getProperty("dt.detector.random.seed", System.nanoTime() + ""));
+    private long randomSeed = Long.parseLong(Configuration.config().getProperty("dt.detector.random.seed", "-1"));
 
     private final String type;
     private final List<String> tests;
@@ -40,7 +40,16 @@ public class TestShuffler {
     public TestShuffler(final String type, final int rounds, final List<String> tests) {
         this.type = type;
         this.tests = tests;
-        this.r = new Random(randomSeed);
+
+        long finalSeed = System.nanoTime();
+        if (randomSeed == -1) {
+            System.out.println(String.format("[INFO] No random seed provided. Using %d", finalSeed));
+        } else {
+            finalSeed = randomSeed;
+            System.out.println(String.format("[INFO] Random seed provided. Using %d", finalSeed));
+        }
+
+        this.r = new Random(finalSeed);
 
         classToMethods = new HashMap<>();
 
