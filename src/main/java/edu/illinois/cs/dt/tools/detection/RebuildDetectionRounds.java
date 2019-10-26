@@ -148,8 +148,11 @@ public class RebuildDetectionRounds extends StandardMain {
     }
 
     private TestRunResult readTestRunResult(final Path resultsPath, final String id) throws IOException {
-        final String contents = FileUtil.readFile(resultsPath.resolve(RunnerPathManager.TEST_RUNS).resolve("results").resolve(id));
+        return readTestRunResult(resultsPath.resolve(RunnerPathManager.TEST_RUNS).resolve("results").resolve(id));
+    }
 
+    public static TestRunResult readTestRunResult(final Path resultsPath) throws IOException {
+        final String contents = FileUtil.readFile(resultsPath);
         return new Gson().fromJson(contents, TestRunResult.class);
     }
 }

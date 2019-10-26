@@ -11,6 +11,8 @@ import edu.illinois.cs.dt.tools.runner.data.TestRun;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +23,30 @@ public class DetectorUtil {
     public static TestRunResult originalResults(final List<String> originalOrder, final Runner runner) {
         final int originalOrderTries = Configuration.config().getProperty("dt.detector.original_order.retry_count", 3);
         final boolean allMustPass = Configuration.config().getProperty("dt.detector.original_order.all_must_pass", true);
+        final String originalOrderResult = Configuration.config().getProperty("dt.detector.original_order.result", "");
+
+        TestRunResult origResult;
+        if (!originalOrderResult.isEmpty()) {
+            Path resultsPath = Paths.get(originalOrderResult);
+            try {
+                origResult = RebuildDetectionRounds.readTestRunResult(resultsPath);
+                TestPluginPlugin.info("Given dt.detector.original_order.result argument. Using that run's result as original order.");
+            } catch (IOException e) {
+                TestPluginPlugin.info("Passed dt.detector.original_order.result but path was invalid. Terminating run now.");
+                throw new RuntimeException(e);
+            }
+        } else {
+            origResult = getOriginaResults(originalOrder,runner,originalOrderTries, allMustPass);
+        }
+
+        return origResult;
+    }
+
+    private static TestRunResult getOriginaResults(final List<String> originalOrder, final Runner runner,
+                                                   int originalOrderTries, boolean allMustPass) {
+        TestRunResult origResult = null;
 
         System.out.println("[INFO] Getting original results (" + originalOrder.size() + " tests).");
-
-        TestRunResult origResult = null;
 
         boolean allPassing = false;
         // Try to run it three times, to see if we can get everything to pass (except for ignored tests)
@@ -33,7 +55,8 @@ public class DetectorUtil {
 
             try {
                 Files.write(DetectorPathManager.originalResultsLog(), (origResult.id() + "\n").getBytes(),
-                        Files.exists(DetectorPathManager.originalOrderPath()) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+                            Files.exists(DetectorPathManager.originalOrderPath()) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+                Files.write(DetectorPathManager.originalResultsRound(), origResult.toString().getBytes());
             } catch (IOException ignored) {}
 
             if (allPass(origResult)) {
@@ -49,7 +72,6 @@ public class DetectorUtil {
                 TestPluginPlugin.info("No passing order for tests (" + originalOrderTries + " runs). Continuing anyway with last run.");
             }
         }
-
         return origResult;
     }
 
