@@ -7,6 +7,7 @@ import com.reedoei.eunomia.data.caching.FileCache;
 import com.reedoei.eunomia.io.files.FileUtil;
 import com.reedoei.eunomia.util.RuntimeThrower;
 import com.reedoei.eunomia.util.Util;
+import com.reedoei.testrunner.configuration.Configuration;
 import com.reedoei.testrunner.data.results.Result;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import com.reedoei.testrunner.mavenplugin.TestPluginPlugin;
@@ -21,6 +22,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     protected final Result expected;
     protected final Result isolationResult;
     protected final SmartRunner runner;
+    final boolean oneByOnePolluter = Configuration.config().getProperty("dt.minimizer.polluters.one_by_one", false);
 
     protected final Path path;
 
@@ -148,6 +151,65 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
                 return new MinimizeTestsResult(time, expectedRun, expected, dependentTest, polluters, FlakyClass.NOD);
             }
         });
+    }
+
+    private int getPolluters(List<String> order, long startTime, List<PolluterData> polluters, int index) throws Exception {
+        while (!order.isEmpty()) {
+            // First need to check if remaining tests in order still lead to expected value
+            if (result(order) != expected) {
+                info("Remaining tests no longer match expected: " + order);
+                break;
+            }
+
+            final OperationTime[] operationTime = new OperationTime[1];
+            final List<String> deps = OperationTime.runOperation(() -> {
+                return run(new ArrayList<>(order));
+            }, (foundDeps, time) -> {
+                operationTime[0] = time;
+                return foundDeps;
+            });
+
+            if (deps.isEmpty()) {
+                info("Did not find any deps");
+                break;
+            }
+
+            info("Ran minimizer, dependencies: " + deps);
+            double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
+            if (index == 0) {
+                info("FIRST POLLUTER: Found first polluter " + deps + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
+            } else {
+                info("POLLUTER: Found polluter " + deps + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
+            }
+
+            // Only look for cleaners if the order is not passing; in case of minimizing for setter don't need to look for cleaner
+            CleanerData cleanerData;
+            if (!expected.equals(Result.PASS)) {
+                cleanerData = new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find();
+            } else {
+                cleanerData = new CleanerData(dependentTest, expected, isolationResult, new ListEx<CleanerGroup>());
+            }
+
+            polluters.add(new PolluterData(operationTime[0], index, deps, cleanerData));
+
+            // A better implementation would remove one by one and not assume polluter groups are mutually exclusive
+            order.removeAll(deps);  // Look for other deps besides the ones already found
+            index++;
+        }
+        return index;
+    }
+
+    // Returns a list where each element is test from order and the dependent test
+    private List<List<String>> getPairs(final List<String> order, String dependentTest) {
+        List<List<String>> pairs = new ArrayList<>();
+        for (String test : order) {
+            if (test.equalsIgnoreCase(dependentTest)) {
+                continue;
+            }
+            pairs.add(Arrays.asList(test, dependentTest));
+        }
+
+        return pairs;
     }
 
     private List<String> deltaDebug(final List<String> deps, int n) throws Exception {
