@@ -61,7 +61,7 @@ then
     echo "Running testplugin for reversing the original order"
     date
 
-    timeout 4000s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=4000 -Ddt.randomize.rounds=1 -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -Ddetector.detector_type=reverse -fn -B -e |& tee reverse_original.log
+    timeout 4000s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=4000 -Ddt.randomize.rounds=1 -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -Dtestplugin.runner.use_timeout=false -Ddetector.detector_type=reverse -fn -B -e |& tee reverse_original.log
 
 
     # Run the plugin, reversing the original order (reverse class)
@@ -85,7 +85,7 @@ then
     echo "Running testplugin for randomizemethods"
     date
 
-    timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -fn -B -e |& tee random_class_method.log
+    timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddt.randomize.rounds=${rounds} -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -Dtestplugin.runner.use_timeout=false -fn -B -e |& tee random_class_method.log
 
     if [[ "$didRunSpecificModule" = true ]];
     then
