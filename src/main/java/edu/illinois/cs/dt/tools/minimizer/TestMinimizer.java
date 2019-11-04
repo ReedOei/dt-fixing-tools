@@ -83,59 +83,22 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
     public MinimizeTestsResult run() throws Exception {
         final long startTime = System.currentTimeMillis();
-        return OperationTime.runOperation(() -> {
+        return  OperationTime.runOperation(() -> {
             info("Running minimizer for: " + dependentTest + " (expected result in this order: " + expected + ")");
-
-            boolean foundFirst = false;
-
-            final List<String> order =
-                    testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
 
             // Keep going as long as there are tests besides dependent test to run
             List<PolluterData> polluters = new ArrayList<>();
             int index = 0;
-            while (!order.isEmpty()) {
-                // First need to check if remaining tests in order still lead to expected value
-                if (result(order) != expected) {
-                    info("Remaining tests no longer match expected: " + order);
-                    break;
+
+            if (oneByOnePolluter) {
+                List<List<String>> pairs = getPairs(testOrder, dependentTest);
+                for (List<String> order : pairs) {
+                    index = getPolluters(order, startTime, polluters, index);
                 }
-
-                final OperationTime[] operationTime = new OperationTime[1];
-                final List<String> deps = OperationTime.runOperation(() -> {
-                    return run(new ArrayList<>(order));
-                }, (foundDeps, time) -> {
-                    operationTime[0] = time;
-                    return foundDeps;
-                });
-
-                if (deps.isEmpty()) {
-                    info("Did not find any deps");
-                    break;
-                }
-
-                info("Ran minimizer, dependencies: " + deps);
-                double elapsedSeconds = System.currentTimeMillis() / 1000.0 - startTime / 1000.0;
-                if (!foundFirst) {
-                    info("FIRST POLLUTER: Found first polluter " + deps + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
-                    foundFirst = true;
-                } else {
-                    info("POLLUTER: Found polluter " + deps + " for dependent test " + dependentTest + " in " + elapsedSeconds + " seconds.");
-                }
-
-
-                // Only look for cleaners if the order is not passing; in case of minimizing for setter don't need to look for cleaner
-                CleanerData cleanerData;
-                if (!expected.equals(Result.PASS)) {
-                    cleanerData = new CleanerFinder(runner, dependentTest, deps, expected, isolationResult, expectedRun.testOrder()).find();
-                } else {
-                    cleanerData = new CleanerData(dependentTest, expected, isolationResult, new ListEx<CleanerGroup>());
-                }
-
-                polluters.add(new PolluterData(operationTime[0], index, deps, cleanerData));
-
-                order.removeAll(deps);  // Look for other deps besides the ones already found
-                index++;
+            } else {
+                final List<String> order =
+                        testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
+                getPolluters(order, startTime, polluters, index);
             }
 
             return polluters;
