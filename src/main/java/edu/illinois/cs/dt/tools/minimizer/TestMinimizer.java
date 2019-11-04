@@ -32,6 +32,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     protected final Result expected;
     protected final Result isolationResult;
     protected final SmartRunner runner;
+    protected final List<String> fullTestOrder;
     final boolean oneByOnePolluter = Configuration.config().getProperty("dt.minimizer.polluters.one_by_one", false);
 
     protected final Path path;
@@ -48,6 +49,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
     public TestMinimizer(final List<String> testOrder, final SmartRunner runner, final String dependentTest) {
         // Only take the tests that come before the dependent test
+        this.fullTestOrder = testOrder;
         this.testOrder = testOrder.contains(dependentTest) ? ListUtil.before(testOrder, dependentTest) : testOrder;
         this.dependentTest = dependentTest;
 
@@ -91,13 +93,12 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             int index = 0;
 
             if (oneByOnePolluter) {
-                List<List<String>> pairs = getPairs(testOrder, dependentTest);
+                List<List<String>> pairs = getPairs(fullTestOrder, dependentTest);
                 for (List<String> order : pairs) {
                     index = getPolluters(order, startTime, polluters, index);
                 }
             } else {
-                final List<String> order =
-                        testOrder.contains(dependentTest) ? ListUtil.beforeInc(testOrder, dependentTest) : new ArrayList<>(testOrder);
+                final List<String> order = new ArrayList<>(testOrder);
                 getPolluters(order, startTime, polluters, index);
             }
 
