@@ -22,7 +22,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -85,7 +84,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
 
     public MinimizeTestsResult run() throws Exception {
         final long startTime = System.currentTimeMillis();
-        return  OperationTime.runOperation(() -> {
+        return OperationTime.runOperation(() -> {
             info("Running minimizer for: " + dependentTest + " (expected result in this order: " + expected + ")");
 
             // Keep going as long as there are tests besides dependent test to run
@@ -93,8 +92,8 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             int index = 0;
 
             if (oneByOnePolluter) {
-                List<List<String>> pairs = getPairs(fullTestOrder, dependentTest);
-                for (List<String> order : pairs) {
+                List<List<String>> singleTests = getSingleTests(fullTestOrder, dependentTest);
+                for (List<String> order : singleTests) {
                     index = getPolluters(order, startTime, polluters, index);
                 }
             } else {
@@ -118,6 +117,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     }
 
     private int getPolluters(List<String> order, long startTime, List<PolluterData> polluters, int index) throws Exception {
+        // order can be the prefix + dependentTest or just the prefix. All current use of this method are using it as just prefix
         while (!order.isEmpty()) {
             // First need to check if remaining tests in order still lead to expected value
             if (result(order) != expected) {
@@ -164,16 +164,16 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     }
 
     // Returns a list where each element is test from order and the dependent test
-    private List<List<String>> getPairs(final List<String> order, String dependentTest) {
-        List<List<String>> pairs = new ArrayList<>();
+    private List<List<String>> getSingleTests(final List<String> order, String dependentTest) {
+        List<List<String>> singleTests = new ArrayList<>();
         for (String test : order) {
             if (test.equalsIgnoreCase(dependentTest)) {
                 continue;
             }
-            pairs.add(Arrays.asList(test, dependentTest));
+            singleTests.add(Collections.singletonList(test));
         }
 
-        return pairs;
+        return singleTests;
     }
 
     private List<String> deltaDebug(final List<String> deps, int n) throws Exception {
