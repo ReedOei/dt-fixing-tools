@@ -92,8 +92,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             int index = 0;
 
             if (oneByOnePolluter) {
-                List<List<String>> singleTests = getSingleTests(fullTestOrder, dependentTest);
-                for (List<String> order : singleTests) {
+                for (List<String> order : getSingleTests(fullTestOrder, dependentTest)) {
                     index = getPolluters(order, startTime, polluters, index);
                 }
             } else {
@@ -117,7 +116,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     }
 
     private int getPolluters(List<String> order, long startTime, List<PolluterData> polluters, int index) throws Exception {
-        // order can be the prefix + dependentTest or just the prefix. All current use of this method are using it as just prefix
+        // order can be the prefix + dependentTest or just the prefix. All current uses of this method are using it as just prefix
         while (!order.isEmpty()) {
             // First need to check if remaining tests in order still lead to expected value
             if (result(order) != expected) {
