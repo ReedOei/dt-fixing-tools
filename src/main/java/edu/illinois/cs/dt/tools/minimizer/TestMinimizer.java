@@ -169,7 +169,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             if (test.equalsIgnoreCase(dependentTest)) {
                 continue;
             }
-            singleTests.add(Collections.singletonList(test));
+            singleTests.add(new ArrayList<>(Collections.singletonList(test)));
         }
 
         return singleTests;
