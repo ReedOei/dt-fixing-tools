@@ -15,10 +15,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,14 +30,26 @@ public class TestShuffler {
     }
 
     private final HashMap<String, List<String>> classToMethods;
+    private long randomSeed = Long.parseLong(Configuration.config().getProperty("dt.detector.random.seed", "-1"));
 
     private final String type;
     private final List<String> tests;
     private final Set<String> alreadySeenOrders = new HashSet<>();
+    private final Random r;
 
     public TestShuffler(final String type, final int rounds, final List<String> tests) {
         this.type = type;
         this.tests = tests;
+
+        long finalSeed = System.nanoTime();
+        if (randomSeed == -1) {
+            System.out.println(String.format("[INFO] No random seed provided. Using %d", finalSeed));
+        } else {
+            finalSeed = randomSeed;
+            System.out.println(String.format("[INFO] Random seed provided. Using %d", finalSeed));
+        }
+
+        this.r = new Random(finalSeed);
 
         classToMethods = new HashMap<>();
 
@@ -105,7 +119,9 @@ public class TestShuffler {
     }
 
     private List<String> generateShuffled() {
-        return generateWithClassOrder(new RandomList<>(classToMethods.keySet()).shuffled());
+        List<String> classes = new ArrayList<>(classToMethods.keySet());
+        Collections.shuffle(classes,r);
+        return generateWithClassOrder(classes);
     }
 
     private List<String> generateWithClassOrder(final List<String> classOrder) {
@@ -117,7 +133,9 @@ public class TestShuffler {
                 fullTestOrder.addAll(classToMethods.get(className));
             } else {
                 // the standard "random" type, will shuffle both
-                fullTestOrder.addAll(new RandomList<>(classToMethods.get(className)).shuffled());
+                List<String> tests = new ArrayList<>(classToMethods.get(className));
+                Collections.shuffle(tests, r);
+                fullTestOrder.addAll(tests);
             }
         }
 

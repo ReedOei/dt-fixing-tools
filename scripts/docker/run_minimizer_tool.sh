@@ -44,7 +44,7 @@ echo "Running the debugging tools"
 git rev-parse HEAD
 date
 
-timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Ddiagnosis.run_detection=false -Denforcer.skip=true -Drat.skip=true -Dtestplugin.className=edu.illinois.cs.dt.tools.minimizer.MinimizerPlugin -fn -B -e |& tee minimizer.log
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin -Ddiagnosis.run_detection=false -Denforcer.skip=true -Drat.skip=true -Dtestplugin.className=edu.illinois.cs.dt.tools.minimizer.MinimizerPlugin -Ddt.minimizer.polluters.one_by_one=true  -fn -B -e |& tee minimizer.log
 
 # Gather the results, put them up top
 RESULTSDIR=/home/awshi2/output/
