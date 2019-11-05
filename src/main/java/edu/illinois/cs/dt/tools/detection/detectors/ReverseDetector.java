@@ -18,10 +18,10 @@ public class ReverseDetector extends ExecutingDetector {
     public ReverseDetector(final Runner runner, final int rounds, final String name, final List<String> tests) {
         // Always 1 round, because there's only one way to reverse the tests
         super(runner, 1, name);
-        this.tests = tests;
         this.origResult = DetectorUtil.originalResults(tests, runner);
+        this.tests = origResult.testOrder();
 
-        testShuffler = new TestShuffler(name, rounds, tests);
+        testShuffler = new TestShuffler(name, rounds, this.tests);
 
         addFilter(new UniqueFilter());
         addFilter(new VerifyFilter(name, runner));

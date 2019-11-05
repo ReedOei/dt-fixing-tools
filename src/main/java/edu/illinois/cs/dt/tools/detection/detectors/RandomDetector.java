@@ -20,16 +20,15 @@ public class RandomDetector extends ExecutingDetector {
     public RandomDetector(final String type, final Runner runner, final int rounds, final List<String> tests) {
         super(runner, rounds, type);
 
-        this.tests = tests;
-
-        this.testShuffler = new TestShuffler(type, rounds, tests);
         this.origResult = DetectorUtil.originalResults(tests, runner);
+        this.tests = origResult.testOrder();
+        this.testShuffler = new TestShuffler(type, rounds, this.tests);
 
         // Filters to be applied in order
         if (runner instanceof InstrumentingSmartRunner) {
-            addFilter(new ConfirmationFilter(name, tests, (InstrumentingSmartRunner) runner));
+            addFilter(new ConfirmationFilter(name, this.tests, (InstrumentingSmartRunner) runner));
         } else {
-            addFilter(new ConfirmationFilter(name, tests, InstrumentingSmartRunner.fromRunner(runner)));
+            addFilter(new ConfirmationFilter(name, this.tests, InstrumentingSmartRunner.fromRunner(runner)));
         }
 
         addFilter(new UniqueFilter());
