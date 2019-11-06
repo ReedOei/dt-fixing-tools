@@ -24,8 +24,8 @@ public class OriginalDetector extends ExecutingDetector {
     public OriginalDetector(final Runner runner, final int rounds, final List<String> tests) {
         super(runner, rounds, "original");
 
-        this.tests = tests;
         this.origResult = DetectorUtil.originalResults(tests, runner);
+        this.tests = origResult.testOrder();
 
         addFilter(new UniqueFilter());
     }

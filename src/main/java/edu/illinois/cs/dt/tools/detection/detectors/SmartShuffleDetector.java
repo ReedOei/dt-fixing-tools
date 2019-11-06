@@ -21,11 +21,11 @@ public class SmartShuffleDetector extends ExecutingDetector {
                                 final String type) {
         super(runner, rounds, type);
 
-        this.originalOrder = tests;
-        this.shuffler = new SmartShuffler(tests);
-        this.originalResults = DetectorUtil.originalResults(originalOrder, runner);
+        this.originalResults = DetectorUtil.originalResults(tests, runner);
+        this.originalOrder = originalResults.testOrder();
+        this.shuffler = new SmartShuffler(this.originalOrder);
 
-        addFilter(new ConfirmationFilter(type, tests, runner));
+        addFilter(new ConfirmationFilter(type, this.originalOrder, runner));
         addFilter(new UniqueFilter());
     }
 
