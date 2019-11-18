@@ -32,7 +32,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
     protected final Result isolationResult;
     protected final SmartRunner runner;
     protected final List<String> fullTestOrder;
-    final boolean oneByOnePolluter = Configuration.config().getProperty("dt.minimizer.polluters.one_by_one", false);
+    private final boolean oneByOnePolluter = Configuration.config().getProperty("dt.minimizer.polluters.one_by_one", false);
 
     protected final Path path;
 
@@ -92,6 +92,7 @@ public class TestMinimizer extends FileCache<MinimizeTestsResult> {
             int index = 0;
 
             if (oneByOnePolluter) {
+                info("Getting all polluters (dt.minimizer.polluters.one_by_one is set to true)");
                 for (List<String> order : getSingleTests(fullTestOrder, dependentTest)) {
                     index = getPolluters(order, startTime, polluters, index);
                 }
