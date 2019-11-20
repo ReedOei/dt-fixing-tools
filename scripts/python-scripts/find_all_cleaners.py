@@ -3,7 +3,7 @@ import os
 import sys
 
 def find(key, dictionary):
-    if hasattr(dictionary, 'iteritems'):        
+    if hasattr(dictionary, 'iteritems'):
         for k, v in dictionary.iteritems():
             if k == key:
                 yield v
@@ -14,7 +14,7 @@ def find(key, dictionary):
                 for d in v:
                     for result in find(key, d):
                         yield result
- 
+
 def main(args):
     jsonfile = args[1]
 
@@ -29,10 +29,12 @@ def main(args):
 
     for pol in allpol:
         cleanertests = find('cleanerTests', pol)
-        for cleanertest in cleanertests:            
+        didprint = False
+        for cleanertest in cleanertests:
+            didprint = True
             print testname + ',' +  ('|'.join(pol['deps'])) + ',' + ('|'.join(cleanertest))
+        if not didprint:
+            print testname + ',' +  ('|'.join(pol['deps'])) + ','
 
-        
-        
 if __name__ == '__main__':
     main(sys.argv)
