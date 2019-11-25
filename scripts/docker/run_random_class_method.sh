@@ -42,7 +42,7 @@ date
 MVNOPTIONS="-Denforcer.skip=true -Drat.skip=true -Dmdep.analyze.skip=true -Dmaven.javadoc.skip=true"
 
 # Optional timeout... In practice our tools really shouldn't need 1hr to parse a project's surefire reports.
-timeout 1h /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.ModuleTestTimePlugin -fn -B -e |& tee module_test_time.log
+timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Dtestplugin.className=edu.illinois.cs.dt.tools.utility.ModuleTestTimePlugin -fn -B -e |& tee module_test_time.log
 
 didRunSpecificModule=false
 if [[ $moduleName != "" ]]; then
@@ -61,7 +61,7 @@ then
     echo "Running testplugin for reversing the original order"
     date
 
-    timeout 4000s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=4000 -Ddt.randomize.rounds=1 -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -Dtestplugin.runner.use_timeout=false -Ddetector.detector_type=reverse -fn -B -e |& tee reverse_original.log
+    timeout ${timeout}s /home/awshi2/apache-maven/bin/mvn testrunner:testplugin ${MVNOPTIONS} -Ddetector.timeout=4000 -Ddt.randomize.rounds=1 -Ddt.detector.original_order.retry_count=1 -Ddt.detector.original_order.all_must_pass=false -Ddt.detector.count.only.first.failure=false -Dtestplugin.runner.use_timeout=false -Ddetector.detector_type=reverse -fn -B -e |& tee reverse_original.log
 
 
     # Run the plugin, reversing the original order (reverse class)

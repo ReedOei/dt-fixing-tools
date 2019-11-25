@@ -471,7 +471,7 @@ create table fs_idflakies_vers
 (
   slug text not null,
   commit_sha text not null,
-  test_name text primary key,
+  test_name text not null,
   module text not null
 );
 
