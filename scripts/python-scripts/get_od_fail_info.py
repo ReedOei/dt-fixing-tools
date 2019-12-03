@@ -2,6 +2,7 @@
 # python -c'import get_od_fail_info; print(get_od_fail_info.calculate("all_polluter_cleaner_info.csv"))'
 
 import math
+from decimal import Decimal
 
 def multiplyList(myList) : 
     # Multiply elements one by one 
@@ -11,7 +12,7 @@ def multiplyList(myList) :
     return result  
 
 def factorial(n):
-    return math.factorial(n) * 1.0
+    return Decimal(math.factorial(n))
 
 def pol(p,c):
     return p * factorial(c + p - 1)
@@ -52,10 +53,17 @@ def add_to_dict(dict, v, val):
     result.append(val)
     dict[v] = result
 
+def uniq_len(values):
+    length = set(values)
+    return len(length)
+
 def count_p_c(values, v) :
     v_full_name = v.rsplit('.', 1)[0]
 
     full_names = set([])
+    p_count = set([])
+    c_count = set([])
+
     c_full_name_to_test = {}
     p_full_name_to_test = {}
     for p,c in values:
@@ -64,6 +72,7 @@ def count_p_c(values, v) :
         p_test_name = p_split[1]
         full_names.add(p_full_name)
         add_to_dict(p_full_name_to_test, p_full_name, p_test_name)
+        p_count.add(p)
 
         if c != "\n" and c != "":
             c_split = c.rsplit('.', 1)
@@ -71,13 +80,14 @@ def count_p_c(values, v) :
             c_test_name = c_split[1]
             full_names.add(c_full_name)
             add_to_dict(c_full_name_to_test, c_full_name, c_test_name)
+            c_count.add(c)
 
     result = []
     for full_name in full_names:
         if full_name != v_full_name:
-            result.append((len(p_full_name_to_test.get(full_name,[])), len(c_full_name_to_test.get(full_name,[]))))
+            result.append((uniq_len(p_full_name_to_test.get(full_name,[])), uniq_len(c_full_name_to_test.get(full_name,[]))))
 
-    return ( v, (len(p_full_name_to_test.get(v_full_name,[])), len(c_full_name_to_test.get(v_full_name,[]))) , result)
+    return ( v, (uniq_len(p_full_name_to_test.get(v_full_name,[])), uniq_len(c_full_name_to_test.get(v_full_name,[]))) , result, len(p_count), len(c_count))
 
 # Assumes all c's cleans all p's, which may not be true
 def read_file(filepath):
@@ -93,15 +103,26 @@ def read_file(filepath):
 
     return list_v_tc
 
+def count_num_p_c(test_classes):
+    p_count = set([])
+    c_count = set([])
+    for p, c in test_classes:
+        p_count.add(p)
+        c_count.add(c)
+
+    return p_count, c_count
+
 def calculate(filepath):
     result = []
     stats = read_file(filepath)
-    for v, t_v, test_classes in stats:
+    for v, t_v, test_classes, p_count, c_count in stats:
         prob = p_fail_class(t_v, test_classes)
-        result.append((v, prob))
+#        test_classes.append(t_v)
+#        p_count, c_count = count_num_p_c(test_classes)
+        result.append((v, prob, p_count, c_count))
     return result
 
 def main(filepath):
     result = calculate(filepath)
-    for v, prob in result:
-        print str.format("{},{}",v,prob)
+    for v, prob, p_count, c_count in result:
+        print str.format("{},{},{},{}",v,p_count,c_count,prob)
