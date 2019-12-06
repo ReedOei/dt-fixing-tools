@@ -1,6 +1,7 @@
 target/
 **/.DS_Store
 **/*~
+**/*.pyc
 
 .idea/*
 dt-fixing-tools.iml
