@@ -1,6 +1,10 @@
 # Reproducing calculations of OD tests' expected and observed failure rate
 A summary of all of the work done by Wing can be found [here](https://docs.google.com/spreadsheets/d/1Vp_IBQ4iS_N09ttJ4L1aPkx5IwdX4-o1g5yEZaHr8Ck).
 
+This readme works top-down. Meaning it first describes the files (e.g., `num_p_c_fail_rate.csv`) that were used to create the Google sheet, then proceeds to describe the files (e.g., `all-polluter-cleaner.csv`) that were used to create the files used by the Google sheet, and so on.
+
+All ZIP or CSV files in this directory contained or helped create some information used in the Google sheet, and they are all described below. 
+
 ## Obtaining number of polluters, cleaners, and expected failure for victims
 - num_p_c_fail_rate.csv: summary file for each victim the number of polluters and cleaners it has and the victims' expected failure rate based on the class of the victims' polluters and cleaners
   ```python
