@@ -60,7 +60,7 @@ def main(args):
         else:
             for c in pol['cleanerData']['cleaners']:
                 # Search through patches in the fixer/ directory, see if they have the polluter and cleaner
-                if outputline(fixerdirname, testname, pol['deps'][0], c['cleanerTests'][0]):
+                if outputline(fixerdirname, testname, pol['deps'][-1], c['cleanerTests'][0]):
                     found = True
                     break
 

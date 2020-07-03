@@ -85,7 +85,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     else
         echo "\\Def{${module}_unique_patches}{$(sort -u <3 | wc -l)}"
         echo "\\Def{${module}_unique_patches_sizes}{$(sort -u <3 | cut -d' ' -f2 | sort -u | wc -l)}"
-        echo "\\Def{${module}_unique_patches_percentage}{$(echo "$(sort -u <3 | wc -l) / ${count}" | bc -l | xargs printf "%.1f")\\%}"
+        echo "\\Def{${module}_unique_patches_percentage}{$(echo "$(sort -u <3 | wc -l) / ${count}" | bc -l | xargs printf "%'.1f")\\%}"
         overalluniquepatches=$(echo "$(sort -u <3 | wc -l) + ${overalluniquepatches}" | bc -l)
         overalluniquepatchessizes=$(echo "$(sort -u <3 | cut -d' ' -f2 | sort -u | wc -l) + ${overalluniquepatchessizes}" | bc -l)
         overalluniquepatchescount=$((overalluniquepatchescount + 1))
@@ -97,7 +97,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
     else
         echo "\\Def{${module}_working_patches}{${count}}"
         workingpatchespertest=$(echo "${count} / ${testcount}" | bc -l)
-        echo "\\Def{${module}_working_patches_pertest}{$(echo "${workingpatchespertest}" | xargs printf "%.1f")}"
+        echo "\\Def{${module}_working_patches_pertest}{$(echo "${workingpatchespertest}" | xargs printf "%'.1f")}"
         overallworkingpatches=$(echo "${overallworkingpatches} + ${count}" | bc -l)
         overallworkingpatchescount=$((overallworkingpatchescount + 1))
     fi
@@ -117,9 +117,9 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_unique_patches_sizes_pertest}{n/a}"
     else
         avgunique=$(echo "${rollingpertestunique} / ${testcount}" | bc -l)
-        echo "\\Def{${module}_unique_patches_pertest}{$(echo "${avgunique}" | xargs printf "%.1f")}"
+        echo "\\Def{${module}_unique_patches_pertest}{$(echo "${avgunique}" | xargs printf "%'.1f")}"
         avgsizeunique=$(echo "${rollingpertestuniquesize} / ${testcount}" | bc -l)
-        echo "\\Def{${module}_unique_patches_sizes_pertest}{$(echo "${avgsizeunique}" | xargs printf "%.1f")}"
+        echo "\\Def{${module}_unique_patches_sizes_pertest}{$(echo "${avgsizeunique}" | xargs printf "%'.1f")}"
         overalluniquepatchespertest=$(echo "${rollingpertestunique} + ${overalluniquepatchespertest}" | bc -l)
         overalluniquepatchessizespertest=$(echo "${rollingpertestuniquesize} + ${overalluniquepatchessizespertest}" | bc -l)
         overalltestcount=$(echo "${overalltestcount} + ${testcount}" | bc -l)
@@ -128,15 +128,15 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
 done
 
 # Output the overall macros
-echo "\\Def{average_unique_patches}{$(echo ${overalluniquepatches} / ${overalluniquepatchescount} | bc -l | xargs printf "%.1f")}"
-echo "\\Def{average_unique_patches_sizes}{$(echo ${overalluniquepatchessizes} / ${overalluniquepatchescount} | bc -l | xargs printf "%.1f")}"
-echo "\\Def{average_working_patches}{$(echo ${overallworkingpatches} / ${overallworkingpatchescount} | bc -l | xargs printf "%.1f")}"
-echo "\\Def{average_possible_patches}{$(echo ${overallpossiblepatches} / ${overallpossiblepatchescount} | bc -l | xargs printf "%.1f")}"
+echo "\\Def{average_unique_patches}{$(echo ${overalluniquepatches} / ${overalluniquepatchescount} | bc -l | xargs printf "%'.1f")}"
+echo "\\Def{average_unique_patches_sizes}{$(echo ${overalluniquepatchessizes} / ${overalluniquepatchescount} | bc -l | xargs printf "%'.1f")}"
+echo "\\Def{average_working_patches}{$(echo ${overallworkingpatches} / ${overallworkingpatchescount} | bc -l | xargs printf "%'.1f")}"
+echo "\\Def{average_possible_patches}{$(echo ${overallpossiblepatches} / ${overallpossiblepatchescount} | bc -l | xargs printf "%'.1f")}"
 
 echo "\\Def{total_testcount}{${overalltestcount}}"
-echo "\\Def{average_working_patches_pertest}{$(echo ${overallworkingpatches} / ${overalltestcount} | bc -l | xargs printf "%.1f")}"
-echo "\\Def{average_unique_patches_pertest}{$(echo ${overalluniquepatchespertest} / ${overalltestcount} | bc -l | xargs printf "%.1f")}"
-echo "\\Def{average_unique_patches_sizes_pertest}{$(echo ${overalluniquepatchessizespertest} / ${overalltestcount} | bc -l | xargs printf "%.1f")}"
+echo "\\Def{average_working_patches_pertest}{$(echo ${overallworkingpatches} / ${overalltestcount} | bc -l | xargs printf "%'.1f")}"
+echo "\\Def{average_unique_patches_pertest}{$(echo ${overalluniquepatchespertest} / ${overalltestcount} | bc -l | xargs printf "%'.1f")}"
+echo "\\Def{average_unique_patches_sizes_pertest}{$(echo ${overalluniquepatchessizespertest} / ${overalltestcount} | bc -l | xargs printf "%'.1f")}"
 
-echo "\\Def{total_unique_patches}{${overalluniquepatches}}"
-echo "\\Def{total_working_patches}{${overallworkingpatches}}"
+echo "\\Def{total_unique_patches}{$(echo ${overalluniquepatches} | xargs printf "%'d")}"
+echo "\\Def{total_working_patches}{$(echo ${overallworkingpatches} | xargs printf "%'d")}"

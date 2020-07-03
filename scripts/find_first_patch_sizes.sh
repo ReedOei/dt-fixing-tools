@@ -20,7 +20,7 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
 
     for t in $(grep ",${module}" ${testsfile} | grep -v "#" | cut -d',' -f1); do
         f=$(find ${debuggingresults} -name "*.json" | grep "=${t}/" | grep "minimized/")
-        res=$(python compute_size_first_patch.py ${f})
+        res=$(python old-python-scripts/compute_size_first_patch.py ${f})
         if [[ ${res} != "" ]]; then
             size=$(echo ${res} | cut -d',' -f1)
             rollingsize=$(echo "${size} + ${rollingsize}" | bc -l)
@@ -35,14 +35,15 @@ for module in $(grep -v "#" ${testsfile} | cut -d',' -f2 | sort -u); do
         echo "\\Def{${module}_firstsizeperc}{n/a}"
     else
         avgsize=$(echo "${rollingsize} / ${count}" | bc -l)
-        echo "\\Def{${module}_firstsize}{$(echo "${avgsize}" | xargs printf "%.1f")}"
+        echo "\\Def{${module}_firstsize}{$(echo "${avgsize}" | xargs printf "%'.1f")}"
         avgsizeperc=$(echo "${rollingsizeperc} / ${count} * 100" | bc -l)
-        echo "\\Def{${module}_firstsizeperc}{$(echo "${avgsizeperc}" | xargs printf "%.1f")\\%}"
-        overallsize=$(echo "${avgsize} + ${overallsize}" | bc -l)
-        overallsizeperc=$(echo "${avgsizeperc} + ${overallsizeperc}" | bc -l)
-        overallsizecount=$((overallsizecount + 1))
+        echo "\\Def{${module}_firstsizeperc}{$(echo "${avgsizeperc}" | xargs printf "%'.1f")\\%}"
+
+        overallsize=$(echo "${overallsize} + ${rollingsize}" | bc -l)
+        overallsizeperc=$(echo "${overallsizeperc} + ${rollingsizeperc}" | bc -l)
+        overallcount=$(echo "${overallcount} + ${count}" | bc -l)
     fi
 done
 
-echo "\\Def{average_firstsize}{$(echo "${overallsize} / ${overallsizecount}" | bc -l | xargs printf "%.1f")}"
-echo "\\Def{average_firstsizeperc}{$(echo "${overallsizeperc} / ${overallsizecount}" | bc -l | xargs printf "%.1f")\\%}"
+echo "\\Def{average_firstsize}{$(echo "${overallsize} / ${overallcount}" | bc -l | xargs printf "%'.1f")}"
+echo "\\Def{average_firstsizeperc}{$(echo "(${overallsizeperc} * 100) / ${overallcount}" | bc -l | xargs printf "%'.1f")\\%}"
